@@ -81,20 +81,7 @@ const ClientOverview = ({ client }: ClientOverviewProps) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
               <DetailRow icon={Mail} label="Email" value={client.email || '—'} />
               <DetailRow icon={Phone} label="Phone" value={client.contact || '—'} />
-              <DetailRow icon={Mail} label="Alt. Email" value={client.alternative_email || '—'} />
-              <DetailRow icon={Phone} label="Alt. Phone" value={client.alternative_contact || '—'} />
-              <DetailRow 
-                icon={LinkIcon} 
-                label="Website" 
-                value={client.website ? <a href={client.website} target="_blank" rel="noreferrer" className="hover:underline" style={{ color: theme.accent }}>{client.website}</a> : '—'} 
-              />
-              <DetailRow 
-                icon={LinkIcon} 
-                label="LinkedIn" 
-                value={client.linkedin ? <a href={client.linkedin} target="_blank" rel="noreferrer" className="hover:underline" style={{ color: theme.accent }}>LinkedIn Profile</a> : '—'} 
-              />
               <DetailRow icon={MapPin} label="Address" value={[client.street, client.city, client.state, client.postal_code, client.country].filter(Boolean).join(', ') || '—'} />
-              <DetailRow icon={Building2} label="Client Location" value={client.client_location || '—'} />
             </div>
           </div>
 

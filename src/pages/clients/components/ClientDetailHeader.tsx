@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Pencil, Plus } from 'lucide-react';
+import { ArrowLeft, Pencil, Plus, Users } from 'lucide-react';
 import { theme } from '@/config/theme';
 import type { ClientDetail } from '@/types/client.types';
+import TeamMembersModal from './TeamMembersModal';
 
 interface ClientDetailHeaderProps {
   client: ClientDetail;
@@ -12,6 +13,7 @@ interface ClientDetailHeaderProps {
 
 const ClientDetailHeader = ({ client }: ClientDetailHeaderProps) => {
   const navigate = useNavigate();
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
 
   return (
     <div className="space-y-4">
@@ -70,6 +72,15 @@ const ClientDetailHeader = ({ client }: ClientDetailHeaderProps) => {
             Edit
           </Button>
           <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setIsTeamModalOpen(true)}
+          >
+            <Users className="size-3" />
+            Team Members
+          </Button>
+          <Button
             size="sm"
             className="gap-1.5"
             onClick={() => navigate('/positions/new')}
@@ -79,6 +90,17 @@ const ClientDetailHeader = ({ client }: ClientDetailHeaderProps) => {
           </Button>
         </div>
       </div>
+
+      <TeamMembersModal
+        isOpen={isTeamModalOpen}
+        onClose={() => setIsTeamModalOpen(false)}
+        clientId={client.id}
+        initialTeamMembers={client.team_members || []}
+        onSuccess={() => {
+          // If you need to refetch client details, trigger it here.
+          // Since the Redux store typically updates itself or you can force a refresh.
+        }}
+      />
     </div>
   );
 };

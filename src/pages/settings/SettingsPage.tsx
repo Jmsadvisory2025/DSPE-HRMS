@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { User, Bell, Palette, Shield, Upload, Camera } from "lucide-react";
 import { theme } from "@/config/theme";
+import { useAppSelector } from "@/store/hooks";
 
 const SETTINGS_TABS = [
   { id: "profile", label: "Profile", icon: User },
@@ -85,6 +86,14 @@ const SettingsPage = () => {
 /* ── Content Components ────────────────────────────────────────── */
 
 const ProfileSettings = () => {
+  const user = useAppSelector((state) => state.auth.user);
+  
+  // Split name for the form
+  const nameParts = (user?.name || "").split(" ");
+  const firstName = nameParts[0] || "";
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
+  const initials = user?.name ? user.name.substring(0, 2).toUpperCase() : "U";
+
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       <div>
@@ -106,7 +115,7 @@ const ProfileSettings = () => {
               border: `1px solid ${theme.accent}30`,
             }}
           >
-            ZS
+            {initials}
           </div>
           <button className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
             <Camera className="size-6 text-white" />
@@ -147,7 +156,7 @@ const ProfileSettings = () => {
             First Name
           </label>
           <Input
-            defaultValue="Zeel"
+            defaultValue={firstName}
             className="bg-transparent"
             style={{ borderColor: theme.border, color: theme.textPrimary }}
           />
@@ -160,7 +169,7 @@ const ProfileSettings = () => {
             Last Name
           </label>
           <Input
-            defaultValue="Shah"
+            defaultValue={lastName}
             className="bg-transparent"
             style={{ borderColor: theme.border, color: theme.textPrimary }}
           />
@@ -173,9 +182,10 @@ const ProfileSettings = () => {
             Email Address
           </label>
           <Input
-            defaultValue="admin@recruit-os.com"
+            defaultValue={user?.email || ""}
+            disabled
             className="bg-transparent"
-            style={{ borderColor: theme.border, color: theme.textPrimary }}
+            style={{ borderColor: theme.border, color: theme.textPrimary, opacity: 0.7 }}
           />
         </div>
         <div className="space-y-2 sm:col-span-2">
@@ -183,12 +193,13 @@ const ProfileSettings = () => {
             className="text-sm font-medium"
             style={{ color: theme.textSecondary }}
           >
-            Bio / Tagline
+            Role / Tagline
           </label>
           <Input
-            defaultValue="Lead Admin & Founder"
-            className="bg-transparent"
-            style={{ borderColor: theme.border, color: theme.textPrimary }}
+            defaultValue={user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ""}
+            disabled
+            className="bg-transparent capitalize"
+            style={{ borderColor: theme.border, color: theme.textPrimary, opacity: 0.7 }}
           />
         </div>
       </div>

@@ -32,6 +32,7 @@ export interface AddClientPayload {
   website?: string;
   linkedin?: string;
   notes?: string;
+  team_members?: TeamMember[];
 }
 
 export interface Client {
@@ -135,6 +136,14 @@ export interface ClientDetail {
   agreement_document_name: string;
   notes: string;
   organization: string;
+  team_members: TeamMember[];
+}
+
+export interface TeamMember {
+  id?: string;
+  name: string;
+  email: string;
+  role: string;
 }
 
 export interface ClientState {

@@ -11,6 +11,7 @@ import { authActions } from '@/redux/actions';
 import { setCredentials } from '@/redux/slices/authSlice';
 import type { LoginResponse, LoginErrorResponse } from '@/types/auth.types';
 import { toast } from 'sonner';
+import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@base-ui/react';
 
@@ -45,6 +46,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState('11111111');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState<string | null>(null);
 
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -55,6 +57,18 @@ const LoginPage = () => {
     }, CYCLE_MS);
 
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    // Fetch Google Client ID from backend
+    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/google-config/`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.client_id) {
+          setGoogleClientId(data.client_id);
+        }
+      })
+      .catch(err => console.error("Failed to fetch Google config", err));
   }, []);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -91,9 +105,46 @@ const LoginPage = () => {
     });
   };
 
+  const handleGoogleLogin = (credential: string | undefined) => {
+    if (!credential) {
+      toast.error("Google Login failed: No credential received.");
+      return;
+    }
+
+    dispatch({
+      type: authActions.LOGIN,
+      method: "POST" as const,
+      endPoint: "/api/v1/auth/google/",
+      body: { id_token: credential },
+      auth: false,
+      setLoading,
+      showSuccessMessage: true,
+      getResponse: (data: unknown) => {
+        const res = data as LoginResponse;
+        dispatch(
+          setCredentials({
+            user: res.user,
+            accessToken: res.access,
+            refreshToken: res.refresh,
+          })
+        );
+        navigate('/dashboard');
+        toast.success("Google Login successful");
+      },
+      getError: (err: unknown) => {
+        const axiosErr = err as { response?: { data?: LoginErrorResponse } };
+        const msg =
+          axiosErr?.response?.data?.detail ||
+          axiosErr?.response?.data?.error ||
+          'Something went wrong during Google Login.';
+        toast.error(msg);
+      },
+    });
+  };
+
   return (
     <div
-      className="min-h-screen w-full relative overflow-hidden"
+      className="h-screen w-full relative overflow-hidden flex flex-col"
       style={{ backgroundColor: theme.background, color: theme.textPrimary }}
     >
       {/* ── Shared ambient canvas — spans the FULL page, no hard split ───────────── */}
@@ -106,7 +157,7 @@ const LoginPage = () => {
       />
     
 
-      <div className="relative z-10 min-h-screen w-full flex items-center justify-center px-6 py-10 lg:px-12">
+      <div className="relative z-10 h-full w-full flex items-center justify-center px-6 py-4 lg:px-12">
         <div className="w-full max-w-5xl flex items-center gap-10 lg:gap-16 xl:gap-20">
           {/* ── Left: Flipping Board Showcase ─────────────────────────────────────── */}
           <div className="hidden lg:flex flex-1 flex-col justify-center gap-10">
@@ -221,115 +272,55 @@ const LoginPage = () => {
                   boxShadow: `0 25px 50px -12px ${hexToRgba('#000000', 0.4)}`,
                 }}
               >
-                <CardHeader className="space-y-1.5 text-center pb-4">
+                <CardHeader className="space-y-3 text-center pb-6 pt-4">
+                  <div className="flex justify-center mb-2">
+                    <div
+                      className="size-12 rounded-2xl flex items-center justify-center shadow-lg"
+                      style={{ backgroundColor: theme.surfaceMuted, color: theme.accent, border: `1px solid ${theme.border}` }}
+                    >
+                      <Zap className="size-6" />
+                    </div>
+                  </div>
                   <CardTitle className="text-2xl font-bold tracking-tight" style={{ color: theme.textPrimary }}>
                     Welcome back
                   </CardTitle>
-                  <CardDescription className="text-xs" style={{ color: theme.textMuted }}>
-                    Enter your workspace credentials to continue
+                  <CardDescription className="text-sm px-4" style={{ color: theme.textMuted }}>
+                    Sign in with your Google Workspace account to access RecruitOS.
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent className="space-y-6 pb-8">
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="email" className="text-xs font-medium" style={{ color: theme.textSecondary }}>
-                        Work Email
-                      </Label>
-                      <div className="relative">
-                        <Mail
-                          className="absolute left-3 top-2.5 size-4"
-                          style={{ color: theme.textMuted }}
-                        />
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="admin@recruit-os.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="pl-9 text-sm"
-                          style={{
-                            backgroundColor: theme.surfaceMuted,
-                            borderColor: theme.input,
-                            color: theme.textPrimary,
-                          }}
-                          disabled={loading}
-                          required
-                        />
+                <CardContent className="space-y-6 pb-10">
+                  {googleClientId ? (
+                    <div className="flex flex-col items-center justify-center gap-4">
+                      <GoogleOAuthProvider clientId={googleClientId}>
+                        <div className="hover:scale-105 transition-transform duration-300">
+                          <GoogleLogin
+                            onSuccess={(credentialResponse) => {
+                              handleGoogleLogin(credentialResponse.credential);
+                            }}
+                            onError={() => {
+                              toast.error("Google Login failed. Please try again.");
+                            }}
+                            useOneTap
+                            theme="filled_black"
+                            size="large"
+                            text="continue_with"
+                            shape="pill"
+                            width="300"
+                          />
+                        </div>
+                      </GoogleOAuthProvider>
+                      <div className="flex items-center gap-1.5 mt-4 text-xs" style={{ color: theme.textMuted }}>
+                        <ShieldCheck className="size-3.5" />
+                        <span>Secure, single sign-on access</span>
                       </div>
                     </div>
-
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="password" className="text-xs font-medium" style={{ color: theme.textSecondary }}>
-                          Password
-                        </Label>
-                        <a
-                          href="#forgot"
-                          onClick={(e) => e.preventDefault()}
-                          className="text-xs hover:underline font-medium"
-                          style={{ color: theme.accent }}
-                        >
-                          Forgot password?
-                        </a>
-                      </div>
-                      <div className="relative">
-                        <Lock
-                          className="absolute left-3 top-2.5 size-4"
-                          style={{ color: theme.textMuted }}
-                        />
-                        <Input
-                          id="password"
-                          type={showPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="pl-9 pr-9 text-sm"
-                          style={{
-                            backgroundColor: theme.surfaceMuted,
-                            borderColor: theme.input,
-                            color: theme.textPrimary,
-                          }}
-                          disabled={loading}
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-2.5 outline-none transition-opacity hover:opacity-80"
-                          style={{ color: theme.textMuted }}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="size-4" />
-                          ) : (
-                            <Eye className="size-4" />
-                          )}
-                        </button>
-                      </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-4">
+                      <Loader2 className="size-6 animate-spin mb-2" style={{ color: theme.accent }} />
+                      <span className="text-xs" style={{ color: theme.textMuted }}>Initializing secure connection...</span>
                     </div>
-
-                    <Button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full font-semibold size-lg gap-2 mt-2 group border-0"
-                      style={{
-                        backgroundColor: loading ? theme.textMuted : theme.accent,
-                        color: theme.accentForeground,
-                      }}
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="size-4 animate-spin" />
-                          <span>Signing in...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Sign In to Workspace</span>
-                          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-                        </>
-                      )}
-                    </Button>
-                  </form>
+                  )}
                 </CardContent>
               </Card>
             </div>
