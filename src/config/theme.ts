@@ -79,3 +79,71 @@ export const theme = {
 } as const;
 
 export type Theme = typeof theme;
+// export const theme = {
+//   /* ─────────────────────────────────────
+//    * Backgrounds
+//    * ───────────────────────────────────── */
+//   background: "#F8FAFC",
+//   surface: "#FFFFFF",
+//   surfaceMuted: "#F1F5F9",
+//   surfaceHover: "#E8EEF5",
+
+//   /* ─────────────────────────────────────
+//    * Text
+//    * ───────────────────────────────────── */
+//   textPrimary: "#0F172A",
+//   textSecondary: "#475569",
+//   textMuted: "#64748B",
+//   textInverse: "#FFFFFF",
+
+//   /* ─────────────────────────────────────
+//    * Borders
+//    * ───────────────────────────────────── */
+//   border: "#E2E8F0",
+//   borderStrong: "#CBD5E1",
+//   input: "#D8E0EB",
+
+//   /* ─────────────────────────────────────
+//    * Primary
+//    * ───────────────────────────────────── */
+//   accent: "#2563EB",
+//   accentHover: "#1D4ED8",
+//   accentSoft: "#DBEAFE",
+//   accentForeground: "#FFFFFF",
+
+//   /* Focus */
+//   ring: "#60A5FA",
+
+//   /* Status */
+//   destructive: "#DC2626",
+//   destructiveForeground: "#FFFFFF",
+
+//   success: "#16A34A",
+//   successSoft: "#DCFCE7",
+
+//   warning: "#D97706",
+//   warningSoft: "#FEF3C7",
+
+//   info: "#0284C7",
+//   infoSoft: "#E0F2FE",
+
+//   /* Charts */
+//   chart1: "#2563EB",
+//   chart2: "#7C3AED",
+//   chart3: "#14B8A6",
+//   chart4: "#F59E0B",
+//   chart5: "#EC4899",
+
+//   /* Sidebar */
+//   sidebar: "#FFFFFF",
+//   sidebarForeground: "#0F172A",
+
+//   sidebarPrimary: "#2563EB",
+//   sidebarPrimaryForeground: "#FFFFFF",
+
+//   sidebarAccent: "#F1F5F9",
+//   sidebarAccentForeground: "#0F172A",
+
+//   sidebarBorder: "#E2E8F0",
+//   sidebarRing: "#60A5FA",
+// } as const;

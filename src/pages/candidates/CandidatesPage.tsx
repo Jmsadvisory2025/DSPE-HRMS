@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { candidateActions } from '@/redux/actions';
+import { setCandidates, setLoading, setError } from '@/redux/slices/candidateSlice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -18,46 +21,85 @@ import {
   Plus,
   TriangleAlert,
   Filter,
-  ArrowRight,
 } from 'lucide-react';
 import { theme } from '@/config/theme';
+import { SubmitCandidateModal } from './components/SubmitCandidateModal';
+import { MoreHorizontal } from 'lucide-react';
 
-import { CANDIDATES, type Segment } from './data';
-
-const SEGMENT_STYLES: Record<Segment, { bg: string; text: string }> = {
-  'Wealth Management': { bg: '#1a2e1a', text: '#6ee7b7' },
-  'AMC':               { bg: '#1a2a3d', text: '#38bdf8' },
-  'NBFC':              { bg: '#2a1a3d', text: '#a78bfa' },
-  'Banking':           { bg: '#2a2a1a', text: '#fbbf24' },
-  'Insurance':         { bg: '#1a2a2a', text: '#67e8f9' },
-  'Broking':           { bg: '#2a1a2a', text: '#f0abfc' },
-  'Investment Banking': { bg: '#1a1a2a', text: '#818cf8' },
+const ActionMenu = ({ onOpenSubmit }: { onOpenSubmit: () => void }) => {
+  const [open, setOpen] = useState(false);
+  
+  return (
+    <div className="relative inline-block" onClick={(e) => { e.stopPropagation(); }}>
+       <button onClick={() => setOpen(!open)} className="p-1 rounded-md hover:bg-black/10 transition-colors">
+          <MoreHorizontal className="size-4 text-muted-foreground" />
+       </button>
+       {open && (
+         <>
+           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+           <div className="absolute right-0 top-full mt-1 w-40 rounded-md border bg-popover shadow-md z-50 py-1" style={{ borderColor: theme.border, background: theme.surface }}>
+             <button 
+               className="w-full text-left px-3 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground" 
+               style={{ color: theme.textPrimary }}
+               onClick={() => { setOpen(false); onOpenSubmit(); }}
+             >
+               Submit Candidate
+             </button>
+           </div>
+         </>
+       )}
+    </div>
+  );
 };
 
-const FILTER_OPTIONS = ['All', 'Broking', 'Wealth Management', 'AMC', 'NBFC', 'Banking', 'Insurance'] as const;
-
-/* ── Component ────────────────────────────────────────────────── */
 const CandidatesPage = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { candidates, loading } = useAppSelector((state) => state.candidates);
+  
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<string>('All');
   const [duplicatesOnly, setDuplicatesOnly] = useState(false);
+  const [experienceMin, setExperienceMin] = useState('');
+  const [experienceMax, setExperienceMax] = useState('');
 
-  // Filter logic
-  const filtered = CANDIDATES.filter((c) => {
-    const matchesSearch =
-      !searchQuery ||
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.role.toLowerCase().includes(searchQuery.toLowerCase());
+  // Submit Candidate Modal State
+  const [submitModalOpen, setSubmitModalOpen] = useState(false);
+  const [targetCandidateId, setTargetCandidateId] = useState<string | null>(null);
 
-    const matchesSegment =
-      activeFilter === 'All' || c.segment === activeFilter;
+  const fetchCandidates = (overrideClear = false) => {
+    const params = new URLSearchParams();
+    if (!overrideClear) {
+      if (searchQuery) params.append('search', searchQuery);
+      if (experienceMin) params.append('experience_min', experienceMin);
+      if (experienceMax) params.append('experience_max', experienceMax);
+      if (duplicatesOnly) params.append('is_duplicate', 'true');
+    }
 
-    const matchesDuplicate = !duplicatesOnly || c.isDuplicate;
+    const queryString = params.toString();
+    const endPoint = `/api/v1/candidates/${queryString ? `?${queryString}` : ''}`;
 
-    return matchesSearch && matchesSegment && matchesDuplicate;
-  });
+    dispatch({
+      type: candidateActions.FETCH_CANDIDATES,
+      method: "GET",
+      endPoint,
+      auth: true,
+      setLoading: (val: boolean) => dispatch(setLoading(val)),
+      getResponse: (data: any) => dispatch(setCandidates(data.results || [])),
+      getError: (err: any) => dispatch(setError(err.message)),
+    });
+  };
+
+  useEffect(() => {
+    fetchCandidates();
+  }, [dispatch]);
+
+  const handleClear = () => {
+    setSearchQuery('');
+    setExperienceMin('');
+    setExperienceMax('');
+    setDuplicatesOnly(false);
+    fetchCandidates(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -71,7 +113,7 @@ const CandidatesPage = () => {
             Candidates
           </h1>
           <p className="text-sm mt-1" style={{ color: theme.textMuted }}>
-            {filtered.length} candidates in the BFSI repository
+            {candidates.length} candidates found
           </p>
         </div>
 
@@ -84,7 +126,7 @@ const CandidatesPage = () => {
             <Download className="size-3.5" />
             <span>Export</span>
           </Button>
-          <Button size="sm" className="gap-1.5">
+          <Button size="sm" className="gap-1.5" onClick={() => navigate('/candidates/new')}>
             <Plus className="size-3.5" />
             <span>Add Candidate</span>
           </Button>
@@ -99,7 +141,7 @@ const CandidatesPage = () => {
             style={{ color: theme.textMuted }}
           />
           <Input
-            placeholder="Search by name, email, company, skill..."
+            placeholder="Search by name, email, phone, location, company, role, skills..."
             className="pl-9 text-sm"
             style={{
               background: theme.surface,
@@ -111,46 +153,53 @@ const CandidatesPage = () => {
           />
         </div>
 
-        {/* Filter pills */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {FILTER_OPTIONS.map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setActiveFilter(filter)}
-              className="px-3 py-1.5 text-xs font-medium rounded-md transition-all"
-              style={{
-                background:
-                  activeFilter === filter ? theme.accent : theme.surfaceMuted,
-                color:
-                  activeFilter === filter
-                    ? theme.accentForeground
-                    : theme.textSecondary,
-                transition: 'background 150ms ease, color 150ms ease',
-              }}
-            >
-              {filter}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <Input 
+            placeholder="Min Exp"
+            type="number"
+            className="w-[85px] text-sm h-9"
+            style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+            value={experienceMin}
+            onChange={(e) => setExperienceMin(e.target.value)}
+          />
+          <span className="text-sm font-medium" style={{ color: theme.textMuted }}>-</span>
+          <Input 
+            placeholder="Max Exp"
+            type="number"
+            className="w-[85px] text-sm h-9"
+            style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+            value={experienceMax}
+            onChange={(e) => setExperienceMax(e.target.value)}
+          />
         </div>
 
-        {/* Duplicates toggle */}
-        <button
-          onClick={() => setDuplicatesOnly(!duplicatesOnly)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ml-auto"
-          style={{
-            background: duplicatesOnly ? theme.warningSoft : 'transparent',
-            color: duplicatesOnly ? theme.warning : theme.textMuted,
-            border: `1px solid ${duplicatesOnly ? theme.warning + '40' : theme.border}`,
-          }}
-        >
-          <TriangleAlert className="size-3.5" />
-          <span>Duplicates only</span>
-        </button>
+        <div className="flex items-center gap-2 ml-auto">
+          {/* Duplicates toggle */}
+          <button
+            onClick={() => setDuplicatesOnly(!duplicatesOnly)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+            style={{
+              background: duplicatesOnly ? theme.warningSoft : 'transparent',
+              color: duplicatesOnly ? theme.warning : theme.textMuted,
+              border: `1px solid ${duplicatesOnly ? theme.warning + '40' : theme.border}`,
+            }}
+          >
+            <TriangleAlert className="size-3.5" />
+            <span>Duplicates</span>
+          </button>
+          
+          <Button variant="outline" size="sm" onClick={handleClear} className="h-8 text-xs">
+            Clear
+          </Button>
+          <Button size="sm" onClick={() => fetchCandidates()} className="h-8 text-xs px-4" style={{ background: theme.accent, color: theme.accentForeground }}>
+            Apply
+          </Button>
+        </div>
 
         {/* Result count */}
         <div className="flex items-center gap-1.5 text-xs" style={{ color: theme.textMuted }}>
           <Filter className="size-3.5" />
-          <span>{filtered.length} results</span>
+          <span>{candidates.length} results</span>
         </div>
       </div>
 
@@ -169,55 +218,79 @@ const CandidatesPage = () => {
               style={{ borderColor: theme.border }}
             >
               <TableHead
-                className="text-[11px] font-semibold uppercase tracking-wider"
+                className="text-[11px] font-semibold uppercase tracking-wider w-[220px]"
                 style={{ color: theme.textMuted }}
               >
                 Candidate
               </TableHead>
               <TableHead
-                className="text-[11px] font-semibold uppercase tracking-wider"
+                className="text-[11px] font-semibold uppercase tracking-wider w-[180px]"
+                style={{ color: theme.textMuted }}
+              >
+                Contact
+              </TableHead>
+              <TableHead
+                className="text-[11px] font-semibold uppercase tracking-wider w-[150px]"
                 style={{ color: theme.textMuted }}
               >
                 Current Company
               </TableHead>
               <TableHead
-                className="text-[11px] font-semibold uppercase tracking-wider"
-                style={{ color: theme.textMuted }}
-              >
-                Segment
-              </TableHead>
-              <TableHead
-                className="text-[11px] font-semibold uppercase tracking-wider"
+                className="text-[11px] font-semibold uppercase tracking-wider w-[100px]"
                 style={{ color: theme.textMuted }}
               >
                 Experience
               </TableHead>
               <TableHead
-                className="text-[11px] font-semibold uppercase tracking-wider"
+                className="text-[11px] font-semibold uppercase tracking-wider w-[150px]"
                 style={{ color: theme.textMuted }}
               >
                 Location
               </TableHead>
               <TableHead
-                className="text-[11px] font-semibold uppercase tracking-wider"
-                style={{ color: theme.textMuted }}
-              >
-                CTC (Cur/Exp)
-              </TableHead>
-              <TableHead
-                className="text-[11px] font-semibold uppercase tracking-wider"
+                className="text-[11px] font-semibold uppercase tracking-wider w-[120px]"
                 style={{ color: theme.textMuted }}
               >
                 Uploaded By
+              </TableHead>
+              <TableHead
+                className="text-[11px] font-semibold uppercase tracking-wider w-[100px]"
+                style={{ color: theme.textMuted }}
+              >
+                Created At
+              </TableHead>
+              <TableHead
+                className="text-[11px] font-semibold uppercase tracking-wider w-[80px] text-right pr-4"
+                style={{ color: theme.textMuted }}
+              >
+                Actions
               </TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
-            {filtered.map((candidate) => {
-              const segStyle = SEGMENT_STYLES[candidate.segment];
-
-              return (
+            {loading ? (
+               <TableRow>
+                 <TableCell
+                   colSpan={8}
+                   className="h-32 text-center text-sm"
+                   style={{ color: theme.textMuted }}
+                 >
+                   Loading candidates...
+                 </TableCell>
+               </TableRow>
+            ) : candidates.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={8}
+                  className="h-32 text-center text-sm"
+                  style={{ color: theme.textMuted }}
+                >
+                  No candidates found matching your filters.
+                </TableCell>
+              </TableRow>
+            ) : (
+              candidates.map((candidate) => (
                 <TableRow
                   key={candidate.id}
                   onClick={() => navigate('/candidates/' + candidate.id)}
@@ -231,26 +304,26 @@ const CandidatesPage = () => {
                   }
                 >
                   {/* Candidate Name + Role */}
-                  <TableCell className="py-3">
+                  <TableCell className="py-3 max-w-[220px]">
                     <div className="flex items-center gap-2">
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <p
-                          className="text-sm font-semibold leading-tight"
+                          className="text-sm font-semibold leading-tight truncate"
                           style={{ color: theme.accent }}
                         >
-                          {candidate.name}
+                          {candidate.candidate_name || "N/A"}
                         </p>
                         <p
-                          className="text-xs mt-0.5"
+                          className="text-xs mt-0.5 truncate"
                           style={{ color: theme.textMuted }}
                         >
-                          {candidate.role}
+                          {candidate.current_profile || "N/A"}
                         </p>
                       </div>
-                      {candidate.isDuplicate && (
+                      {candidate.is_duplicate && (
                         <Badge
                           variant="outline"
-                          className="text-[10px] gap-1 px-1.5 py-0 h-5"
+                          className="text-[10px] gap-1 px-1.5 py-0 h-5 shrink-0"
                           style={{
                             borderColor: theme.warning + '60',
                             color: theme.warning,
@@ -264,82 +337,88 @@ const CandidatesPage = () => {
                     </div>
                   </TableCell>
 
-                  {/* Company */}
-                  <TableCell
-                    className="text-sm"
-                    style={{ color: theme.textSecondary }}
-                  >
-                    {candidate.company}
+                  {/* Contact Info */}
+                  <TableCell className="max-w-[180px]">
+                     <div className="min-w-0">
+                        <p
+                          className="text-sm truncate"
+                          style={{ color: theme.textSecondary }}
+                        >
+                          {candidate.email || "N/A"}
+                        </p>
+                        <p
+                          className="text-xs mt-0.5 truncate"
+                          style={{ color: theme.textMuted }}
+                        >
+                          {candidate.contact || "N/A"}
+                        </p>
+                      </div>
                   </TableCell>
 
-                  {/* Segment Badge */}
-                  <TableCell>
-                    <span
-                      className="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium"
-                      style={{
-                        background: segStyle.bg,
-                        color: segStyle.text,
-                      }}
-                    >
-                      {candidate.segment}
-                    </span>
+                  {/* Company */}
+                  <TableCell
+                    className="text-sm max-w-[150px] truncate"
+                    style={{ color: theme.textSecondary }}
+                  >
+                    {candidate.current_company || "Not provided"}
                   </TableCell>
 
                   {/* Experience */}
                   <TableCell
-                    className="text-sm"
+                    className="text-sm max-w-[100px] truncate"
                     style={{ color: theme.textSecondary }}
                   >
-                    {candidate.experience}
+                    {candidate.experience || "N/A"}
                   </TableCell>
 
                   {/* Location */}
                   <TableCell
-                    className="text-sm font-medium"
+                    className="text-sm font-medium max-w-[150px] truncate"
                     style={{ color: theme.textSecondary }}
                   >
-                    {candidate.location}
-                  </TableCell>
-
-                  {/* CTC */}
-                  <TableCell className="text-sm">
-                    <span style={{ color: theme.textSecondary }}>
-                      {candidate.ctcCurrent}
-                    </span>
-                    <ArrowRight
-                      className="inline size-3 mx-1.5"
-                      style={{ color: theme.textMuted }}
-                    />
-                    <span style={{ color: theme.textPrimary }}>
-                      {candidate.ctcExpected}
-                    </span>
+                    {candidate.current_location || "N/A"}
                   </TableCell>
 
                   {/* Uploaded By */}
                   <TableCell
+                    className="text-sm max-w-[120px] truncate"
+                    style={{ color: theme.textSecondary }}
+                  >
+                    {candidate.uploaded_by_name || "N/A"}
+                  </TableCell>
+                  
+                  {/* Created At */}
+                  <TableCell
                     className="text-sm"
                     style={{ color: theme.textSecondary }}
                   >
-                    {candidate.uploadedBy}
+                    {new Date(candidate.created_at).toLocaleDateString()}
+                  </TableCell>
+
+                  {/* Actions */}
+                  <TableCell className="text-right pr-4">
+                     <ActionMenu 
+                        onOpenSubmit={() => {
+                           setTargetCandidateId(candidate.id);
+                           setSubmitModalOpen(true);
+                        }} 
+                     />
                   </TableCell>
                 </TableRow>
-              );
-            })}
-
-            {filtered.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="h-32 text-center text-sm"
-                  style={{ color: theme.textMuted }}
-                >
-                  No candidates found matching your filters.
-                </TableCell>
-              </TableRow>
+              ))
             )}
           </TableBody>
         </Table>
       </div>
+      
+      <SubmitCandidateModal 
+         isOpen={submitModalOpen} 
+         onClose={() => {
+           setSubmitModalOpen(false);
+           setTargetCandidateId(null);
+         }} 
+         candidateId={targetCandidateId} 
+      />
     </div>
   );
 };

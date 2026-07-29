@@ -14,7 +14,13 @@ export const clientActions = {
 } as const;
 
 /* ── Candidates ───────────────────────────────────────────────── */
-export const candidateActions = {} as const;
+export const candidateActions = {
+  FETCH_CANDIDATES: "FETCH_CANDIDATES",
+  UPLOAD_RESUMES: "UPLOAD_RESUMES",
+  FETCH_CANDIDATE_DETAIL: "FETCH_CANDIDATE_DETAIL",
+  UPDATE_CANDIDATE: "UPDATE_CANDIDATE",
+  SUBMIT_CANDIDATE: "SUBMIT_CANDIDATE",
+} as const;
 
 /* ── Positions ────────────────────────────────────────────────── */
 export const positionActions = {
@@ -24,8 +30,11 @@ export const positionActions = {
   UPDATE_JOB: "UPDATE_JOB",
 } as const;
 
-/* ── Approvals ────────────────────────────────────────────────── */
-export const approvalActions = {} as const;
+export const approvalActions = {
+  FETCH_APPLICATIONS: "FETCH_APPLICATIONS",
+  FETCH_APPLICATION_DETAIL: "FETCH_APPLICATION_DETAIL",
+  REVIEW_APPLICATION: "REVIEW_APPLICATION",
+} as const;
 
 /* ── Users ─────────────────────────────────────────────────────── */
 export const userActions = {

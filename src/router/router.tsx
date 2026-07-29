@@ -12,10 +12,13 @@ import JobsPage from "@/pages/positions/JobsPage";
 import JobDetailPage from "@/pages/positions/JobDetailPage";
 import EditPositionPage from "@/pages/positions/EditPositionPage";
 import ApprovalsPage from "@/pages/approvals/ApprovalsPage";
+import ApprovalDetailPage from "@/pages/approvals/ApprovalDetailPage";
 import UsersPage from "@/pages/users/UsersPage";
 import AuditLogsPage from "@/pages/audit/AuditLogsPage";
 import SettingsPage from "@/pages/settings/SettingsPage";
+import AddCandidatePage from "@/pages/candidates/AddCandidatePage";
 import CandidateDetailPage from "@/pages/candidates/CandidateDetailPage";
+import EditCandidatePage from "@/pages/candidates/EditCandidatePage";
 import SetPinPage from "@/pages/auth/SetPinPage";
 
 const RootRedirect = () => {
@@ -49,8 +52,16 @@ export const router = createBrowserRouter([
         element: <CandidatesPage />,
       },
       {
+        path: "/candidates/new",
+        element: <AddCandidatePage />,
+      },
+      {
         path: "/candidates/:candidateId",
         element: <CandidateDetailPage />,
+      },
+      {
+        path: "/candidates/:candidateId/edit",
+        element: <EditCandidatePage />,
       },
       {
         path: "/clients",
@@ -87,6 +98,10 @@ export const router = createBrowserRouter([
       {
         path: "/approvals",
         element: <ApprovalsPage />,
+      },
+      {
+        path: "/approvals/:applicationId",
+        element: <ApprovalDetailPage />,
       },
       {
         path: "/interviews",

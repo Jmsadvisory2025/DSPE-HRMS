@@ -1,137 +1,369 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Briefcase, MapPin, Building2, User, FileText, CheckCircle2 } from 'lucide-react';
+import { 
+  ArrowLeft, MapPin, Building2, User, FileText, 
+  Mail, Phone, Globe, Link as LinkIcon, 
+  Briefcase, GraduationCap, Calendar, Download, Loader2, CheckCircle2, Edit
+} from 'lucide-react';
 import { theme } from '@/config/theme';
-import { CANDIDATES } from './data';
-import { useAuth } from '@/context/AuthContext';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { candidateActions } from '@/redux/actions';
+import { setCandidateDetail, setCandidateDetailLoading, setError } from '@/redux/slices/candidateSlice';
+import { motion } from 'framer-motion';
 
 const CandidateDetailPage = () => {
   const { candidateId } = useParams();
   const navigate = useNavigate();
-  const { isRecruiter } = useAuth();
+  const dispatch = useAppDispatch();
+  
+  const { candidateDetail: candidate, candidateDetailLoading: loading } = useAppSelector(
+    (state) => state.candidates
+  );
 
-  const candidate = CANDIDATES.find((c) => c.id === Number(candidateId));
+  useEffect(() => {
+    if (candidateId) {
+      dispatch({
+        type: candidateActions.FETCH_CANDIDATE_DETAIL,
+        method: "GET",
+        endPoint: `/api/v1/candidates/${candidateId}/`,
+        auth: true,
+        setLoading: (val: boolean) => dispatch(setCandidateDetailLoading(val)),
+        getResponse: (data: any) => dispatch(setCandidateDetail(data)),
+        getError: (err: any) => dispatch(setError(err.message)),
+      });
+    }
+  }, [candidateId, dispatch]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Loader2 className="size-10 animate-spin" style={{ color: theme.accent }} />
+        <p className="text-sm font-medium" style={{ color: theme.textMuted }}>Loading Candidate Profile...</p>
+      </div>
+    );
+  }
 
   if (!candidate) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <h2 className="text-2xl font-bold" style={{ color: theme.textPrimary }}>Candidate Not Found</h2>
-        <Button onClick={() => navigate('/candidates')}>Back to Candidates</Button>
+        <Button onClick={() => navigate('/candidates')} variant="outline">
+          <ArrowLeft className="mr-2 size-4" /> Back to Candidates
+        </Button>
       </div>
     );
   }
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100 } }
+  };
+
   return (
-    <div className="space-y-6 pb-10 max-w-5xl mx-auto">
-      {/* Header / Actions */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0 h-9 w-9">
-            <ArrowLeft className="size-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: theme.textPrimary }}>
-              {candidate.name}
-            </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-sm font-medium" style={{ color: theme.accent }}>{candidate.role}</span>
-              <span className="text-xs" style={{ color: theme.textMuted }}>•</span>
-              <span className="text-sm" style={{ color: theme.textSecondary }}>{candidate.company}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          {!isRecruiter && (
-            <Button variant="outline" size="sm" className="h-9">
-              Edit Candidate
+    <motion.div 
+      className="space-y-8 pb-12 max-w-6xl mx-auto"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
+      {/* ── Header Section (Glassmorphism inspired) ─────────────────────────── */}
+      <motion.div 
+        variants={itemVariants}
+        className="relative overflow-hidden rounded-2xl p-8 border backdrop-blur-xl"
+        style={{ 
+          background: `linear-gradient(135deg, ${theme.surface}E6 0%, ${theme.surfaceMuted}E6 100%)`, 
+          borderColor: theme.border,
+          boxShadow: `0 8px 32px 0 ${theme.border}40`
+        }}
+      >
+        <div className="absolute top-0 right-0 p-32 opacity-10 blur-3xl pointer-events-none rounded-full" 
+             style={{ background: `radial-gradient(circle, ${theme.accent} 0%, transparent 70%)` }} />
+             
+        <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6 z-10">
+          <div className="flex items-start gap-4">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => navigate('/candidates')} 
+              className="shrink-0 rounded-full mt-1 border-white/10 hover:bg-white/5"
+              style={{ color: theme.textPrimary }}
+            >
+              <ArrowLeft className="size-4" />
             </Button>
-          )}
-          <Button size="sm" className="h-9 gap-1.5" style={{ background: theme.accent, color: theme.accentForeground }}>
-            <FileText className="size-4" />
-            View Resume
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left Column: Details */}
-        <div className="md:col-span-2 space-y-6">
-          <div
-            className="rounded-xl p-6"
-            style={{ background: theme.surface, border: `1px solid ${theme.border}` }}
-          >
-            <h3 className="text-lg font-bold mb-4" style={{ color: theme.textPrimary }}>Candidate Overview</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <p className="text-xs" style={{ color: theme.textMuted }}>Experience</p>
-                <p className="text-sm font-medium" style={{ color: theme.textPrimary }}>{candidate.experience}</p>
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight mb-2" style={{ color: theme.textPrimary }}>
+                {candidate.candidate_name || candidate.profile_name || "Unknown Candidate"}
+              </h1>
+              <div className="flex flex-wrap items-center gap-3 text-sm font-medium">
+                {candidate.current_profile && (
+                  <span className="flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: theme.accent + '20', color: theme.accent }}>
+                    <Briefcase className="size-3.5" />
+                    {candidate.current_profile}
+                  </span>
+                )}
+                {candidate.current_company && (
+                  <span className="flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: theme.surfaceHover, color: theme.textSecondary }}>
+                    <Building2 className="size-3.5" />
+                    {candidate.current_company}
+                  </span>
+                )}
+                {candidate.current_location && (
+                  <span className="flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: theme.surfaceHover, color: theme.textSecondary }}>
+                    <MapPin className="size-3.5" />
+                    {candidate.current_location}
+                  </span>
+                )}
               </div>
-              <div className="space-y-1">
-                <p className="text-xs" style={{ color: theme.textMuted }}>Location</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <Button 
+              variant="outline"
+              className="flex-1 md:flex-none gap-2 rounded-full border-white/10 hover:bg-white/5"
+              onClick={() => navigate(`/candidates/${candidateId}/edit`)}
+            >
+              <Edit className="size-4" />
+              Edit Profile
+            </Button>
+            {candidate.resume && (
+              <Button 
+                variant="outline"
+                className="flex-1 md:flex-none gap-2 rounded-full border-white/10 hover:bg-white/5"
+                onClick={() => window.open(candidate.resume, '_blank')}
+              >
+                <FileText className="size-4" />
+                View Resume
+              </Button>
+            )}
+          </div>
+        </div>
+      </motion.div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* ── Left Column: Main Details ────────────────────────────────────── */}
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* Professional Summary & Skills */}
+          <motion.div variants={itemVariants} className="space-y-6">
+            <h3 className="text-xl font-bold border-b pb-2" style={{ color: theme.textPrimary, borderColor: theme.border }}>
+              Professional Profile
+            </h3>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-4 rounded-xl border" style={{ background: theme.surfaceMuted, borderColor: theme.border }}>
+                <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.textMuted }}>Experience</p>
+                <p className="text-lg font-bold" style={{ color: theme.textPrimary }}>{candidate.experience || "N/A"}</p>
+              </div>
+              <div className="p-4 rounded-xl border" style={{ background: theme.surfaceMuted, borderColor: theme.border }}>
+                <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.textMuted }}>Status</p>
                 <div className="flex items-center gap-1.5">
-                  <MapPin className="size-4" style={{ color: theme.textSecondary }} />
-                  <p className="text-sm font-medium" style={{ color: theme.textPrimary }}>{candidate.location}</p>
+                  <CheckCircle2 className="size-4" style={{ color: theme.success }} />
+                  <p className="text-sm font-bold" style={{ color: theme.success }}>Active</p>
                 </div>
               </div>
-              <div className="space-y-1">
-                <p className="text-xs" style={{ color: theme.textMuted }}>Current CTC</p>
-                <p className="text-sm font-medium" style={{ color: theme.textPrimary }}>{candidate.ctcCurrent}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs" style={{ color: theme.textMuted }}>Expected CTC</p>
-                <p className="text-sm font-medium" style={{ color: theme.success }}>{candidate.ctcExpected}</p>
-              </div>
+              {candidate.is_duplicate && (
+                 <div className="p-4 rounded-xl border col-span-2 md:col-span-2" style={{ background: theme.warningSoft, borderColor: theme.warning + '40' }}>
+                   <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.warning }}>Notice</p>
+                   <p className="text-sm font-medium" style={{ color: theme.warning }}>Flagged as Duplicate Profile</p>
+                 </div>
+              )}
             </div>
 
-            <div className="mt-6 pt-6 border-t space-y-4" style={{ borderColor: theme.border }}>
-              <div>
-                <p className="text-xs mb-1" style={{ color: theme.textMuted }}>Segment / Industry</p>
-                <Badge variant="outline" style={{ color: theme.info, borderColor: theme.info + '50', background: theme.info + '10' }}>
-                  {candidate.segment}
-                </Badge>
-              </div>
-              <div>
-                <p className="text-xs mb-1" style={{ color: theme.textMuted }}>Uploaded By</p>
-                <div className="flex items-center gap-2">
-                  <User className="size-4" style={{ color: theme.textSecondary }} />
-                  <span className="text-sm font-medium" style={{ color: theme.textPrimary }}>{candidate.uploadedBy}</span>
+            {candidate.skills && candidate.skills.length > 0 && (
+              <div className="pt-4">
+                <h4 className="text-sm font-bold mb-3" style={{ color: theme.textSecondary }}>Top Skills</h4>
+                <div className="flex flex-wrap gap-2">
+                  {candidate.skills.map((skill: string, index: number) => (
+                    <Badge 
+                      key={index} 
+                      variant="secondary"
+                      className="px-3 py-1.5 text-xs font-medium rounded-md hover:scale-105 transition-transform"
+                      style={{ 
+                        background: theme.surfaceHover, 
+                        color: theme.textPrimary,
+                        border: `1px solid ${theme.border}`
+                      }}
+                    >
+                      {skill}
+                    </Badge>
+                  ))}
                 </div>
               </div>
-            </div>
-          </div>
+            )}
+
+            {candidate.tags && candidate.tags.length > 0 && (
+              <div className="pt-4">
+                <h4 className="text-sm font-bold mb-3" style={{ color: theme.textSecondary }}>Tags</h4>
+                <div className="flex flex-wrap gap-2">
+                  {candidate.tags.map((tag: string, index: number) => (
+                    <Badge 
+                      key={index} 
+                      className="px-3 py-1.5 text-xs font-medium rounded-md hover:scale-105 transition-transform"
+                      style={{ 
+                        background: theme.accent + '20', 
+                        color: theme.accent,
+                        border: `1px solid ${theme.accent}40`
+                      }}
+                    >
+                      #{tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </motion.div>
+
+          {/* Experience Timeline */}
+          {candidate.experience_details && candidate.experience_details.length > 0 && (
+            <motion.div variants={itemVariants} className="space-y-6">
+              <h3 className="text-xl font-bold border-b pb-2 flex items-center gap-2" style={{ color: theme.textPrimary, borderColor: theme.border }}>
+                <Briefcase className="size-5" style={{ color: theme.accent }}/> Experience
+              </h3>
+              <div className="space-y-4 pl-2">
+                {candidate.experience_details.map((exp: string, index: number) => (
+                  <div key={index} className="relative pl-6 border-l-2" style={{ borderColor: theme.border }}>
+                    <div className="absolute w-3 h-3 rounded-full -left-[7px] top-1.5" style={{ background: theme.accent }} />
+                    <p className="text-sm font-medium leading-relaxed" style={{ color: theme.textPrimary }}>
+                      {exp}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Education Timeline */}
+          {candidate.education && candidate.education.length > 0 && (
+            <motion.div variants={itemVariants} className="space-y-6">
+              <h3 className="text-xl font-bold border-b pb-2 flex items-center gap-2" style={{ color: theme.textPrimary, borderColor: theme.border }}>
+                <GraduationCap className="size-5" style={{ color: theme.accent }}/> Education
+              </h3>
+              <div className="space-y-4 pl-2">
+                {candidate.education.map((edu: string, index: number) => (
+                  <div key={index} className="relative pl-6 border-l-2" style={{ borderColor: theme.border }}>
+                    <div className="absolute w-3 h-3 rounded-full -left-[7px] top-1.5" style={{ background: theme.accent }} />
+                    <p className="text-sm font-medium leading-relaxed" style={{ color: theme.textPrimary }}>
+                      {edu}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+          
+          {/* Certifications */}
+          {candidate.certifications && candidate.certifications.length > 0 && (
+             <motion.div variants={itemVariants} className="space-y-6">
+               <h3 className="text-xl font-bold border-b pb-2" style={{ color: theme.textPrimary, borderColor: theme.border }}>
+                 Certifications
+               </h3>
+               <ul className="list-disc pl-5 space-y-2">
+                 {candidate.certifications.map((cert: string, index: number) => (
+                   <li key={index} className="text-sm font-medium" style={{ color: theme.textSecondary }}>{cert}</li>
+                 ))}
+               </ul>
+             </motion.div>
+          )}
         </div>
 
-        {/* Right Column: Status & Pipeline */}
+        {/* ── Right Column: Contact & Meta ─────────────────────────────────── */}
         <div className="space-y-6">
-          <div
-            className="rounded-xl p-6"
-            style={{ background: theme.surface, border: `1px solid ${theme.border}` }}
+          <motion.div 
+            variants={itemVariants}
+            className="rounded-2xl p-6 border shadow-sm"
+            style={{ background: theme.surface, borderColor: theme.border }}
           >
-            <h3 className="text-sm font-bold mb-4" style={{ color: theme.textPrimary }}>Status</h3>
-            <div className="flex items-center gap-3 mb-6">
-              <CheckCircle2 className="size-5" style={{ color: theme.success }} />
-              <div>
-                <p className="text-sm font-medium" style={{ color: theme.success }}>Active Candidate</p>
-                <p className="text-xs" style={{ color: theme.textMuted }}>Ready for submission</p>
+            <h3 className="text-base font-bold mb-5" style={{ color: theme.textPrimary }}>Contact Information</h3>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ background: theme.surfaceMuted }}>
+                  <Mail className="size-4" style={{ color: theme.textSecondary }} />
+                </div>
+                <div className="overflow-hidden">
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>Email</p>
+                  <p className="text-sm font-medium truncate" style={{ color: theme.textPrimary }}>{candidate.email || "N/A"}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ background: theme.surfaceMuted }}>
+                  <Phone className="size-4" style={{ color: theme.textSecondary }} />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>Phone</p>
+                  <p className="text-sm font-medium" style={{ color: theme.textPrimary }}>{candidate.contact || "N/A"}</p>
+                </div>
+              </div>
+              {candidate.linkedin_url && (
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg" style={{ background: theme.surfaceMuted }}>
+                    <Globe className="size-4" style={{ color: theme.textSecondary }} />
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="text-xs font-semibold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>LinkedIn</p>
+                    <a href={candidate.linkedin_url.startsWith('http') ? candidate.linkedin_url : `https://${candidate.linkedin_url}`} target="_blank" rel="noreferrer" className="text-sm font-medium truncate hover:underline" style={{ color: theme.accent }}>
+                      View Profile
+                    </a>
+                  </div>
+                </div>
+              )}
+              {candidate.portfolio_url && (
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg" style={{ background: theme.surfaceMuted }}>
+                    <LinkIcon className="size-4" style={{ color: theme.textSecondary }} />
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="text-xs font-semibold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>Portfolio</p>
+                    <a href={candidate.portfolio_url.startsWith('http') ? candidate.portfolio_url : `https://${candidate.portfolio_url}`} target="_blank" rel="noreferrer" className="text-sm font-medium truncate hover:underline" style={{ color: theme.accent }}>
+                      View Website
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          <motion.div 
+            variants={itemVariants}
+            className="rounded-2xl p-6 border shadow-sm space-y-4"
+            style={{ background: theme.surfaceMuted, borderColor: theme.border }}
+          >
+            <div>
+              <p className="text-xs font-semibold mb-1" style={{ color: theme.textMuted }}>Added to System</p>
+              <div className="flex items-center gap-2">
+                <Calendar className="size-4" style={{ color: theme.textSecondary }} />
+                <span className="text-sm font-medium" style={{ color: theme.textPrimary }}>
+                  {new Date(candidate.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                </span>
               </div>
             </div>
-
-            <h3 className="text-sm font-bold mb-3" style={{ color: theme.textPrimary }}>Active Applications</h3>
-            {/* Mock pipeline application */}
-            <div className="p-3 rounded-lg border flex flex-col gap-2" style={{ borderColor: theme.border, background: theme.surfaceMuted }}>
-              <p className="text-sm font-medium" style={{ color: theme.textPrimary }}>Senior Wealth Manager</p>
-              <p className="text-xs" style={{ color: theme.textSecondary }}>HDFC Securities</p>
-              <Badge variant="outline" className="w-fit text-[10px]" style={{ color: theme.warning, borderColor: theme.warning, background: theme.warning + '10' }}>
-                Pending Approval
-              </Badge>
-            </div>
-          </div>
+            
+            {candidate.uploaded_by && (
+              <div className="pt-3 border-t" style={{ borderColor: theme.border }}>
+                <p className="text-xs font-semibold mb-2" style={{ color: theme.textMuted }}>Sourced By</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs" style={{ background: theme.accent + '20', color: theme.accent }}>
+                    {candidate.uploaded_by.name?.charAt(0) || <User className="size-4"/>}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: theme.textPrimary }}>{candidate.uploaded_by.name}</p>
+                    <p className="text-xs" style={{ color: theme.textMuted }}>{candidate.uploaded_by.email}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
