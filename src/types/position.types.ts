@@ -1,23 +1,31 @@
 /* ── Position Module — Type Definitions ───────────────────────── */
 
+export interface JobClient {
+  id: string;
+  name: string;
+  team_member: {
+    id: string;
+    name: string;
+    email?: string;
+  } | null;
+}
+
 export interface Job {
   id: string;
   code: string;
   title: string;
   status: string;
-  priority: string;
-  job_mode: string;
-  job_type: string;
   location: string;
   openings: number;
   min_experience: number;
   max_experience: number;
+  budget: string;
   hiring_for: string;
-  client_name: string | null;
   candidate_count: number;
-  target_closing_date: string;
   created_by_name: string;
+  hiring_manager_name: string | null;
   created_at: string;
+  client: JobClient | null;
 }
 
 export interface JobResponse {
@@ -57,35 +65,30 @@ export interface JobCreator {
 
 export interface JobDetail {
   id: string;
-  stages: any[];
-  assigned_recruiters: JobAssignedRecruiter[];
-  candidate_count: number;
-  client_name: string | null;
-  created_by: JobCreator;
-  target_closing_date: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  is_deleted: boolean;
+  code: string;
   title: string;
   description: string;
-  code: string;
+  description_file: string | null;
   skills: string[];
   education: string;
   min_experience: number;
   max_experience: number;
   location: string;
   openings: number;
-  priority: string;
   budget: string;
-  job_mode: string;
-  job_type: string;
   hiring_for: string;
+  client: JobClient | null;
   status: string;
-  notice_period_preference: string;
-  skill_criteria: string;
+  assigned_recruiters: JobAssignedRecruiter[];
+  created_by: JobCreator;
+  hiring_manager: any | null;
+  stages: any[];
+  candidate_count: number;
+  created_at: string;
+  updated_at: string;
   organization: string;
-  client: string | null;
+  is_deleted: boolean;
+  deleted_at: string | null;
 }
 
 export interface PositionState {
@@ -98,22 +101,17 @@ export interface PositionState {
 
 export interface AddJobPayload {
   title: string;
+  location: string;
+  client?: string | null;
+  team_member_id?: string | null;
+  assigned_recruiter_ids?: string[];
   description: string;
+  description_file?: File | null;
   skills?: string[];
   education?: string;
   min_experience: number;
   max_experience: number;
-  location: string;
   openings?: number;
-  priority?: "high" | "medium" | "low";
   budget?: number;
-  job_type?: "permanent" | "contractual";
-  job_mode?: "remote" | "hybrid" | "office";
-  hiring_for?: "self" | "client";
-  client?: string | null;
   status?: "open" | "closed" | "on-hold";
-  assigned_recruiter_ids?: string[];
-  target_closing_date?: string;
-  notice_period_preference?: string;
-  skill_criteria?: number;
 }

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Building2, Phone, Mail, Calendar, Percent, Clock, RefreshCw, Award,
   Link as LinkIcon, MapPin, Briefcase, File, UserCheck, Users
@@ -35,6 +36,7 @@ const DetailRow = ({
 );
 
 const ClientOverview = ({ client }: ClientOverviewProps) => {
+  const navigate = useNavigate();
   return (
     <div className="space-y-6">
       {/* ── Stats Row ─────────────────────────────────────────── */}
@@ -96,7 +98,14 @@ const ClientOverview = ({ client }: ClientOverviewProps) => {
               <DetailRow icon={Building2} label="Industry" value={client.industry || '—'} />
               <DetailRow icon={Building2} label="GST" value={client.gst_number || '—'} />
               <DetailRow icon={Calendar} label="Agreement Date" value={client.agreement_date ? new Date(client.agreement_date).toLocaleDateString() : '—'} />
-              <DetailRow icon={File} label="Document" value={client.agreement_document_name || '—'} />
+              <DetailRow icon={File} label="Document" value={
+                client.agreement_document ? (
+                  <a href={client.agreement_document} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 hover:underline transition-opacity hover:opacity-80" style={{ color: theme.accent }}>
+                    <LinkIcon className="size-3 shrink-0" />
+                    <span className="truncate max-w-[150px] font-medium" title={client.agreement_document_name}>{client.agreement_document_name || 'Download Agreement'}</span>
+                  </a>
+                ) : '—'
+              } />
               <DetailRow icon={Percent} label="Commercials" value={client.commercial_decided || 'N/A'} />
               <DetailRow icon={Clock} label="Payment period" value={client.payment_period_days ? `${client.payment_period_days} days` : '—'} />
               <DetailRow icon={RefreshCw} label="Replacement" value={client.replacement_period_days ? `${client.replacement_period_days} days` : '—'} />
@@ -114,22 +123,54 @@ const ClientOverview = ({ client }: ClientOverviewProps) => {
 
         {/* ── POC Cards ─────────────────────────────────────────── */}
         <div className="space-y-4">
-          {client.pocs?.hiring?.map((poc) => (
+          {client.pocs?.hiring && client.pocs.hiring.map((poc, idx) => (
             <ClientPOCCard
-              key={poc.id}
-              title={`${poc.designation || 'Hiring'} POC`}
+              key={poc.id || `hiring-${idx}`}
+              title="Hiring POC"
               poc={poc}
               accentColor={theme.success}
             />
           ))}
-          {client.pocs?.payment?.map((poc) => (
+          {client.pocs?.payment && client.pocs.payment.map((poc, idx) => (
             <ClientPOCCard
-              key={poc.id}
-              title={`${poc.designation || 'Payment'} POC`}
+              key={poc.id || `payment-${idx}`}
+              title="Payment POC"
               poc={poc}
               accentColor={theme.chart2}
             />
           ))}
+          
+          {/* Team Members List (Overview) */}
+          {client.team_members && client.team_members.length > 0 && (
+             <div className="rounded-xl p-5" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
+               <div className="flex items-center justify-between mb-4">
+                 <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: theme.textPrimary }}>
+                   <Users className="size-4" style={{ color: theme.accent }} />
+                   Internal Team Members
+                 </h3>
+                 <button
+                   onClick={() => navigate(`/clients/${client.id}/edit`)}
+                   className="text-xs font-medium hover:underline"
+                   style={{ color: theme.accent }}
+                 >
+                   Update
+                 </button>
+               </div>
+               <div className="space-y-2">
+                 {client.team_members.map((member, idx) => (
+                   <div key={idx} className="flex justify-between items-center text-sm p-3 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5 border border-transparent hover:border-black/5 dark:hover:border-white/5">
+                     <div className="min-w-0 flex-1 pr-3">
+                       <p className="font-medium truncate" style={{ color: theme.textSecondary }}>{member.name}</p>
+                       <p className="text-xs truncate mt-0.5" style={{ color: theme.textMuted }}>{member.email}</p>
+                     </div>
+                     <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap" style={{ background: theme.accentSoft, color: theme.accent, border: `1px solid ${theme.accent}30` }}>
+                       {member.role || 'Member'}
+                     </span>
+                   </div>
+                 ))}
+               </div>
+             </div>
+          )}
         </div>
       </div>
     </div>

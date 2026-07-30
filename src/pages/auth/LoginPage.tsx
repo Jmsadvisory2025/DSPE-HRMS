@@ -264,65 +264,88 @@ const LoginPage = () => {
                 </span>
               </div>
 
-              <Card
-                className="backdrop-blur-xl shadow-2xl"
-                style={{
-                  backgroundColor: hexToRgba(theme.surface, 0.75),
-                  borderColor: theme.border,
-                  boxShadow: `0 25px 50px -12px ${hexToRgba('#000000', 0.4)}`,
-                }}
-              >
-                <CardHeader className="space-y-3 text-center pb-6 pt-4">
-                  <div className="flex justify-center mb-2">
-                    <div
-                      className="size-12 rounded-2xl flex items-center justify-center shadow-lg"
-                      style={{ backgroundColor: theme.surfaceMuted, color: theme.accent, border: `1px solid ${theme.border}` }}
-                    >
-                      <Zap className="size-6" />
-                    </div>
-                  </div>
-                  <CardTitle className="text-2xl font-bold tracking-tight" style={{ color: theme.textPrimary }}>
-                    Welcome back
-                  </CardTitle>
-                  <CardDescription className="text-sm px-4" style={{ color: theme.textMuted }}>
-                    Sign in with your Google Workspace account to access RecruitOS.
-                  </CardDescription>
-                </CardHeader>
-
-                <CardContent className="space-y-6 pb-10">
-                  {googleClientId ? (
-                    <div className="flex flex-col items-center justify-center gap-4">
-                      <GoogleOAuthProvider clientId={googleClientId}>
-                        <div className="hover:scale-105 transition-transform duration-300">
-                          <GoogleLogin
-                            onSuccess={(credentialResponse) => {
-                              handleGoogleLogin(credentialResponse.credential);
-                            }}
-                            onError={() => {
-                              toast.error("Google Login failed. Please try again.");
-                            }}
-                            useOneTap
-                            theme="filled_black"
-                            size="large"
-                            text="continue_with"
-                            shape="pill"
-                            width="300"
-                          />
-                        </div>
-                      </GoogleOAuthProvider>
-                      <div className="flex items-center gap-1.5 mt-4 text-xs" style={{ color: theme.textMuted }}>
-                        <ShieldCheck className="size-3.5" />
-                        <span>Secure, single sign-on access</span>
+              <div className="relative group">
+                {/* Subtle animated gradient glow behind the card */}
+                <div 
+                  className="absolute -inset-0.5 bg-gradient-to-r blur opacity-30 group-hover:opacity-50 transition duration-1000 rounded-2xl"
+                  style={{ backgroundImage: `linear-gradient(to right, ${theme.accent}, ${theme.chart2}, ${theme.accent})` }}
+                />
+                <Card
+                  className="relative backdrop-blur-2xl shadow-2xl transition-all duration-300 rounded-2xl"
+                  style={{
+                    backgroundColor: hexToRgba(theme.surface, 0.85),
+                    borderColor: hexToRgba(theme.border, 0.5),
+                    borderWidth: '1px',
+                    boxShadow: `0 30px 60px -15px ${hexToRgba('#000000', 0.5)}`,
+                  }}
+                >
+                  <CardHeader className="space-y-4 text-center pb-8 pt-8">
+                    <div className="flex justify-center mb-2">
+                      <div
+                        className="size-16 rounded-2xl flex items-center justify-center shadow-lg relative overflow-hidden"
+                        style={{ backgroundColor: theme.surfaceMuted, border: `1px solid ${hexToRgba(theme.border, 0.5)}` }}
+                      >
+                        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `linear-gradient(to top right, ${theme.accent}, transparent)` }} />
+                        <Zap className="size-7 relative z-10" style={{ color: theme.accent }} />
                       </div>
                     </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-4">
-                      <Loader2 className="size-6 animate-spin mb-2" style={{ color: theme.accent }} />
-                      <span className="text-xs" style={{ color: theme.textMuted }}>Initializing secure connection...</span>
+                    <div>
+                      <CardTitle className="text-3xl font-extrabold tracking-tight mb-2" style={{ color: theme.textPrimary }}>
+                        Welcome back
+                      </CardTitle>
+                      <CardDescription className="text-sm px-6 font-medium" style={{ color: theme.textMuted }}>
+                        Sign in with your Google Workspace account to access RecruitOS.
+                      </CardDescription>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardHeader>
+
+                  <CardContent className="space-y-6 pb-12 px-8">
+                    {loading ? (
+                      <div className="flex flex-col items-center justify-center py-6 animate-in fade-in zoom-in duration-300">
+                        <div className="relative size-14 mb-5">
+                          <div className="absolute inset-0 rounded-full border-t-2 border-r-2 animate-spin" style={{ borderColor: theme.accent, animationDuration: '1s' }}></div>
+                          <div className="absolute inset-2 rounded-full border-b-2 border-l-2 animate-spin" style={{ borderColor: theme.chart2, animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Zap className="size-4 animate-pulse" style={{ color: theme.textPrimary }} />
+                          </div>
+                        </div>
+                        <span className="text-sm font-semibold tracking-wide animate-pulse" style={{ color: theme.textPrimary }}>Authenticating...</span>
+                        <span className="text-xs mt-1 text-center" style={{ color: theme.textMuted }}>Securely connecting to your workspace</span>
+                      </div>
+                    ) : googleClientId ? (
+                      <div className="flex flex-col items-center justify-center gap-5 animate-in fade-in duration-500">
+                        <GoogleOAuthProvider clientId={googleClientId}>
+                          <div className="w-full max-w-[300px] hover:scale-[1.02] transition-transform duration-300 shadow-xl rounded-full relative overflow-hidden">
+                            <GoogleLogin
+                              onSuccess={(credentialResponse) => {
+                                handleGoogleLogin(credentialResponse.credential);
+                              }}
+                              onError={() => {
+                                toast.error("Google Login failed. Please try again.");
+                              }}
+                              useOneTap
+                              theme="filled_black"
+                              size="large"
+                              text="continue_with"
+                              shape="pill"
+                              width="300"
+                            />
+                          </div>
+                        </GoogleOAuthProvider>
+                        <div className="flex items-center gap-2 mt-4 text-xs font-medium px-4 py-2 rounded-full" style={{ backgroundColor: theme.surfaceMuted, color: theme.textMuted, border: `1px solid ${theme.border}` }}>
+                          <ShieldCheck className="size-3.5" style={{ color: theme.success }} />
+                          <span>Secure, single sign-on access</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-6">
+                        <Loader2 className="size-6 animate-spin mb-3" style={{ color: theme.textMuted }} />
+                        <span className="text-xs font-medium" style={{ color: theme.textMuted }}>Initializing secure connection...</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </div>

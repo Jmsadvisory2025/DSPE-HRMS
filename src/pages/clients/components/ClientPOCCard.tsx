@@ -26,12 +26,16 @@ const ClientPOCCard = ({ title, poc, accentColor = theme.accent }: ClientPOCCard
         {title}
       </h3>
 
-      <p
-        className="text-sm font-medium"
-        style={{ color: theme.textPrimary }}
-      >
-        {poc.name}
-      </p>
+      <div className="mb-3">
+        <p className="text-sm font-semibold" style={{ color: theme.textPrimary }}>
+          {poc.name}
+        </p>
+        {poc.designation && (
+          <p className="text-xs mt-0.5" style={{ color: theme.textMuted }}>
+            {poc.designation}
+          </p>
+        )}
+      </div>
 
       <div className="mt-2 space-y-1.5">
         {poc.email && (

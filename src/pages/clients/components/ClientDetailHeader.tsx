@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Pencil, Plus, Users } from 'lucide-react';
 import { theme } from '@/config/theme';
 import type { ClientDetail } from '@/types/client.types';
-import TeamMembersModal from './TeamMembersModal';
 
 interface ClientDetailHeaderProps {
   client: ClientDetail;
@@ -13,8 +12,6 @@ interface ClientDetailHeaderProps {
 
 const ClientDetailHeader = ({ client }: ClientDetailHeaderProps) => {
   const navigate = useNavigate();
-  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
-
   return (
     <div className="space-y-4">
       {/* Back link */}
@@ -32,14 +29,19 @@ const ClientDetailHeader = ({ client }: ClientDetailHeaderProps) => {
       {/* Title row */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1
-            className="text-2xl font-bold tracking-tight"
-            style={{ color: theme.textPrimary }}
-          >
-            {client.company_name}
-          </h1>
-          <p className="text-sm mt-0.5" style={{ color: theme.textMuted }}>
-            {client.industry} · {[client.city, client.state, client.country].filter(Boolean).join(', ')}
+          <div className="flex items-center gap-3">
+            <h1
+              className="text-2xl font-bold tracking-tight"
+              style={{ color: theme.textPrimary }}
+            >
+              {client.company_name}
+            </h1>
+            <Badge variant="outline" className="text-xs font-mono px-2 py-0.5" style={{ color: theme.textMuted, borderColor: theme.border }}>
+              {client.client_id}
+            </Badge>
+          </div>
+          <p className="text-sm mt-1" style={{ color: theme.textMuted }}>
+            {client.industry} · {[client.city, client.state, client.country].filter(Boolean).join(', ')} · <span className="font-medium" style={{ color: theme.textSecondary }}>Account: {client.client_name || 'N/A'}</span>
           </p>
         </div>
 
@@ -71,15 +73,7 @@ const ClientDetailHeader = ({ client }: ClientDetailHeaderProps) => {
             <Pencil className="size-3" />
             Edit
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => setIsTeamModalOpen(true)}
-          >
-            <Users className="size-3" />
-            Team Members
-          </Button>
+
           <Button
             size="sm"
             className="gap-1.5"
@@ -90,17 +84,6 @@ const ClientDetailHeader = ({ client }: ClientDetailHeaderProps) => {
           </Button>
         </div>
       </div>
-
-      <TeamMembersModal
-        isOpen={isTeamModalOpen}
-        onClose={() => setIsTeamModalOpen(false)}
-        clientId={client.id}
-        initialTeamMembers={client.team_members || []}
-        onSuccess={() => {
-          // If you need to refetch client details, trigger it here.
-          // Since the Redux store typically updates itself or you can force a refresh.
-        }}
-      />
     </div>
   );
 };

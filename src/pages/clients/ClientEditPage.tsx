@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { theme } from '@/config/theme';
 import type { AddClientPayload, AddPOCPayload, ClientDetail } from '@/types/client.types';
 
-const STEPS = ['Company', 'Address', 'Commercials', 'POCs', 'Review'];
+const STEPS = ['Company', 'Address', 'Commercials', 'Team & POCs', 'Review'];
 
 const ClientEditPage = () => {
   const { clientId } = useParams<{ clientId: string }>();
@@ -69,21 +69,22 @@ const ClientEditPage = () => {
         linkedin: selectedClient.linkedin || '',
         notes: selectedClient.notes || '',
         pocs: [
-          ...(selectedClient.pocs?.hiring || []).map(p => ({
-            poc_type: 'hiring' as string,
-            name: p.name,
-            email: p.email,
-            designation: p.designation,
-            contact: p.contact,
-          })),
-          ...(selectedClient.pocs?.payment || []).map(p => ({
-            poc_type: 'payment' as string,
-            name: p.name,
-            email: p.email,
-            designation: p.designation,
-            contact: p.contact,
-          })),
+          {
+            poc_type: 'hiring',
+            name: selectedClient.pocs?.hiring?.[0]?.name || '',
+            email: selectedClient.pocs?.hiring?.[0]?.email || '',
+            designation: selectedClient.pocs?.hiring?.[0]?.designation || 'Talent Acquisition Head',
+            contact: selectedClient.pocs?.hiring?.[0]?.contact || '',
+          },
+          {
+            poc_type: 'payment',
+            name: selectedClient.pocs?.payment?.[0]?.name || '',
+            email: selectedClient.pocs?.payment?.[0]?.email || '',
+            designation: selectedClient.pocs?.payment?.[0]?.designation || 'Finance Manager',
+            contact: selectedClient.pocs?.payment?.[0]?.contact || '',
+          }
         ],
+        team_members: selectedClient.team_members || [],
       });
     }
   }, [selectedClient]);
@@ -108,16 +109,68 @@ const ClientEditPage = () => {
     });
   };
 
+  const handleTeamMemberChange = (index: number, field: string, value: string) => {
+    setFormData(prev => {
+      if (!prev) return prev;
+      const newTeam = [...(prev.team_members || [])];
+      newTeam[index] = { ...newTeam[index], [field]: value };
+      return { ...prev, team_members: newTeam };
+    });
+  };
+
+  const addTeamMember = () => {
+    setFormData(prev => prev ? ({
+      ...prev,
+      team_members: [...(prev.team_members || []), { name: '', email: '', role: '' }]
+    }) : prev);
+  };
+
+  const removeTeamMember = (index: number) => {
+    setFormData(prev => {
+      if (!prev) return prev;
+      const newTeam = [...(prev.team_members || [])];
+      newTeam.splice(index, 1);
+      return { ...prev, team_members: newTeam };
+    });
+  };
+
   const handleSubmit = () => {
     if (!formData || !clientId) return;
     setIsSubmitting(true);
     setFormErrors({});
 
+    const fd = new FormData();
+    Object.keys(formData).forEach(key => {
+      const k = key as keyof AddClientPayload;
+      if (k === 'team_members') {
+        if (formData.team_members) {
+          fd.append('team_members', JSON.stringify(formData.team_members));
+        }
+      } else if (k === 'pocs') {
+        if (formData.pocs) {
+          fd.append('pocs', JSON.stringify(formData.pocs));
+        }
+      } else if (k === 'agreement_document') {
+        if (formData.agreement_document) {
+          fd.append('agreement_document', formData.agreement_document);
+          if (formData.agreement_document.name) {
+             fd.append('agreement_document_name', formData.agreement_document.name);
+          }
+        }
+      } else if (k === 'agreement_document_name') {
+        // Ignored here
+      } else {
+        if (formData[k] !== undefined && formData[k] !== null && formData[k] !== '') {
+          fd.append(k, String(formData[k]));
+        }
+      }
+    });
+
     dispatch({
       type: clientActions.UPDATE_CLIENT,
       method: 'PATCH',
       endPoint: `/api/v1/clients/${clientId}/`,
-      body: formData,
+      body: fd,
       auth: true,
       getResponse: () => {
         setIsSubmitting(false);
@@ -164,7 +217,7 @@ const ClientEditPage = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 w-full pb-10 px-4 md:px-8 pt-4">
       <div>
         <button
           onClick={() => navigate(`/clients/${clientId}`)}
@@ -235,7 +288,7 @@ const ClientEditPage = () => {
         }}
       >
         {currentStep === 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Company Name *</label>
               <Input name="company_name" value={formData.company_name} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
@@ -269,29 +322,9 @@ const ClientEditPage = () => {
               <FieldError name="email" />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Alternate Email</label>
-              <Input type="email" name="alternative_email" value={formData.alternative_email} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
-              <FieldError name="alternative_email" />
-            </div>
-            <div className="space-y-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Phone *</label>
               <Input name="contact" value={formData.contact} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
               <FieldError name="contact" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Alternate Phone</label>
-              <Input name="alternative_contact" value={formData.alternative_contact} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
-              <FieldError name="alternative_contact" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Website</label>
-              <Input name="website" value={formData.website} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
-              <FieldError name="website" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>LinkedIn</label>
-              <Input name="linkedin" value={formData.linkedin} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
-              <FieldError name="linkedin" />
             </div>
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>GST No.</label>
@@ -302,7 +335,7 @@ const ClientEditPage = () => {
         )}
 
         {currentStep === 1 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Street Address</label>
               <Input name="street" value={formData.street} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
@@ -338,7 +371,7 @@ const ClientEditPage = () => {
 
         {currentStep === 2 && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Commercials Decided?</label>
                 <Input
@@ -371,6 +404,25 @@ const ClientEditPage = () => {
                 <Input name="notes" value={formData.notes} onChange={handleChange} placeholder="Any additional notes..." style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
                 <FieldError name="notes" />
               </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Agreement Document (Optional)</label>
+                <Input 
+                  type="file" 
+                  accept=".pdf,.doc,.docx" 
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setFormData(prev => prev ? ({ ...prev, agreement_document: e.target.files![0] }) : prev);
+                    }
+                  }} 
+                  className="cursor-pointer file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold"
+                  style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} 
+                />
+                {formData.agreement_document && (
+                  <p className="text-xs mt-1" style={{ color: theme.accent }}>
+                    Selected: {(formData.agreement_document as File).name}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -378,11 +430,11 @@ const ClientEditPage = () => {
         {currentStep === 3 && (
           <div className="space-y-8">
             {formData.pocs.map((poc, index) => (
-              <div key={index} className="space-y-4 pb-6" style={index < formData.pocs.length - 1 ? { borderBottom: `1px solid ${theme.border}` } : {}}>
+              <div key={index} className="space-y-4 pb-6" style={index === 0 ? { borderBottom: `1px solid ${theme.border}` } : {}}>
                 <h3 className="font-semibold capitalize" style={{ color: theme.textPrimary }}>
                   {poc.poc_type} POC
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Name</label>
                     <Input value={poc.name} onChange={(e) => handlePOCChange(index, 'name', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
@@ -402,6 +454,31 @@ const ClientEditPage = () => {
                 </div>
               </div>
             ))}
+
+            {/* Team Members */}
+            <div className="space-y-4 pt-6" style={{ borderTop: `1px solid ${theme.border}` }}>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold" style={{ color: theme.textPrimary }}>Team Members</h3>
+                <Button type="button" variant="outline" size="sm" onClick={addTeamMember}>+ Add Member</Button>
+              </div>
+              {(formData.team_members || []).map((member, index) => (
+                <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-4 items-end pb-4 border-b" style={{ borderColor: theme.border }}>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Name</label>
+                    <Input value={member.name} onChange={(e) => handleTeamMemberChange(index, 'name', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Email</label>
+                    <Input type="email" value={member.email} onChange={(e) => handleTeamMemberChange(index, 'email', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Role</label>
+                    <Input value={member.role} onChange={(e) => handleTeamMemberChange(index, 'role', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+                  </div>
+                  <Button type="button" variant="outline" className="mb-0 text-red-500 hover:text-red-600 hover:bg-red-50" style={{ borderColor: theme.border }} onClick={() => removeTeamMember(index)}>Remove</Button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -415,7 +492,7 @@ const ClientEditPage = () => {
               <p className="text-sm" style={{ color: theme.textMuted }}>Please verify all updated details below before saving.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm" style={{ color: theme.textSecondary }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 text-sm" style={{ color: theme.textSecondary }}>
               {/* Company */}
               <div className="p-4 rounded-lg space-y-1" style={{ background: theme.background, border: `1px solid ${theme.border}` }}>
                 <h4 className="font-semibold mb-2" style={{ color: theme.textPrimary }}>Company</h4>
@@ -424,11 +501,7 @@ const ClientEditPage = () => {
                 <p><strong>Industry:</strong> {formData.industry || '—'}</p>
                 <p><strong>Status:</strong> <span className="capitalize">{formData.status}</span></p>
                 <p><strong>Email:</strong> {formData.email || '—'}</p>
-                <p><strong>Alt. Email:</strong> {formData.alternative_email || '—'}</p>
                 <p><strong>Phone:</strong> {formData.contact || '—'}</p>
-                <p><strong>Alt. Phone:</strong> {formData.alternative_contact || '—'}</p>
-                <p><strong>Website:</strong> {formData.website || '—'}</p>
-                <p><strong>LinkedIn:</strong> {formData.linkedin || '—'}</p>
                 <p><strong>GST:</strong> {formData.gst_number || '—'}</p>
               </div>
 
@@ -466,6 +539,22 @@ const ClientEditPage = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Team Members Review */}
+              {formData.team_members && formData.team_members.length > 0 && (
+                <div className="p-4 rounded-lg space-y-1 md:col-span-2" style={{ background: theme.background, border: `1px solid ${theme.border}` }}>
+                  <h4 className="font-semibold mb-2" style={{ color: theme.textPrimary }}>Team Members</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {formData.team_members.map((member, i) => (
+                      <div key={i} className="space-y-1 p-3 rounded bg-black/5 dark:bg-white/5">
+                        <p className="font-medium">{member.name || '—'}</p>
+                        <p className="text-xs">{member.email || '—'}</p>
+                        <p className="text-xs px-2 py-1 bg-black/5 dark:bg-white/10 rounded inline-block mt-1">{member.role || '—'}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

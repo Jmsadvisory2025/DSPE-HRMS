@@ -64,7 +64,7 @@ const JobDetailPage = () => {
             {job.title}
           </h1>
           <p className="text-sm mt-1" style={{ color: theme.textMuted }}>
-            {job.code} · {job.client_name || 'Self'}
+            {job.code} · {job.client?.name || 'Self'}
           </p>
         </div>
 
@@ -121,10 +121,10 @@ const JobDetailPage = () => {
         </div>
         <div className="rounded-xl p-5" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold tracking-wider" style={{ color: theme.textMuted }}>PRIORITY</span>
+            <span className="text-xs font-bold tracking-wider" style={{ color: theme.textMuted }}>CANDIDATES</span>
           </div>
-          <div className="text-2xl font-bold uppercase" style={{ color: job.priority.toLowerCase() === 'high' ? theme.destructive : (job.priority.toLowerCase() === 'medium' ? theme.warning : theme.success) }}>
-            {job.priority}
+          <div className="text-2xl font-bold" style={{ color: theme.textPrimary }}>
+            {job.candidate_count}
           </div>
         </div>
       </div>
@@ -139,25 +139,20 @@ const JobDetailPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 mb-6">
               <div className="flex items-center gap-2">
                 <MapPin className="size-4 shrink-0" style={{ color: theme.textMuted }} />
-                <span className="text-sm" style={{ color: theme.textSecondary }}>{job.location} · {job.job_mode}</span>
+                <span className="text-sm capitalize" style={{ color: theme.textSecondary }}>{job.location}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Briefcase className="size-4 shrink-0" style={{ color: theme.textMuted }} />
-                <span className="text-sm capitalize" style={{ color: theme.textSecondary }}>{job.job_type}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="size-4 shrink-0" style={{ color: theme.textMuted }} />
-                <span className="text-sm" style={{ color: theme.textSecondary }}>Target: {job.target_closing_date}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm" style={{ color: theme.textSecondary }}>Notice: <strong style={{ color: theme.textPrimary }}>{job.notice_period_preference}</strong></span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm" style={{ color: theme.textSecondary }}>Skills match ≥ {job.skill_criteria}%</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm" style={{ color: theme.textSecondary }}>Education: <strong style={{ color: theme.textPrimary }}>{job.education}</strong></span>
-              </div>
+              {job.education && (
+                <div className="flex items-center gap-2">
+                  <FileText className="size-4 shrink-0" style={{ color: theme.textMuted }} />
+                  <span className="text-sm" style={{ color: theme.textSecondary }}>Education: <strong style={{ color: theme.textPrimary }}>{job.education}</strong></span>
+                </div>
+              )}
+              {job.hiring_for && (
+                <div className="flex items-center gap-2">
+                  <Briefcase className="size-4 shrink-0" style={{ color: theme.textMuted }} />
+                  <span className="text-sm" style={{ color: theme.textSecondary }}>Hiring for: <strong className="capitalize" style={{ color: theme.textPrimary }}>{job.hiring_for}</strong></span>
+                </div>
+              )}
             </div>
 
             <div className="mb-6">
@@ -177,7 +172,20 @@ const JobDetailPage = () => {
             </div>
 
             <div>
-              <h4 className="text-xs font-bold tracking-wider mb-2 uppercase" style={{ color: theme.textMuted }}>Job Description</h4>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs font-bold tracking-wider uppercase" style={{ color: theme.textMuted }}>Job Description</h4>
+                {job.description_file && (
+                  <a 
+                    href={job.description_file} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="text-xs font-medium underline transition-colors"
+                    style={{ color: theme.accent }}
+                  >
+                    View Attachment
+                  </a>
+                )}
+              </div>
               <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: theme.textSecondary }}>
                 {job.description || 'No description provided.'}
               </p>
@@ -187,6 +195,31 @@ const JobDetailPage = () => {
 
         {/* Right Column: Recruiters & Meta */}
         <div className="space-y-4">
+          {/* Client Block */}
+          {job.client && (
+            <div className="rounded-xl p-6" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
+              <h3 className="font-semibold mb-4 flex items-center gap-2" style={{ color: theme.textPrimary }}>
+                <Users className="size-4" style={{ color: theme.accent }} />
+                Client Details
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs font-bold tracking-wider mb-1 uppercase" style={{ color: theme.textMuted }}>Company Name</p>
+                  <p className="text-sm font-medium" style={{ color: theme.textPrimary }}>{job.client.name}</p>
+                </div>
+                {job.client.team_member && (
+                  <div>
+                    <p className="text-xs font-bold tracking-wider mb-1 uppercase" style={{ color: theme.textMuted }}>Client POC</p>
+                    <p className="text-sm font-medium" style={{ color: theme.textPrimary }}>{job.client.team_member.name}</p>
+                    {job.client.team_member.email && (
+                      <p className="text-xs mt-0.5" style={{ color: theme.textMuted }}>{job.client.team_member.email}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="rounded-xl p-6" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
             <h3 className="font-semibold mb-4" style={{ color: theme.textPrimary }}>Assigned recruiters</h3>
             <div className="space-y-3">

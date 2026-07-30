@@ -33,6 +33,8 @@ export interface AddClientPayload {
   linkedin?: string;
   notes?: string;
   team_members?: TeamMember[];
+  agreement_document?: File | null;
+  agreement_document_name?: string;
 }
 
 export interface Client {
@@ -49,6 +51,7 @@ export interface Client {
   open_jobs_count: number;
   created_by_name: string;
   created_at: string;
+  team_members?: TeamMember[];
 }
 
 export interface ClientResponse {
@@ -100,8 +103,8 @@ export interface CreatedBy {
 export interface ClientDetail {
   id: string;
   pocs: {
-    hiring: POC[];
-    payment: POC[];
+    hiring?: POC[];
+    payment?: POC[];
   };
   documents: any[];
   created_by: CreatedBy;

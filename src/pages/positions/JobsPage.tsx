@@ -149,7 +149,7 @@ const JobsPage = () => {
                 <TableHead>Designation</TableHead>
                 <TableHead>Client</TableHead>
                 <TableHead>Location</TableHead>
-                <TableHead>Priority</TableHead>
+                <TableHead>Openings</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -171,29 +171,19 @@ const JobsPage = () => {
                       {job.code}
                     </TableCell>
                     <TableCell style={{ color: theme.textPrimary }}>
-                      {job.title}
+                      <div className="font-semibold">{job.title}</div>
                       <div className="text-xs" style={{ color: theme.textMuted }}>
-                        {job.job_type} · {job.job_mode}
+                        Exp: {job.min_experience}-{job.max_experience} yrs
                       </div>
                     </TableCell>
                     <TableCell style={{ color: theme.textSecondary }}>
-                      {job.client_name || 'Self'}
+                      {job.client?.name || 'Self'}
                     </TableCell>
-                    <TableCell style={{ color: theme.textSecondary }}>
+                    <TableCell style={{ color: theme.textSecondary }} className="capitalize">
                       {job.location}
                     </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] uppercase font-bold tracking-wider px-2"
-                        style={{
-                          color: job.priority.toLowerCase() === 'high' ? theme.destructive : (job.priority.toLowerCase() === 'medium' ? theme.warning : theme.success),
-                          borderColor: job.priority.toLowerCase() === 'high' ? theme.destructive + '40' : (job.priority.toLowerCase() === 'medium' ? theme.warning + '40' : theme.success + '40'),
-                          background: 'transparent'
-                        }}
-                      >
-                        {job.priority}
-                      </Badge>
+                    <TableCell style={{ color: theme.textSecondary }}>
+                      {job.openings}
                     </TableCell>
                     <TableCell>
                       <Badge
