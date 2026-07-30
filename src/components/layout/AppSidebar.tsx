@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
@@ -206,6 +206,7 @@ const AppSidebar = ({
               className="size-8 shrink-0 ring-2"
               style={{ "--tw-ring-color": theme.accent } as React.CSSProperties}
             >
+              {user?.avatar && <AvatarImage src={user.avatar} alt={user?.name || "User"} />}
               <AvatarFallback
                 className="text-xs font-bold"
                 style={{

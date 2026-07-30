@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppBreadcrumb from './AppBreadcrumb';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LogOut, Settings, User as UserIcon } from 'lucide-react';
 import { theme } from '@/config/theme';
 import { useAuth } from '@/context/AuthContext';
@@ -37,6 +37,7 @@ const AppTopbar = () => {
           }}
         >
           <Avatar className="size-8 shrink-0 ring-2" style={{ '--tw-ring-color': theme.accent } as React.CSSProperties}>
+            {user?.avatar && <AvatarImage src={user.avatar} alt={user?.name || "User"} />}
             <AvatarFallback
               className="text-xs font-bold"
               style={{

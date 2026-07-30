@@ -115,7 +115,11 @@ const ProfileSettings = () => {
               border: `1px solid ${theme.accent}30`,
             }}
           >
-            {initials}
+            {user?.avatar ? (
+              <img src={user.avatar} alt="Profile" className="size-full object-cover" />
+            ) : (
+              initials
+            )}
           </div>
           <button className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
             <Camera className="size-6 text-white" />
