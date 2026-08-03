@@ -146,7 +146,7 @@ const ClientOverview = ({ client }: ClientOverviewProps) => {
                <div className="flex items-center justify-between mb-4">
                  <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: theme.textPrimary }}>
                    <Users className="size-4" style={{ color: theme.accent }} />
-                   Internal Team Members
+                   Client Team Members
                  </h3>
                  <button
                    onClick={() => navigate(`/clients/${client.id}/edit`)}

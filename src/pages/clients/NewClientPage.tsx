@@ -36,8 +36,8 @@ const initialFormData: AddClientPayload = {
   linkedin: '',
   notes: '',
   pocs: [
-    { poc_type: 'hiring', name: '', email: '', designation: 'Talent Acquisition Head', contact: '' },
-    { poc_type: 'payment', name: '', email: '', designation: 'Finance Manager', contact: '' }
+    { poc_type: 'hiring', name: '', email: '', designation: '', contact: '' },
+    { poc_type: 'payment', name: '', email: '', designation: '', contact: '' }
   ],
   team_members: [
     { name: '', email: '', role: '' }
@@ -232,7 +232,7 @@ const NewClientPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Company Name *</label>
-              <Input name="company_name" value={formData.company_name} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+              <Input name="company_name" value={formData.company_name} onChange={handleChange} placeholder="e.g. Acme Corporation" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
               <FieldError name="company_name" />
             </div>
             <div className="space-y-2">
@@ -242,7 +242,7 @@ const NewClientPage = () => {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Industry *</label>
-              <Input name="industry" value={formData.industry} onChange={handleChange} placeholder="Broking / Valuation..." style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+              <Input name="industry" value={formData.industry} onChange={handleChange} placeholder="e.g. Financial Services, IT, Healthcare" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
               <FieldError name="industry" />
             </div>
             <div className="space-y-2">
@@ -259,17 +259,17 @@ const NewClientPage = () => {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Primary Email *</label>
-              <Input type="email" name="email" value={formData.email} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+              <Input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="e.g. contact@company.com" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
               <FieldError name="email" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Phone *</label>
-              <Input name="contact" value={formData.contact} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+              <Input name="contact" value={formData.contact} onChange={handleChange} placeholder="e.g. +91 9876543210" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
               <FieldError name="contact" />
             </div>
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>GST No.</label>
-              <Input name="gst_number" value={formData.gst_number} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+              <Input name="gst_number" value={formData.gst_number} onChange={handleChange} placeholder="e.g. 22AAAAA0000A1Z5" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
               <FieldError name="gst_number" />
             </div>
           </div>
@@ -279,27 +279,27 @@ const NewClientPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Street Address</label>
-              <Input name="street" value={formData.street} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+              <Input name="street" value={formData.street} onChange={handleChange} placeholder="e.g. 123 Business Park, Suite 400" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
               <FieldError name="street" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>City *</label>
-              <Input name="city" value={formData.city} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+              <Input name="city" value={formData.city} onChange={handleChange} placeholder="e.g. Mumbai" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
               <FieldError name="city" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>State *</label>
-              <Input name="state" value={formData.state} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+              <Input name="state" value={formData.state} onChange={handleChange} placeholder="e.g. Maharashtra" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
               <FieldError name="state" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Country *</label>
-              <Input name="country" value={formData.country} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+              <Input name="country" value={formData.country} onChange={handleChange} placeholder="e.g. India" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
               <FieldError name="country" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Postal Code</label>
-              <Input name="postal_code" value={formData.postal_code} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+              <Input name="postal_code" value={formData.postal_code} onChange={handleChange} placeholder="e.g. 400001" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
               <FieldError name="postal_code" />
             </div>
           </div>
@@ -327,12 +327,12 @@ const NewClientPage = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Payment Period (days)</label>
-                <Input type="number" name="payment_period_days" value={formData.payment_period_days} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+                <Input type="number" name="payment_period_days" value={formData.payment_period_days} onChange={handleChange} placeholder="e.g. 30" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
                 <FieldError name="payment_period_days" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Replacement Period (days)</label>
-                <Input type="number" name="replacement_period_days" value={formData.replacement_period_days} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+                <Input type="number" name="replacement_period_days" value={formData.replacement_period_days} onChange={handleChange} placeholder="e.g. 90" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
                 <FieldError name="replacement_period_days" />
               </div>
               <div className="space-y-2 md:col-span-2">
@@ -373,19 +373,19 @@ const NewClientPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Name</label>
-                    <Input value={poc.name} onChange={(e) => handlePOCChange(index, 'name', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+                    <Input value={poc.name} onChange={(e) => handlePOCChange(index, 'name', e.target.value)} placeholder="e.g. John Doe" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Designation</label>
-                    <Input value={poc.designation} onChange={(e) => handlePOCChange(index, 'designation', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+                    <Input value={poc.designation} onChange={(e) => handlePOCChange(index, 'designation', e.target.value)} placeholder="e.g. HR Manager" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Email</label>
-                    <Input type="email" value={poc.email} onChange={(e) => handlePOCChange(index, 'email', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+                    <Input type="email" value={poc.email} onChange={(e) => handlePOCChange(index, 'email', e.target.value)} placeholder="e.g. john.doe@company.com" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Phone</label>
-                    <Input value={poc.contact} onChange={(e) => handlePOCChange(index, 'contact', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+                    <Input value={poc.contact} onChange={(e) => handlePOCChange(index, 'contact', e.target.value)} placeholder="e.g. +91 9876543210" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
                   </div>
                 </div>
               </div>
@@ -394,22 +394,22 @@ const NewClientPage = () => {
             {/* Team Members */}
             <div className="space-y-4 pt-6" style={{ borderTop: `1px solid ${theme.border}` }}>
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold" style={{ color: theme.textPrimary }}>Team Members</h3>
+                <h3 className="font-semibold" style={{ color: theme.textPrimary }}>Client Team Members</h3>
                 <Button type="button" variant="outline" size="sm" onClick={addTeamMember}>+ Add Member</Button>
               </div>
               {(formData.team_members || []).map((member, index) => (
                 <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-4 items-end pb-4 border-b" style={{ borderColor: theme.border }}>
                   <div className="space-y-2">
                     <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Name</label>
-                    <Input value={member.name} onChange={(e) => handleTeamMemberChange(index, 'name', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+                    <Input placeholder='e.g. Jane Smith' value={member.name} onChange={(e) => handleTeamMemberChange(index, 'name', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Email</label>
-                    <Input type="email" value={member.email} onChange={(e) => handleTeamMemberChange(index, 'email', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+                    <Input placeholder='e.g. jane.smith@company.com' type="email" value={member.email} onChange={(e) => handleTeamMemberChange(index, 'email', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Role</label>
-                    <Input value={member.role} onChange={(e) => handleTeamMemberChange(index, 'role', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+                    <Input placeholder='e.g. Tech Lead, HR Manager' value={member.role} onChange={(e) => handleTeamMemberChange(index, 'role', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
                   </div>
                   <Button type="button" variant="outline" className="mb-0 text-red-500 hover:text-red-600 hover:bg-red-50" style={{ borderColor: theme.border }} onClick={() => removeTeamMember(index)}>Remove</Button>
                 </div>
@@ -478,7 +478,7 @@ const NewClientPage = () => {
               {/* Team Members Review */}
               {formData.team_members && formData.team_members.length > 0 && (
                 <div className="p-4 rounded-lg space-y-1 md:col-span-2" style={{ background: theme.background, border: `1px solid ${theme.border}` }}>
-                  <h4 className="font-semibold mb-2" style={{ color: theme.textPrimary }}>Team Members</h4>
+                  <h4 className="font-semibold mb-2" style={{ color: theme.textPrimary }}>Client Team Members</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {formData.team_members.map((member, i) => (
                       <div key={i} className="mb-2">

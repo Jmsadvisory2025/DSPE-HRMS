@@ -458,7 +458,7 @@ const ClientEditPage = () => {
             {/* Team Members */}
             <div className="space-y-4 pt-6" style={{ borderTop: `1px solid ${theme.border}` }}>
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold" style={{ color: theme.textPrimary }}>Team Members</h3>
+                <h3 className="font-semibold" style={{ color: theme.textPrimary }}>Client Team Members</h3>
                 <Button type="button" variant="outline" size="sm" onClick={addTeamMember}>+ Add Member</Button>
               </div>
               {(formData.team_members || []).map((member, index) => (
@@ -543,7 +543,7 @@ const ClientEditPage = () => {
               {/* Team Members Review */}
               {formData.team_members && formData.team_members.length > 0 && (
                 <div className="p-4 rounded-lg space-y-1 md:col-span-2" style={{ background: theme.background, border: `1px solid ${theme.border}` }}>
-                  <h4 className="font-semibold mb-2" style={{ color: theme.textPrimary }}>Team Members</h4>
+                  <h4 className="font-semibold mb-2" style={{ color: theme.textPrimary }}>client Team Members</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {formData.team_members.map((member, i) => (
                       <div key={i} className="space-y-1 p-3 rounded bg-black/5 dark:bg-white/5">
