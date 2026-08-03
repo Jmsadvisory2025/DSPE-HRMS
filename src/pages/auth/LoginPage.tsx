@@ -11,7 +11,27 @@ import { authActions } from '@/redux/actions';
 import { setCredentials } from '@/redux/slices/authSlice';
 import type { LoginResponse, LoginErrorResponse } from '@/types/auth.types';
 import { toast } from 'sonner';
-import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+import { useGoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+
+const CustomGoogleLoginButton = ({ onAuthCode, theme }: { onAuthCode: (code: string) => void, theme: any }) => {
+  const login = useGoogleLogin({
+    flow: 'auth-code',
+    scope: 'openid email profile https://www.googleapis.com/auth/gmail.send',
+    onSuccess: (codeResponse) => {
+      onAuthCode(codeResponse.code);
+    },
+    onError: (errorResponse) => {
+      console.error(errorResponse);
+    }
+  });
+
+  return (
+    <button onClick={() => login()} className="w-full flex items-center justify-center gap-3 py-3 rounded-full font-medium shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5" style={{ backgroundColor: theme.surface, color: theme.textPrimary, border: `1px solid ${theme.border}` }}>
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+      Sign in with Google Workspace
+    </button>
+  );
+};
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@base-ui/react';
 
@@ -105,9 +125,9 @@ const LoginPage = () => {
     });
   };
 
-  const handleGoogleLogin = (credential: string | undefined) => {
-    if (!credential) {
-      toast.error("Google Login failed: No credential received.");
+  const handleGoogleLogin = (code: string | undefined) => {
+    if (!code) {
+      toast.error("Google Login failed: No auth code received.");
       return;
     }
 
@@ -115,7 +135,7 @@ const LoginPage = () => {
       type: authActions.LOGIN,
       method: "POST" as const,
       endPoint: "/api/v1/auth/google/",
-      body: { id_token: credential },
+      body: { code },
       auth: false,
       setLoading,
       showSuccessMessage: true,
@@ -316,19 +336,9 @@ const LoginPage = () => {
                       <div className="flex flex-col items-center justify-center gap-5 animate-in fade-in duration-500">
                         <GoogleOAuthProvider clientId={googleClientId}>
                           <div className="w-full max-w-[300px] hover:scale-[1.02] transition-transform duration-300 shadow-xl rounded-full relative overflow-hidden">
-                            <GoogleLogin
-                              onSuccess={(credentialResponse) => {
-                                handleGoogleLogin(credentialResponse.credential);
-                              }}
-                              onError={() => {
-                                toast.error("Google Login failed. Please try again.");
-                              }}
-                              useOneTap
-                              theme="filled_black"
-                              size="large"
-                              text="continue_with"
-                              shape="pill"
-                              width="300"
+                            <CustomGoogleLoginButton 
+                                onAuthCode={(code) => handleGoogleLogin(code)} 
+                                theme={theme}
                             />
                           </div>
                         </GoogleOAuthProvider>
