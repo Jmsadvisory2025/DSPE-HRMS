@@ -7,8 +7,6 @@ import { useAppSelector } from "@/store/hooks";
 
 const SETTINGS_TABS = [
   { id: "profile", label: "Profile", icon: User },
-
-  { id: "security", label: "Security", icon: Shield },
 ];
 
 const SettingsPage = () => {
@@ -73,9 +71,8 @@ const SettingsPage = () => {
             }}
           >
             {activeTab === "profile" && <ProfileSettings />}
-            {activeTab === "appearance" && <AppearanceSettings />}
-            {activeTab === "notifications" && <NotificationSettings />}
-            {activeTab === "security" && <SecuritySettings />}
+        
+          
           </div>
         </div>
       </div>
@@ -379,71 +376,6 @@ const NotificationSettings = () => {
   );
 };
 
-const SecuritySettings = () => {
-  return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      <div>
-        <h3 className="text-lg font-bold" style={{ color: theme.textPrimary }}>
-          Security
-        </h3>
-        <p className="text-sm mt-1" style={{ color: theme.textMuted }}>
-          Manage your password and security settings.
-        </p>
-      </div>
 
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <label
-            className="text-sm font-medium"
-            style={{ color: theme.textSecondary }}
-          >
-            Current Password
-          </label>
-          <Input
-            type="password"
-            placeholder="••••••••"
-            className="bg-transparent max-w-sm"
-            style={{ borderColor: theme.border, color: theme.textPrimary }}
-          />
-        </div>
-        <div className="space-y-2">
-          <label
-            className="text-sm font-medium"
-            style={{ color: theme.textSecondary }}
-          >
-            New Password
-          </label>
-          <Input
-            type="password"
-            placeholder="••••••••"
-            className="bg-transparent max-w-sm"
-            style={{ borderColor: theme.border, color: theme.textPrimary }}
-          />
-        </div>
-        <div className="pt-2">
-          <Button>Update Password</Button>
-        </div>
-      </div>
-
-      <div
-        className="pt-6 border-t space-y-4"
-        style={{ borderColor: theme.border }}
-      >
-        <div>
-          <h4
-            className="text-sm font-medium"
-            style={{ color: theme.textPrimary }}
-          >
-            Two-Factor Authentication
-          </h4>
-          <p className="text-xs mt-0.5" style={{ color: theme.textMuted }}>
-            Add an extra layer of security to your account.
-          </p>
-        </div>
-        <Button variant="outline">Enable 2FA</Button>
-      </div>
-    </div>
-  );
-};
 
 export default SettingsPage;

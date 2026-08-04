@@ -50,7 +50,7 @@ export const ReviewActionModal = ({ isOpen, onClose, onConfirm, actionType, load
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
           <Button 
-             style={{ background: actionColor, color: '#fff' }} 
+             style={{ background: actionColor, color: theme.textInverse }} 
              onClick={() => onConfirm(notes)}
              disabled={loading}
           >

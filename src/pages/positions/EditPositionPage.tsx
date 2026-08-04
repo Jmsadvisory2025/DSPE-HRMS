@@ -22,7 +22,6 @@ const INITIAL_FORM: AddJobPayload = {
   min_experience: 0,
   max_experience: 0,
   location: '',
-  openings: 1,
   budget: 0,
   client: null,
   team_member_id: null,
@@ -75,7 +74,6 @@ const EditPositionPage = () => {
         min_experience: selectedJob.min_experience ?? 0,
         max_experience: selectedJob.max_experience ?? 0,
         location: selectedJob.location || '',
-        openings: selectedJob.openings ?? 1,
         budget: selectedJob.budget ? parseFloat(selectedJob.budget as any) : 0,
         client: selectedJob.client?.id || null,
         team_member_id: selectedJob.client?.team_member?.id || null,
@@ -183,7 +181,6 @@ const EditPositionPage = () => {
     fd.append('max_experience', String(formData.max_experience));
     
     if (formData.education) fd.append('education', formData.education);
-    if (formData.openings) fd.append('openings', String(formData.openings));
     if (formData.budget) fd.append('budget', String(formData.budget));
     if (formData.status) fd.append('status', formData.status);
     
@@ -414,18 +411,6 @@ const EditPositionPage = () => {
                 style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }}
               />
             </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Openings</label>
-              <Input
-                type="number"
-                min="1"
-                value={formData.openings}
-                onChange={(e) => setFormData({ ...formData, openings: Number(e.target.value) })}
-                style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }}
-              />
-            </div>
-
           </div>
 
           <div className="space-y-2">
@@ -503,7 +488,7 @@ const EditPositionPage = () => {
                             />
                             <div>
                               <p className="text-sm font-medium" style={{ color: isAssigned ? theme.accent : theme.textPrimary }}>
-                                {recruiter.first_name} {recruiter.last_name}
+                                {recruiter.name}
                               </p>
                               <p className="text-xs" style={{ color: theme.textMuted }}>{recruiter.email}</p>
                             </div>

@@ -28,7 +28,6 @@ export interface AddClientPayload {
   replacement_period_days: number;
   agreement_date?: string;
   commercial_decided: string;
-  pocs: AddPOCPayload[];
   website?: string;
   linkedin?: string;
   notes?: string;

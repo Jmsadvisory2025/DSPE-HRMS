@@ -20,6 +20,7 @@ import AddCandidatePage from "@/pages/candidates/AddCandidatePage";
 import CandidateDetailPage from "@/pages/candidates/CandidateDetailPage";
 import EditCandidatePage from "@/pages/candidates/EditCandidatePage";
 import SetPinPage from "@/pages/auth/SetPinPage";
+import TrackersPage from "@/pages/trackers/TrackersPage";
 
 const RootRedirect = () => {
   return <Navigate to="/login" replace />;
@@ -94,6 +95,10 @@ export const router = createBrowserRouter([
       {
         path: "/positions/:jobId/edit",
         element: <EditPositionPage />,
+      },
+      {
+        path: "/trackers",
+        element: <TrackersPage />,
       },
       {
         path: "/approvals",

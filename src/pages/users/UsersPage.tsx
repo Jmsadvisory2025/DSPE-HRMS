@@ -171,8 +171,8 @@ const UsersPage = () => {
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="gap-1.5 shrink-0">
+          <DialogTrigger>
+            <Button size="sm" className="gap-1.5 shrink-0" type="button" onClick={() => setIsDialogOpen(true)}>
               <Plus className="size-3.5" />
               <span>Invite User</span>
             </Button>
@@ -202,7 +202,7 @@ const UsersPage = () => {
               </div>
               <div className="space-y-2">
                 <Label>Role</Label>
-                <Select value={formData.role} onValueChange={val => setFormData({...formData, role: val})}>
+                <Select value={formData.role} onValueChange={val => setFormData({...formData, role: val || ''})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
@@ -339,7 +339,7 @@ const UsersPage = () => {
               </div>
               <div className="space-y-2">
                 <Label>Role</Label>
-                <Select value={editFormData.role} onValueChange={val => setEditFormData({...editFormData, role: val})}>
+                <Select value={editFormData.role} onValueChange={val => setEditFormData({...editFormData, role: val || ''})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>

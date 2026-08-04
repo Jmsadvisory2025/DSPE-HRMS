@@ -296,7 +296,7 @@ const LoginPage = () => {
                     backgroundColor: hexToRgba(theme.surface, 0.85),
                     borderColor: hexToRgba(theme.border, 0.5),
                     borderWidth: '1px',
-                    boxShadow: `0 30px 60px -15px ${hexToRgba('#000000', 0.5)}`,
+                    boxShadow: `0 30px 60px -15px ${hexToRgba(theme.textPrimary, 0.15)}`,
                   }}
                 >
                   <CardHeader className="space-y-4 text-center pb-8 pt-8">

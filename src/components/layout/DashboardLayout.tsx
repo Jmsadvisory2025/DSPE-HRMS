@@ -16,7 +16,7 @@ const DashboardLayout = () => {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   return (
-    <TooltipProvider delayDuration={0}>
+    <TooltipProvider delay={0}>
       <div
         className="min-h-screen w-full"
         style={{ background: theme.background }}

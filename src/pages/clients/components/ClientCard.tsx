@@ -45,24 +45,26 @@ const ClientCard = ({ client }: ClientCardProps) => {
     >
       {/* Top row — Name + Status */}
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <div
             className="size-9 rounded-lg flex items-center justify-center shrink-0"
             style={{ background: iconColor + '18' }}
           >
             <Building2 className="size-4" style={{ color: iconColor }} />
           </div>
-          <div className="min-w-0">
-            <p
-              className="text-sm font-semibold truncate flex items-center gap-2"
+          <div className="min-w-0 flex-1">
+            <div
+              className="flex items-center gap-2"
               style={{ color: theme.textPrimary }}
             >
-              {client.company_name}
-              <span className="text-[10px] font-normal px-1.5 py-0.5 rounded-sm" style={{ background: theme.surfaceMuted, color: theme.textMuted }}>
+              <span className="text-sm font-semibold truncate">
+                {client.company_name}
+              </span>
+              <span className="text-[10px] font-normal px-1.5 py-0.5 rounded-sm shrink-0" style={{ background: theme.surfaceMuted, color: theme.textMuted }}>
                 {client.client_id}
               </span>
-            </p>
-            <p className="text-xs" style={{ color: theme.textMuted }}>
+            </div>
+            <p className="text-xs truncate mt-0.5" style={{ color: theme.textMuted }}>
               {client.industry}
             </p>
           </div>

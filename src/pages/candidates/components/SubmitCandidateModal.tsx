@@ -102,7 +102,7 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
         
         <div className="py-4 space-y-2">
            <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Job Position</label>
-           <Select value={selectedJobId} onValueChange={setSelectedJobId} disabled={submitting || jobsLoading}>
+           <Select value={selectedJobId} onValueChange={(val) => setSelectedJobId(val || '')} disabled={submitting || jobsLoading}>
              <SelectTrigger className="w-full">
                 <SelectValue placeholder={jobsLoading ? "Loading jobs..." : "Select a job..."}>
                   {selectedJobDetail 

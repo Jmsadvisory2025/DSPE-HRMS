@@ -44,7 +44,7 @@ const JobDetailPage = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-6xl pb-10">
+    <div className="space-y-6  pb-10">
       {/* Back button */}
       <button
         onClick={() => navigate('/positions')}
@@ -96,14 +96,7 @@ const JobDetailPage = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-xl p-5" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold tracking-wider" style={{ color: theme.textMuted }}>OPENINGS</span>
-            <Users className="size-4" style={{ color: theme.textMuted }} />
-          </div>
-          <div className="text-2xl font-bold" style={{ color: theme.textPrimary }}>{job.openings}</div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="rounded-xl p-5" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold tracking-wider" style={{ color: theme.textMuted }}>EXPERIENCE</span>
@@ -157,10 +150,10 @@ const JobDetailPage = () => {
 
             <div className="mb-6">
               <h4 className="text-xs font-bold tracking-wider mb-2 uppercase" style={{ color: theme.textMuted }}>Required Skills</h4>
-              <div className="flex flex-wrap gap-2">
-                {job.skills && job.skills.length > 0 ? job.skills.map((skill) => (
+              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-2">
+                {job.skills && job.skills.length > 0 ? job.skills.map((skill, index) => (
                   <Badge
-                    key={skill}
+                    key={`${skill}-${index}`}
                     variant="outline"
                     className="text-xs px-2.5 py-1 border-0 font-medium"
                     style={{ color: theme.chart2, background: theme.chart2 + '15' }}
@@ -175,20 +168,21 @@ const JobDetailPage = () => {
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-xs font-bold tracking-wider uppercase" style={{ color: theme.textMuted }}>Job Description</h4>
                 {job.description_file && (
-                  <a 
-                    href={job.description_file} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="text-xs font-medium underline transition-colors"
-                    style={{ color: theme.accent }}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 h-7 text-xs font-medium"
+                    style={{ borderColor: theme.accent + '50', color: theme.accent, background: theme.accentSoft }}
+                    onClick={() => window.open(job.description_file as string, '_blank')}
                   >
+                    <FileText className="size-3" />
                     View Attachment
-                  </a>
+                  </Button>
                 )}
               </div>
-              <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: theme.textSecondary }}>
+              <div className="text-sm leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto p-4 rounded-lg bg-black/5 dark:bg-white/5" style={{ color: theme.textSecondary }}>
                 {job.description || 'No description provided.'}
-              </p>
+              </div>
             </div>
           </div>
         </div>

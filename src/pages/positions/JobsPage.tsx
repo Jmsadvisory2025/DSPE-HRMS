@@ -6,55 +6,72 @@ import { Search, Plus, ChevronDown, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { positionActions } from '@/redux/actions';
+import { positionActions, clientActions } from '@/redux/actions';
 import { setJobs, setLoading, setError } from '@/redux/slices/positionSlice';
 import type { JobResponse } from '@/types/position.types';
 import { useAuth } from '@/context/AuthContext';
 import { theme } from '@/config/theme';
+import { SearchableDropdown } from '@/components/ui/searchable-dropdown';
 
 const JobsPage = () => {
   const navigate = useNavigate();
   const { isRecruiter } = useAuth();
   const dispatch = useAppDispatch();
   const { jobs, loading } = useAppSelector((state) => state.positions);
-  const [activeFilter, setActiveFilter] = useState('All');
+
+  
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedClient, setSelectedClient] = useState('');
+  const [clientsData, setClientsData] = useState<{client: {client_id: string, name: string}}[]>([]);
+  const [clientsLoading, setClientsLoading] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     dispatch({
+      type: clientActions.FETCH_CLIENTS,
+      method: "GET",
+      endPoint: "/api/v1/clients/general-dropdown/",
+      auth: true,
+      setLoading: (val: boolean) => setClientsLoading(val),
+      getResponse: (data: any) => {
+        if (data && data.clients_details) {
+          setClientsData(data.clients_details);
+        }
+      },
+      getError: (err: any) => console.error('Error fetching clients dropdown:', err),
+    });
+  }, [dispatch]);
+
+  useEffect(() => {
+    let endpoint = '/api/v1/jobs/?';
+    if (debouncedSearch) endpoint += `search=${encodeURIComponent(debouncedSearch)}&`;
+    if (selectedClient) endpoint += `client=${encodeURIComponent(selectedClient)}&`;
+
+    dispatch({
       type: positionActions.FETCH_JOBS,
       method: 'GET',
-      endPoint: '/api/v1/jobs/',
+      endPoint: endpoint,
       auth: true,
       setLoading: (val: boolean) => dispatch(setLoading(val)),
       getResponse: (data: JobResponse) => dispatch(setJobs(data.results || [])),
       getError: (err: any) => dispatch(setError(err.message)),
     });
-  }, [dispatch]);
+  }, [dispatch, debouncedSearch, selectedClient]);
 
-  // Counts based on live API data
-  const counts = {
-    All: jobs.length,
-    Open: jobs.filter((p) => p.status.toLowerCase() === 'open').length,
-    'On Hold': jobs.filter((p) => p.status.toLowerCase() === 'on hold' || p.status.toLowerCase() === 'on_hold').length,
-    Filled: jobs.filter((p) => p.status.toLowerCase() === 'filled').length,
-    Closed: jobs.filter((p) => p.status.toLowerCase() === 'closed').length,
-  };
+  const clientOptions = [
+    { value: '', label: 'All Clients' },
+    ...clientsData.map(c => ({
+      value: c.client.client_id,
+      label: c.client.name,
+    }))
+  ];
 
-  const filteredPositions = jobs.filter((job) => {
-    // Basic Search
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      if (!job.title.toLowerCase().includes(q) && !job.code.toLowerCase().includes(q)) {
-        return false;
-      }
-    }
-
-    // Status filtering
-    if (activeFilter === 'All') return true;
-    if (activeFilter === 'On Hold' && (job.status.toLowerCase() === 'on hold' || job.status.toLowerCase() === 'on_hold')) return true;
-    return job.status.toLowerCase() === activeFilter.toLowerCase();
-  });
+  const filteredPositions = jobs;
 
   return (
     <div className="space-y-6">
@@ -81,38 +98,16 @@ const JobsPage = () => {
       </div>
 
       {/* Filters & Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        {/* Status Filters */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 w-full sm:w-auto">
-          {Object.entries(counts).map(([status, count]) => {
-            const isActive = activeFilter === status;
-            return (
-              <button
-                key={status}
-                onClick={() => setActiveFilter(status)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors shrink-0"
-                style={{
-                  background: isActive ? theme.accentSoft : 'transparent',
-                  color: isActive ? theme.accent : theme.textMuted,
-                  border: `1px solid ${isActive ? theme.accent : 'transparent'}`,
-                }}
-              >
-                {status} - {count}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Search & Type Filter */}
+      <div className="flex flex-col sm:flex-row items-center justify-end gap-4">
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="relative shrink-0">
-            <select
-              className="appearance-none bg-transparent text-sm pl-3 pr-8 py-2 outline-none cursor-pointer"
-              style={{ color: theme.textPrimary }}
-            >
-              <option>All hiring types</option>
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 size-4 pointer-events-none" style={{ color: theme.textMuted }} />
+          <div className="w-full sm:w-48 shrink-0">
+            <SearchableDropdown
+              options={clientOptions}
+              value={selectedClient}
+              onChange={setSelectedClient}
+              placeholder="All Clients"
+              loading={clientsLoading}
+            />
           </div>
 
           <div className="relative w-full sm:w-64">
@@ -123,7 +118,7 @@ const JobsPage = () => {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search designation, code..."
+              placeholder="Search title, location, or status..."
               className="pl-9 text-sm"
               style={{
                 background: theme.surface,
@@ -149,7 +144,7 @@ const JobsPage = () => {
                 <TableHead>Designation</TableHead>
                 <TableHead>Client</TableHead>
                 <TableHead>Location</TableHead>
-                <TableHead>Openings</TableHead>
+              
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -182,9 +177,7 @@ const JobsPage = () => {
                     <TableCell style={{ color: theme.textSecondary }} className="capitalize">
                       {job.location}
                     </TableCell>
-                    <TableCell style={{ color: theme.textSecondary }}>
-                      {job.openings}
-                    </TableCell>
+                   
                     <TableCell>
                       <Badge
                         variant="outline"

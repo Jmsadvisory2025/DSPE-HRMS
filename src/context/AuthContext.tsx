@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, type ReactNode } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import type { AuthUser } from '@/types/auth.types';
 

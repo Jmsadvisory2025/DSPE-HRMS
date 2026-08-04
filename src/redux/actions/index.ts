@@ -11,6 +11,9 @@ export const clientActions = {
   FETCH_CLIENT_DETAIL: "FETCH_CLIENT_DETAIL",
   ADD_CLIENT: "ADD_CLIENT",
   UPDATE_CLIENT: "UPDATE_CLIENT",
+  FETCH_TRACKER_FORMATS: "FETCH_TRACKER_FORMATS",
+  UPDATE_TRACKER_FORMAT: "UPDATE_TRACKER_FORMAT",
+  CREATE_TRACKER_FORMAT: "CREATE_TRACKER_FORMAT",
 } as const;
 
 /* ── Candidates ───────────────────────────────────────────────── */
@@ -33,7 +36,11 @@ export const positionActions = {
 export const approvalActions = {
   FETCH_APPLICATIONS: "FETCH_APPLICATIONS",
   FETCH_APPLICATION_DETAIL: "FETCH_APPLICATION_DETAIL",
+  FETCH_GROUPED_APPROVALS: "FETCH_GROUPED_APPROVALS",
+  PREVIEW_TRACKER: "PREVIEW_TRACKER",
+  UPDATE_TRACKER_PREVIEW: "UPDATE_TRACKER_PREVIEW",
   REVIEW_APPLICATION: "REVIEW_APPLICATION",
+  SEND_TO_CLIENT: "SEND_TO_CLIENT",
 } as const;
 
 /* ── Users ─────────────────────────────────────────────────────── */
@@ -44,7 +51,10 @@ export const userActions = {
 } as const;
 
 /* ── Audit Logs ───────────────────────────────────────────────── */
-export const auditActions = {} as const;
+export const auditActions = {
+  FETCH_AUDIT_LOGS: "FETCH_AUDIT_LOGS",
+  FETCH_AUDIT_LOG_DETAIL: "FETCH_AUDIT_LOG_DETAIL",
+} as const;
 
 /* ── Dashboard ────────────────────────────────────────────────── */
 export const dashboardActions = {} as const;

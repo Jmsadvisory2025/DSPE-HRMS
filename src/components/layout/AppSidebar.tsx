@@ -69,6 +69,12 @@ const mainNavItems: NavItem[] = [
     path: "/positions",
     roles: ["admin", "manager", "recruiter"],
   },
+  {
+    label: "Trackers",
+    icon: FileText,
+    path: "/trackers",
+    roles: ["admin", "manager"],
+  }
 ];
 
 const bottomNavItems: NavItem[] = [
@@ -291,7 +297,7 @@ const SidebarNavItem = ({
         style={{
           background: active ? theme.sidebarAccent : "transparent",
           color: active
-            ? theme.sidebarPrimaryForeground
+            ? theme.sidebarAccentForeground
             : theme.textSecondary,
           transition: "background 150ms ease, color 150ms ease",
         }}

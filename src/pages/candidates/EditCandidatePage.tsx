@@ -112,6 +112,14 @@ const EditCandidatePage = () => {
         current_location: candidateDetail.current_location || '',
         linkedin_url: candidateDetail.linkedin_url || '',
         portfolio_url: candidateDetail.portfolio_url || '',
+        current_ctc: candidateDetail.current_ctc || '',
+        expected_ctc: candidateDetail.expected_ctc || '',
+        notice_period: candidateDetail.notice_period || '',
+        hike: candidateDetail.hike || '',
+        preferred_location: candidateDetail.preferred_location || '',
+        offer_in_hand: candidateDetail.offer_in_hand || '',
+        reason_for_change: candidateDetail.reason_for_change || '',
+        dob: candidateDetail.dob || '',
         education: candidateDetail.education || [],
         skills: candidateDetail.skills || [],
         certifications: candidateDetail.certifications || [],
@@ -154,7 +162,7 @@ const EditCandidatePage = () => {
     );
   }
 
-  const containerVariants = {
+  const containerVariants: any = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100 } }
   };
@@ -281,6 +289,77 @@ const EditCandidatePage = () => {
               <Input 
                 value={formData.portfolio_url} 
                 onChange={e => handleInputChange('portfolio_url', e.target.value)}
+                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 rounded-2xl border shadow-sm space-y-6" style={{ background: theme.surface, borderColor: theme.border }}>
+          <h3 className="text-lg font-bold border-b pb-3" style={{ color: theme.textPrimary, borderColor: theme.border }}>Compensation & Preferences</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label style={{ color: theme.textPrimary }}>Current CTC</Label>
+              <Input 
+                value={formData.current_ctc} 
+                onChange={e => handleInputChange('current_ctc', e.target.value)}
+                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label style={{ color: theme.textPrimary }}>Expected CTC</Label>
+              <Input 
+                value={formData.expected_ctc} 
+                onChange={e => handleInputChange('expected_ctc', e.target.value)}
+                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label style={{ color: theme.textPrimary }}>Hike</Label>
+              <Input 
+                value={formData.hike} 
+                onChange={e => handleInputChange('hike', e.target.value)}
+                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label style={{ color: theme.textPrimary }}>Notice Period</Label>
+              <Input 
+                value={formData.notice_period} 
+                onChange={e => handleInputChange('notice_period', e.target.value)}
+                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label style={{ color: theme.textPrimary }}>Offer in Hand</Label>
+              <Input 
+                value={formData.offer_in_hand} 
+                onChange={e => handleInputChange('offer_in_hand', e.target.value)}
+                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label style={{ color: theme.textPrimary }}>Preferred Location</Label>
+              <Input 
+                value={formData.preferred_location} 
+                onChange={e => handleInputChange('preferred_location', e.target.value)}
+                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label style={{ color: theme.textPrimary }}>Reason for Change</Label>
+              <Input 
+                value={formData.reason_for_change} 
+                onChange={e => handleInputChange('reason_for_change', e.target.value)}
+                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label style={{ color: theme.textPrimary }}>Date of Birth</Label>
+              <Input 
+                type="date"
+                value={formData.dob} 
+                onChange={e => handleInputChange('dob', e.target.value)}
                 style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
               />
             </div>

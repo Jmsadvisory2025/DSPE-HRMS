@@ -1,24 +1,99 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Download, Search, Activity } from 'lucide-react';
+import { Download, Search, Activity, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { theme } from '@/config/theme';
-import { AUDIT_LOGS_DATA } from './data';
+import { useAppDispatch } from '@/store/hooks';
+import { auditActions } from '@/redux/actions';
+import { AuditLogDetailModal } from './components/AuditLogDetailModal';
+
+interface AuditLog {
+  id: string;
+  timestamp: string;
+  event: string;
+  action: string;
+  user_info: {
+    name: string | null;
+    role: string | null;
+    email: string | null;
+    organization: string | null;
+  } | null;
+  method: string | null;
+  status_code: number | null;
+  path: string | null;
+}
+
+interface AuditResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: AuditLog[];
+}
 
 const AuditLogsPage = () => {
+  const dispatch = useAppDispatch();
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<AuditResponse | null>(null);
+  const [page, setPage] = useState(1);
+  const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
 
-  const filteredLogs = AUDIT_LOGS_DATA.filter((log) => {
+  const fetchLogs = (targetPage: number = 1) => {
+    dispatch({
+      type: auditActions.FETCH_AUDIT_LOGS,
+      method: 'GET',
+      endPoint: `/api/v1/audit/?page=${targetPage}`,
+      auth: true,
+      setLoading: (val: boolean) => setLoading(val),
+      getResponse: (res: AuditResponse) => {
+        if (res && res.results) {
+          setData(res);
+        }
+      },
+      getError: (err: any) => console.error("Error fetching audit logs:", err),
+    });
+  };
+
+  useEffect(() => {
+    fetchLogs(page);
+  }, [dispatch, page]);
+
+  // Client-side search (note: API might support search, but we apply local filter on current page)
+  const filteredLogs = data?.results.filter((log) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
-      log.user.toLowerCase().includes(q) ||
-      log.action.toLowerCase().includes(q) ||
-      log.resource.toLowerCase().includes(q) ||
-      log.details.toLowerCase().includes(q)
+      (log.user_info?.name || '').toLowerCase().includes(q) ||
+      (log.action || '').toLowerCase().includes(q) ||
+      (log.event || '').toLowerCase().includes(q) ||
+      (log.path || '').toLowerCase().includes(q)
     );
-  });
+  }) || [];
+
+  const handleNextPage = () => {
+    if (data?.next) {
+      setPage(prev => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (data?.previous) {
+      setPage(prev => prev - 1);
+    }
+  };
+
+  const formatDate = (isoString: string) => {
+    try {
+      const date = new Date(isoString);
+      return date.toLocaleString(undefined, { 
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+    } catch {
+      return isoString;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -64,7 +139,7 @@ const AuditLogsPage = () => {
 
       {/* Logs Table */}
       <div
-        className="rounded-xl overflow-hidden"
+        className="rounded-xl overflow-hidden flex flex-col"
         style={{
           background: theme.surface,
           border: `1px solid ${theme.border}`,
@@ -80,15 +155,22 @@ const AuditLogsPage = () => {
               }}
             >
               <tr>
-                <th className="px-5 py-4 font-semibold whitespace-nowrap">Timestamp</th>
-                <th className="px-5 py-4 font-semibold">User</th>
-                <th className="px-5 py-4 font-semibold">Action</th>
-                <th className="px-5 py-4 font-semibold">Resource</th>
-                <th className="px-5 py-4 font-semibold w-full">Details</th>
+                <th className="px-5 py-3 font-semibold whitespace-nowrap w-[15%]">Timestamp</th>
+                <th className="px-5 py-3 font-semibold w-[25%]">User</th>
+                <th className="px-5 py-3 font-semibold w-[10%]">Action</th>
+                <th className="px-5 py-3 font-semibold w-[20%]">Event / Resource</th>
+                <th className="px-5 py-3 font-semibold w-auto">Details</th>
               </tr>
             </thead>
             <tbody>
-              {filteredLogs.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-5 py-12 text-center">
+                    <Loader2 className="size-6 animate-spin mx-auto mb-2" style={{ color: theme.accent }} />
+                    <span style={{ color: theme.textMuted }}>Loading audit logs...</span>
+                  </td>
+                </tr>
+              ) : filteredLogs.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-5 py-12 text-center" style={{ color: theme.textMuted }}>
                     No audit logs match your search criteria.
@@ -96,20 +178,22 @@ const AuditLogsPage = () => {
                 </tr>
               ) : (
                 filteredLogs.map((log, index) => {
-                  // Action Badge Styling
-                  const getActionStyle = (action: string) => {
-                    switch (action) {
-                      case 'CREATE':
+                  const getActionStyle = (action: string | null) => {
+                    const act = action?.toUpperCase() || '';
+                    switch (act) {
+                      case 'CREATED':
                       case 'APPROVE':
+                      case 'SENT':
                         return { color: theme.success, bg: theme.successSoft };
-                      case 'UPDATE':
+                      case 'UPDATED':
+                      case 'REVIEWED':
                         return { color: theme.info, bg: theme.infoSoft };
-                      case 'DELETE':
-                      case 'REJECT':
+                      case 'DELETED':
+                      case 'REJECTED':
                         return { color: theme.destructive, bg: theme.destructive + '15' };
-                      case 'LOGIN':
+                      case 'LOGGED_IN':
                         return { color: theme.chart2, bg: theme.chart2 + '20' };
-                      case 'EXPORT':
+                      case 'READ':
                         return { color: theme.textSecondary, bg: theme.surfaceMuted };
                       default:
                         return { color: theme.textMuted, bg: theme.surfaceMuted };
@@ -121,38 +205,49 @@ const AuditLogsPage = () => {
                   return (
                     <tr
                       key={log.id}
+                      onClick={() => setSelectedLogId(log.id)}
                       style={{
                         borderTop: index !== 0 ? `1px solid ${theme.border}` : 'none',
                       }}
-                      className="hover:bg-white/5 transition-colors group"
+                      className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors group cursor-pointer"
                     >
-                      <td className="px-5 py-4 whitespace-nowrap text-xs" style={{ color: theme.textSecondary }}>
-                        {log.timestamp}
+                      <td className="px-5 py-3 whitespace-nowrap text-xs" style={{ color: theme.textSecondary }}>
+                        {formatDate(log.timestamp)}
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-3">
                         <div className="flex flex-col">
-                          <span className="font-medium" style={{ color: theme.textPrimary }}>
-                            {log.user}
+                          <span className="font-medium capitalize" style={{ color: theme.textPrimary }}>
+                            {log.user_info?.name || 'System'}
                           </span>
                           <span className="text-[10px] mt-0.5" style={{ color: theme.textMuted }}>
-                            {log.role} · {log.ipAddress}
+                            <span className="capitalize">{log.user_info?.role || 'System'}</span> · {log.user_info?.email?.toLowerCase() || 'N/A'}
                           </span>
                         </div>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-3">
                         <Badge
                           variant="outline"
-                          className="border-0 font-bold px-2 py-0.5 text-[10px] tracking-wider"
+                          className="border-0 font-bold px-2.5 py-0.5 text-[10px] tracking-wider uppercase"
                           style={{ color: actionStyle.color, background: actionStyle.bg }}
                         >
-                          {log.action}
+                          {log.action || 'UNKNOWN'}
                         </Badge>
                       </td>
-                      <td className="px-5 py-4 font-medium" style={{ color: theme.textSecondary }}>
-                        {log.resource}
+                      <td className="px-5 py-3 font-medium text-sm" style={{ color: theme.textSecondary }}>
+                        {log.event}
                       </td>
-                      <td className="px-5 py-4 text-xs leading-relaxed" style={{ color: theme.textSecondary }}>
-                        {log.details}
+                      <td className="px-5 py-3 text-xs leading-relaxed" style={{ color: theme.textSecondary }}>
+                        {log.path ? (
+                          <div className="flex items-center gap-2 font-mono bg-black/5 dark:bg-white/5 px-2.5 py-1.5 rounded w-max" style={{ color: theme.textSecondary }}>
+                            <span className="font-bold">{log.method}</span>
+                            <span>{log.path}</span>
+                            {log.status_code && (
+                              <span className={log.status_code >= 400 ? 'text-red-500' : 'text-green-600'}>
+                                {log.status_code}
+                              </span>
+                            )}
+                          </div>
+                        ) : '—'}
                       </td>
                     </tr>
                   );
@@ -161,7 +256,46 @@ const AuditLogsPage = () => {
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination */}
+        {data && data.count > 0 && (
+          <div className="flex items-center justify-between px-5 py-4 border-t" style={{ borderColor: theme.border, background: theme.surfaceMuted }}>
+            <div className="text-xs font-medium" style={{ color: theme.textMuted }}>
+              Showing page {page} <span className="mx-1">•</span> Total {data.count} records
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrevPage}
+                disabled={!data.previous || loading}
+                className="h-8 px-2"
+                style={{ borderColor: theme.border, color: theme.textPrimary }}
+              >
+                <ChevronLeft className="size-4 mr-1" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={!data.next || loading}
+                className="h-8 px-2"
+                style={{ borderColor: theme.border, color: theme.textPrimary }}
+              >
+                Next
+                <ChevronRight className="size-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
+
+      <AuditLogDetailModal 
+        isOpen={!!selectedLogId} 
+        onClose={() => setSelectedLogId(null)} 
+        logId={selectedLogId} 
+      />
     </div>
   );
 };

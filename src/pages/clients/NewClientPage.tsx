@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { theme } from '@/config/theme';
 import type { AddClientPayload, AddPOCPayload, Client } from '@/types/client.types';
 
-const STEPS = ['Company', 'Address', 'Commercials', 'Team & POCs', 'Review'];
+const STEPS = ['Company', 'Address', 'Commercials', 'Team Members', 'Review'];
 
 const initialFormData: AddClientPayload = {
   company_name: '',
@@ -35,10 +35,6 @@ const initialFormData: AddClientPayload = {
   website: '',
   linkedin: '',
   notes: '',
-  pocs: [
-    { poc_type: 'hiring', name: '', email: '', designation: '', contact: '' },
-    { poc_type: 'payment', name: '', email: '', designation: '', contact: '' }
-  ],
   team_members: [
     { name: '', email: '', role: '' }
   ]
@@ -63,13 +59,7 @@ const NewClientPage = () => {
     }
   };
 
-  const handlePOCChange = (index: number, field: keyof AddPOCPayload, value: string) => {
-    setFormData(prev => {
-      const newPocs = [...prev.pocs];
-      newPocs[index] = { ...newPocs[index], [field]: value };
-      return { ...prev, pocs: newPocs };
-    });
-  };
+
 
   const handleTeamMemberChange = (index: number, field: string, value: string) => {
     setFormData(prev => {
@@ -105,10 +95,7 @@ const NewClientPage = () => {
         if (formData.team_members) {
           fd.append('team_members', JSON.stringify(formData.team_members));
         }
-      } else if (k === 'pocs') {
-        if (formData.pocs) {
-          fd.append('pocs', JSON.stringify(formData.pocs));
-        }
+
       } else if (k === 'agreement_document') {
         if (formData.agreement_document) {
           fd.append('agreement_document', formData.agreement_document);
@@ -365,32 +352,6 @@ const NewClientPage = () => {
 
         {currentStep === 3 && (
           <div className="space-y-8">
-            {formData.pocs.map((poc, index) => (
-              <div key={index} className="space-y-4 pb-6" style={index === 0 ? { borderBottom: `1px solid ${theme.border}` } : {}}>
-                <h3 className="font-semibold capitalize" style={{ color: theme.textPrimary }}>
-                  {poc.poc_type} POC
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Name</label>
-                    <Input value={poc.name} onChange={(e) => handlePOCChange(index, 'name', e.target.value)} placeholder="e.g. John Doe" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Designation</label>
-                    <Input value={poc.designation} onChange={(e) => handlePOCChange(index, 'designation', e.target.value)} placeholder="e.g. HR Manager" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Email</label>
-                    <Input type="email" value={poc.email} onChange={(e) => handlePOCChange(index, 'email', e.target.value)} placeholder="e.g. john.doe@company.com" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Phone</label>
-                    <Input value={poc.contact} onChange={(e) => handlePOCChange(index, 'contact', e.target.value)} placeholder="e.g. +91 9876543210" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
-                  </div>
-                </div>
-              </div>
-            ))}
-
             {/* Team Members */}
             <div className="space-y-4 pt-6" style={{ borderTop: `1px solid ${theme.border}` }}>
               <div className="flex items-center justify-between">
@@ -461,19 +422,7 @@ const NewClientPage = () => {
                 <p><strong>Notes:</strong> {formData.notes || '—'}</p>
               </div>
 
-              {/* POCs */}
-              <div className="p-4 rounded-lg space-y-1" style={{ background: theme.background, border: `1px solid ${theme.border}` }}>
-                <h4 className="font-semibold mb-2" style={{ color: theme.textPrimary }}>POCs</h4>
-                {formData.pocs.map((poc, i) => (
-                  <div key={i} className="mb-2">
-                    <p className="font-medium capitalize" style={{ color: theme.accent }}>{poc.poc_type} POC</p>
-                    <p><strong>Name:</strong> {poc.name || '—'}</p>
-                    <p><strong>Designation:</strong> {poc.designation || '—'}</p>
-                    <p><strong>Email:</strong> {poc.email || '—'}</p>
-                    <p><strong>Phone:</strong> {poc.contact || '—'}</p>
-                  </div>
-                ))}
-              </div>
+
 
               {/* Team Members Review */}
               {formData.team_members && formData.team_members.length > 0 && (

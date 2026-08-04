@@ -57,12 +57,12 @@ const CandidateDetailPage = () => {
   }
 
   // Animation variants
-  const containerVariants = {
+  const containerVariants: any = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
   };
 
-  const itemVariants = {
+  const itemVariants: any = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100 } }
   };
@@ -103,24 +103,18 @@ const CandidateDetailPage = () => {
                 {candidate.candidate_name || candidate.profile_name || "Unknown Candidate"}
               </h1>
               <div className="flex flex-wrap items-center gap-3 text-sm font-medium">
-                {candidate.current_profile && (
-                  <span className="flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: theme.accent + '20', color: theme.accent }}>
-                    <Briefcase className="size-3.5" />
-                    {candidate.current_profile}
-                  </span>
-                )}
-                {candidate.current_company && (
-                  <span className="flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: theme.surfaceHover, color: theme.textSecondary }}>
-                    <Building2 className="size-3.5" />
-                    {candidate.current_company}
-                  </span>
-                )}
-                {candidate.current_location && (
-                  <span className="flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: theme.surfaceHover, color: theme.textSecondary }}>
-                    <MapPin className="size-3.5" />
-                    {candidate.current_location}
-                  </span>
-                )}
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: theme.accent + '20', color: theme.accent }}>
+                  <Briefcase className="size-3.5" />
+                  {candidate.current_profile || "Profile not specified"}
+                </span>
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: theme.surfaceHover, color: theme.textSecondary }}>
+                  <Building2 className="size-3.5" />
+                  {candidate.current_company || "Company not specified"}
+                </span>
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full" style={{ background: theme.surfaceHover, color: theme.textSecondary }}>
+                  <MapPin className="size-3.5" />
+                  {candidate.current_location || "Location not specified"}
+                </span>
               </div>
             </div>
           </div>
@@ -178,9 +172,9 @@ const CandidateDetailPage = () => {
               )}
             </div>
 
-            {candidate.skills && candidate.skills.length > 0 && (
-              <div className="pt-4">
-                <h4 className="text-sm font-bold mb-3" style={{ color: theme.textSecondary }}>Top Skills</h4>
+            <div className="pt-4">
+              <h4 className="text-sm font-bold mb-3" style={{ color: theme.textSecondary }}>Top Skills</h4>
+              {candidate.skills && candidate.skills.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {candidate.skills.map((skill: string, index: number) => (
                     <Badge 
@@ -197,12 +191,14 @@ const CandidateDetailPage = () => {
                     </Badge>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm italic" style={{ color: theme.textMuted }}>No skills specified</p>
+              )}
+            </div>
 
-            {candidate.tags && candidate.tags.length > 0 && (
-              <div className="pt-4">
-                <h4 className="text-sm font-bold mb-3" style={{ color: theme.textSecondary }}>Tags</h4>
+            <div className="pt-4">
+              <h4 className="text-sm font-bold mb-3" style={{ color: theme.textSecondary }}>Tags</h4>
+              {candidate.tags && candidate.tags.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {candidate.tags.map((tag: string, index: number) => (
                     <Badge 
@@ -218,16 +214,59 @@ const CandidateDetailPage = () => {
                     </Badge>
                   ))}
                 </div>
+              ) : (
+                <p className="text-sm italic" style={{ color: theme.textMuted }}>No tags specified</p>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Compensation & Preferences */}
+          <motion.div variants={itemVariants} className="space-y-6">
+            <h3 className="text-xl font-bold border-b pb-2" style={{ color: theme.textPrimary, borderColor: theme.border }}>
+              Compensation & Preferences
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 p-5 rounded-xl border shadow-sm" style={{ background: theme.surface, borderColor: theme.border }}>
+              <div>
+                <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.textMuted }}>Current CTC</p>
+                <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>{candidate.current_ctc && candidate.current_ctc !== "0.00" ? candidate.current_ctc : "Not specified"}</p>
               </div>
-            )}
+              <div>
+                <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.textMuted }}>Expected CTC</p>
+                <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>{candidate.expected_ctc && candidate.expected_ctc !== "0.00" ? candidate.expected_ctc : "Not specified"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.textMuted }}>Hike</p>
+                <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>{candidate.hike || "Not specified"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.textMuted }}>Notice Period</p>
+                <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>{candidate.notice_period || "Not specified"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.textMuted }}>Offer in Hand</p>
+                <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>{candidate.offer_in_hand || "Not specified"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.textMuted }}>Pref. Location</p>
+                <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>{candidate.preferred_location || "Not specified"}</p>
+              </div>
+              <div className="col-span-2 md:col-span-3">
+                <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.textMuted }}>Reason for Change</p>
+                <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>{candidate.reason_for_change || "Not specified"}</p>
+              </div>
+              <div className="col-span-2 md:col-span-3">
+                <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.textMuted }}>Date of Birth</p>
+                <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>{candidate.dob ? new Date(candidate.dob).toLocaleDateString() : "Not specified"}</p>
+              </div>
+            </div>
           </motion.div>
 
           {/* Experience Timeline */}
-          {candidate.experience_details && candidate.experience_details.length > 0 && (
-            <motion.div variants={itemVariants} className="space-y-6">
-              <h3 className="text-xl font-bold border-b pb-2 flex items-center gap-2" style={{ color: theme.textPrimary, borderColor: theme.border }}>
-                <Briefcase className="size-5" style={{ color: theme.accent }}/> Experience
-              </h3>
+          <motion.div variants={itemVariants} className="space-y-6">
+            <h3 className="text-xl font-bold border-b pb-2 flex items-center gap-2" style={{ color: theme.textPrimary, borderColor: theme.border }}>
+              <Briefcase className="size-5" style={{ color: theme.accent }}/> Experience
+            </h3>
+            {candidate.experience_details && candidate.experience_details.length > 0 ? (
               <div className="space-y-4 pl-2">
                 {candidate.experience_details.map((exp: string, index: number) => (
                   <div key={index} className="relative pl-6 border-l-2" style={{ borderColor: theme.border }}>
@@ -238,15 +277,17 @@ const CandidateDetailPage = () => {
                   </div>
                 ))}
               </div>
-            </motion.div>
-          )}
+            ) : (
+              <p className="text-sm italic pl-2" style={{ color: theme.textMuted }}>No experience details specified</p>
+            )}
+          </motion.div>
 
           {/* Education Timeline */}
-          {candidate.education && candidate.education.length > 0 && (
-            <motion.div variants={itemVariants} className="space-y-6">
-              <h3 className="text-xl font-bold border-b pb-2 flex items-center gap-2" style={{ color: theme.textPrimary, borderColor: theme.border }}>
-                <GraduationCap className="size-5" style={{ color: theme.accent }}/> Education
-              </h3>
+          <motion.div variants={itemVariants} className="space-y-6">
+            <h3 className="text-xl font-bold border-b pb-2 flex items-center gap-2" style={{ color: theme.textPrimary, borderColor: theme.border }}>
+              <GraduationCap className="size-5" style={{ color: theme.accent }}/> Education
+            </h3>
+            {candidate.education && candidate.education.length > 0 ? (
               <div className="space-y-4 pl-2">
                 {candidate.education.map((edu: string, index: number) => (
                   <div key={index} className="relative pl-6 border-l-2" style={{ borderColor: theme.border }}>
@@ -257,22 +298,65 @@ const CandidateDetailPage = () => {
                   </div>
                 ))}
               </div>
-            </motion.div>
-          )}
+            ) : (
+              <p className="text-sm italic pl-2" style={{ color: theme.textMuted }}>No education details specified</p>
+            )}
+          </motion.div>
           
-          {/* Certifications */}
-          {candidate.certifications && candidate.certifications.length > 0 && (
-             <motion.div variants={itemVariants} className="space-y-6">
-               <h3 className="text-xl font-bold border-b pb-2" style={{ color: theme.textPrimary, borderColor: theme.border }}>
-                 Certifications
-               </h3>
+           {/* Certifications */}
+           <motion.div variants={itemVariants} className="space-y-6">
+             <h3 className="text-xl font-bold border-b pb-2" style={{ color: theme.textPrimary, borderColor: theme.border }}>
+               Certifications
+             </h3>
+             {candidate.certifications && candidate.certifications.length > 0 ? (
                <ul className="list-disc pl-5 space-y-2">
                  {candidate.certifications.map((cert: string, index: number) => (
                    <li key={index} className="text-sm font-medium" style={{ color: theme.textSecondary }}>{cert}</li>
                  ))}
                </ul>
+             ) : (
+               <p className="text-sm italic" style={{ color: theme.textMuted }}>No certifications specified</p>
+             )}
+           </motion.div>
+
+           {/* Applications */}
+           {candidate.applications && candidate.applications.length > 0 && (
+             <motion.div variants={itemVariants} className="space-y-6">
+               <h3 className="text-xl font-bold border-b pb-2 flex items-center gap-2" style={{ color: theme.textPrimary, borderColor: theme.border }}>
+                 <FileText className="size-5" style={{ color: theme.accent }}/> Applications
+               </h3>
+               <div className="grid gap-4">
+                 {candidate.applications.map((app: any, index: number) => (
+                   <div key={app.id || index} className="p-5 rounded-xl border shadow-sm transition-all hover:shadow-md" style={{ background: theme.surface, borderColor: theme.border }}>
+                     <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-3">
+                       <div>
+                         <h4 className="font-bold text-lg" style={{ color: theme.textPrimary }}>{app.job_title}</h4>
+                         <p className="text-xs font-medium mt-1" style={{ color: theme.textMuted }}>
+                           Submitted by {app.submitted_by?.name || "System"} on {new Date(app.created_at).toLocaleDateString()}
+                         </p>
+                       </div>
+                       <Badge variant="outline" className="px-3 py-1 font-semibold uppercase tracking-wider text-[10px]" style={{ background: theme.surfaceMuted, borderColor: theme.border, color: theme.textSecondary }}>
+                         {app.status?.replace(/-/g, ' ')}
+                       </Badge>
+                     </div>
+                     {app.manager_review_status && app.manager_review_status !== 'pending' && (
+                       <div className="mt-4 p-3 rounded-lg border" style={{ background: theme.surfaceMuted, borderColor: theme.border }}>
+                         <div className="flex items-center gap-2 mb-1.5">
+                           <span className="text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Manager Review:</span>
+                           <span className="text-sm font-bold capitalize" style={{ color: app.manager_review_status === 'accepted' ? theme.success : app.manager_review_status === 'rejected' ? theme.destructive : theme.warning }}>
+                             {app.manager_review_status}
+                           </span>
+                         </div>
+                         {app.manager_review_notes && (
+                           <p className="text-sm italic" style={{ color: theme.textSecondary }}>"{app.manager_review_notes}"</p>
+                         )}
+                       </div>
+                     )}
+                   </div>
+                 ))}
+               </div>
              </motion.div>
-          )}
+           )}
         </div>
 
         {/* ── Right Column: Contact & Meta ─────────────────────────────────── */}
@@ -302,32 +386,36 @@ const CandidateDetailPage = () => {
                   <p className="text-sm font-medium" style={{ color: theme.textPrimary }}>{candidate.contact || "N/A"}</p>
                 </div>
               </div>
-              {candidate.linkedin_url && (
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg" style={{ background: theme.surfaceMuted }}>
-                    <Globe className="size-4" style={{ color: theme.textSecondary }} />
-                  </div>
-                  <div className="overflow-hidden">
-                    <p className="text-xs font-semibold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>LinkedIn</p>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ background: theme.surfaceMuted }}>
+                  <Globe className="size-4" style={{ color: theme.textSecondary }} />
+                </div>
+                <div className="overflow-hidden">
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>LinkedIn</p>
+                  {candidate.linkedin_url ? (
                     <a href={candidate.linkedin_url.startsWith('http') ? candidate.linkedin_url : `https://${candidate.linkedin_url}`} target="_blank" rel="noreferrer" className="text-sm font-medium truncate hover:underline" style={{ color: theme.accent }}>
                       View Profile
                     </a>
-                  </div>
+                  ) : (
+                    <p className="text-sm font-medium" style={{ color: theme.textMuted }}>Not specified</p>
+                  )}
                 </div>
-              )}
-              {candidate.portfolio_url && (
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg" style={{ background: theme.surfaceMuted }}>
-                    <LinkIcon className="size-4" style={{ color: theme.textSecondary }} />
-                  </div>
-                  <div className="overflow-hidden">
-                    <p className="text-xs font-semibold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>Portfolio</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ background: theme.surfaceMuted }}>
+                  <LinkIcon className="size-4" style={{ color: theme.textSecondary }} />
+                </div>
+                <div className="overflow-hidden">
+                  <p className="text-xs font-semibold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>Portfolio</p>
+                  {candidate.portfolio_url ? (
                     <a href={candidate.portfolio_url.startsWith('http') ? candidate.portfolio_url : `https://${candidate.portfolio_url}`} target="_blank" rel="noreferrer" className="text-sm font-medium truncate hover:underline" style={{ color: theme.accent }}>
                       View Website
                     </a>
-                  </div>
+                  ) : (
+                    <p className="text-sm font-medium" style={{ color: theme.textMuted }}>Not specified</p>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </motion.div>
 
