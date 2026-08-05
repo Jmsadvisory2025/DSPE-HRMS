@@ -4,7 +4,7 @@ import { TextFlippingBoard } from '@/components/ui/text-flipping-board';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sparkles, ShieldCheck, Zap, Lock, Mail, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Sparkles, ShieldCheck, Zap, Lock, Mail, ArrowRight, Eye, EyeOff, Loader2, X } from 'lucide-react';
 import { theme } from '@/config/theme';
 import { useAppDispatch } from '@/store/hooks';
 import { authActions } from '@/redux/actions';
@@ -63,10 +63,11 @@ function hexToRgba(hex: string, alpha: number) {
 const LoginPage = () => {
   const [textIndex, setTextIndex] = useState(0);
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('11111111');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleClientId, setGoogleClientId] = useState<string | null>(null);
+  const [showDemoModal, setShowDemoModal] = useState(false);
 
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -163,6 +164,7 @@ const LoginPage = () => {
   };
 
   return (
+    <>
     <div
       className="h-screen w-full relative overflow-hidden flex flex-col"
       style={{ backgroundColor: theme.background, color: theme.textPrimary }}
@@ -346,6 +348,13 @@ const LoginPage = () => {
                           <ShieldCheck className="size-3.5" style={{ color: theme.success }} />
                           <span>Secure, single sign-on access</span>
                         </div>
+                        <button
+                          onClick={() => { setEmail(''); setPassword(''); setShowPassword(false); setShowDemoModal(true); }}
+                          className="text-xs font-medium cursor-pointer transition-colors duration-200 hover:underline"
+                          style={{ color: theme.textMuted }}
+                        >
+                          Try with demo credentials →
+                        </button>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center py-6">
@@ -361,6 +370,120 @@ const LoginPage = () => {
         </div>
       </div>
     </div>
+
+      {/* ── Demo Login Modal ──────────────────────────────────────────────────── */}
+      {showDemoModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setShowDemoModal(false)}
+        >
+          <div
+            className="relative w-full max-w-sm rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in-95 duration-200"
+            style={{
+              backgroundColor: theme.surface,
+              border: `1px solid ${theme.border}`,
+              boxShadow: `0 25px 50px -12px ${hexToRgba(theme.textPrimary, 0.2)}`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setShowDemoModal(false)}
+              className="absolute top-4 right-4 size-7 rounded-full flex items-center justify-center transition-colors duration-200 cursor-pointer"
+              style={{ backgroundColor: theme.surfaceMuted, color: theme.textMuted }}
+            >
+              <X className="size-3.5" />
+            </button>
+
+            {/* Header */}
+            <div className="text-center mb-5">
+              <div
+                className="size-10 rounded-xl flex items-center justify-center mx-auto mb-3"
+                style={{ backgroundColor: theme.accentSoft }}
+              >
+                <Lock className="size-4" style={{ color: theme.accent }} />
+              </div>
+              <h3 className="text-lg font-bold" style={{ color: theme.textPrimary }}>Demo Access</h3>
+              <p className="text-xs mt-1" style={{ color: theme.textMuted }}>Enter your demo credentials to explore RecruitOS</p>
+            </div>
+
+            {/* Form */}
+            <form
+              onSubmit={(e) => {
+                handleLogin(e);
+                setShowDemoModal(false);
+              }}
+              className="space-y-4"
+            >
+              {/* Email */}
+              <div className="space-y-1.5">
+                <Label htmlFor="demo-email" className="text-xs font-semibold" style={{ color: theme.textSecondary }}>Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4" style={{ color: theme.textMuted }} />
+                  <Input
+                    id="demo-email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="pl-9 h-10 text-sm rounded-lg"
+                    style={{ backgroundColor: theme.surfaceMuted, borderColor: theme.border, color: theme.textPrimary }}
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="space-y-1.5">
+                <Label htmlFor="demo-password" className="text-xs font-semibold" style={{ color: theme.textSecondary }}>Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4" style={{ color: theme.textMuted }} />
+                  <Input
+                    id="demo-password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="pl-9 pr-10 h-10 text-sm rounded-lg"
+                    style={{ backgroundColor: theme.surfaceMuted, borderColor: theme.border, color: theme.textPrimary }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
+                    style={{ color: theme.textMuted }}
+                  >
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-10 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer hover:opacity-90"
+                style={{
+                  backgroundColor: theme.accent,
+                  color: theme.accentForeground,
+                  boxShadow: `0 4px 14px ${hexToRgba(theme.accent, 0.3)}`,
+                }}
+              >
+                {loading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <>
+                    Sign In <ArrowRight className="size-3.5" />
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
