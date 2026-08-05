@@ -88,7 +88,7 @@ const keyMetrics = [
 ];
 
 const DashboardPage = () => {
-  const containerVariants = {
+  const containerVariants: any = {
     hidden: { opacity: 0 },
     visible: { 
       opacity: 1, 
@@ -96,7 +96,7 @@ const DashboardPage = () => {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: any = {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 90, damping: 14 } }
   };
