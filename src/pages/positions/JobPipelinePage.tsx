@@ -785,15 +785,11 @@ const JobPipelinePage = () => {
                                         )}
                                         {!snapshot.isDragging && (
                                           <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="size-6 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                style={{ color: theme.textMuted }}
-                                              >
-                                                <MoreHorizontal className="size-3.5" />
-                                              </Button>
+                                            <DropdownMenuTrigger
+                                              className="size-6 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center justify-center rounded-md cursor-pointer"
+                                              style={{ color: theme.textMuted }}
+                                            >
+                                              <MoreHorizontal className="size-3.5" />
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="w-48 text-xs">
                                               <DropdownMenuGroup>
