@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Shield, Loader2, Pencil } from 'lucide-react';
+import { Plus, Shield, Loader2, Pencil, Building2 } from 'lucide-react';
 import { theme } from '@/config/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -248,11 +248,15 @@ const UsersPage = () => {
                 }}
               >
                 <TableRow className="border-b-0 hover:bg-transparent">
-                  <TableHead className="font-semibold text-current">Name</TableHead>
-                  <TableHead className="font-semibold text-current">Email</TableHead>
+                  <TableHead className="font-semibold text-current">User</TableHead>
+                  <TableHead className="font-semibold text-current">Phone</TableHead>
                   <TableHead className="font-semibold text-current">Role</TableHead>
+                  <TableHead className="font-semibold text-current">Organization</TableHead>
+                  <TableHead className="font-semibold text-current">Created By</TableHead>
+                  <TableHead className="font-semibold text-current text-center">Jobs</TableHead>
+                  <TableHead className="font-semibold text-current text-center">Recruiters</TableHead>
                   <TableHead className="font-semibold text-current">Joined</TableHead>
-                  <TableHead className="font-semibold text-current text-right">Jobs Count</TableHead>
+                  <TableHead className="font-semibold text-current text-center">Status</TableHead>
                   <TableHead className="font-semibold text-current text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -278,12 +282,46 @@ const UsersPage = () => {
                       }}
                       className="hover:bg-white/5 transition-colors border-0"
                     >
-                      <TableCell className="font-medium" style={{ color: theme.textPrimary }}>
-                        {user.name}
+                      {/* User — Avatar + Name + Email */}
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          {user.avatar ? (
+                            <img
+                              src={user.avatar}
+                              alt={user.name}
+                              className="size-9 rounded-full object-cover shrink-0 ring-2 ring-white"
+                              style={{ boxShadow: `0 0 0 1px ${theme.border}` }}
+                            />
+                          ) : (
+                            <div
+                              className="size-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
+                              style={{
+                                background: roleStyle.bg,
+                                color: roleStyle.color,
+                              }}
+                            >
+                              {user.name?.charAt(0)?.toUpperCase()}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold truncate" style={{ color: theme.textPrimary }}>
+                              {user.name}
+                            </p>
+                            <p className="text-xs truncate" style={{ color: theme.textMuted }}>
+                              {user.email}
+                            </p>
+                          </div>
+                        </div>
                       </TableCell>
-                      <TableCell style={{ color: theme.textSecondary }}>
-                        {user.email}
+
+                      {/* Phone */}
+                      <TableCell>
+                        <span className="text-sm" style={{ color: user.phone ? theme.textSecondary : theme.textMuted }}>
+                          {user.phone || '—'}
+                        </span>
                       </TableCell>
+
+                      {/* Role */}
                       <TableCell>
                         <Badge
                           variant="outline"
@@ -293,12 +331,82 @@ const UsersPage = () => {
                           {user.role}
                         </Badge>
                       </TableCell>
-                      <TableCell style={{ color: theme.textSecondary }}>
-                        {new Date(user.date_joined).toLocaleDateString()}
+
+                      {/* Organization */}
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <Building2 className="size-3.5 shrink-0" style={{ color: theme.textMuted }} />
+                          <span className="text-sm" style={{ color: theme.textSecondary }}>
+                            {user.organization_name || '—'}
+                          </span>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-right" style={{ color: theme.textSecondary }}>
-                        {user.jobs_count}
+
+                      {/* Created By */}
+                      <TableCell>
+                        <span className="text-sm" style={{ color: user.created_by_name ? theme.textSecondary : theme.textMuted }}>
+                          {user.created_by_name || '—'}
+                        </span>
                       </TableCell>
+
+                      {/* Jobs Count */}
+                      <TableCell className="text-center">
+                        <span
+                          className="inline-flex items-center justify-center min-w-[28px] h-6 rounded-full text-xs font-semibold px-2"
+                          style={{
+                            background: user.jobs_count > 0 ? theme.accentSoft : theme.surfaceMuted,
+                            color: user.jobs_count > 0 ? theme.accent : theme.textMuted,
+                          }}
+                        >
+                          {user.jobs_count}
+                        </span>
+                      </TableCell>
+
+                      {/* Recruiters Count */}
+                      <TableCell className="text-center">
+                        <span
+                          className="inline-flex items-center justify-center min-w-[28px] h-6 rounded-full text-xs font-semibold px-2"
+                          style={{
+                            background: user.recruiters_count > 0 ? theme.chart2 + '15' : theme.surfaceMuted,
+                            color: user.recruiters_count > 0 ? theme.chart2 : theme.textMuted,
+                          }}
+                        >
+                          {user.recruiters_count}
+                        </span>
+                      </TableCell>
+
+                      {/* Date Joined */}
+                      <TableCell>
+                        <span className="text-sm" style={{ color: theme.textSecondary }}>
+                          {new Date(user.date_joined).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                      </TableCell>
+
+                      {/* Status */}
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span
+                            className="size-2 rounded-full shrink-0"
+                            style={{
+                              background: user.is_active ? theme.success : theme.destructive,
+                            }}
+                          />
+                          <span
+                            className="text-xs font-medium"
+                            style={{
+                              color: user.is_active ? theme.success : theme.destructive,
+                            }}
+                          >
+                            {user.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      {/* Actions */}
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(user)} className="size-8">
                           <Pencil className="size-4" style={{ color: theme.textSecondary }} />

@@ -12,6 +12,7 @@ import { setCredentials } from '@/redux/slices/authSlice';
 import type { LoginResponse, LoginErrorResponse } from '@/types/auth.types';
 import { toast } from 'sonner';
 import { useGoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+import RecruitOSLogo from '@/assets/RecruitOSLogo.png';
 
 const CustomGoogleLoginButton = ({ onAuthCode, theme }: { onAuthCode: (code: string) => void, theme: any }) => {
   const login = useGoogleLogin({
@@ -102,7 +103,6 @@ const LoginPage = () => {
       body: { email, password },
       auth: false,
       setLoading,
-      showSuccessMessage: true,
       getResponse: (data: unknown) => {
         const res = data as LoginResponse;
         dispatch(
@@ -139,7 +139,6 @@ const LoginPage = () => {
       body: { code },
       auth: false,
       setLoading,
-      showSuccessMessage: true,
       getResponse: (data: unknown) => {
         const res = data as LoginResponse;
         dispatch(
@@ -184,17 +183,15 @@ const LoginPage = () => {
           {/* ── Left: Flipping Board Showcase ─────────────────────────────────────── */}
           <div className="hidden lg:flex flex-1 flex-col justify-center gap-10">
             {/* Brand Header */}
-            <div className="flex items-center gap-3">
-              <div
-                className="size-10 rounded-xl flex items-center justify-center"
+            <div className="flex items-center ">
+              <img
+                src={RecruitOSLogo}
+                alt="RecruitOS Logo"
+                className="size-20 rounded-xl object-contain drop-shadow-lg"
                 style={{
-                  backgroundColor: theme.accent,
-                  color: theme.accentForeground,
-                  boxShadow: `0 10px 25px -5px ${hexToRgba(theme.accent, 0.35)}`,
+                  filter: `drop-shadow(0 10px 25px ${hexToRgba(theme.accent, 0.35)})`,
                 }}
-              >
-                <Zap className="size-5" />
-              </div>
+              />
               <div className=''>
                 <h1 className="font-bold text-lg tracking-wider" style={{ color: theme.textPrimary }}>
                   RECRUIT-OS
@@ -210,10 +207,10 @@ const LoginPage = () => {
              
 
               <div className="w-full transform scale-95 hover:scale-100 transition-transform duration-500 ease-out">
-                <TextFlippingBoard
+                {/* <TextFlippingBoard
                   text={FEATURE_TEXTS[textIndex]}
                   duration={FLIP_DURATION_S}
-                />
+                /> */}
               </div>
 
               <div className="space-y-3 max-w-md pl-1">
@@ -275,12 +272,11 @@ const LoginPage = () => {
             <div className="w-full max-w-md space-y-6">
               {/* Mobile Logo Header */}
               <div className="flex lg:hidden items-center justify-center gap-2 mb-6">
-                <div
-                  className="size-9 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: theme.accent, color: theme.accentForeground }}
-                >
-                  <Zap className="size-5" />
-                </div>
+                <img
+                  src={RecruitOSLogo}
+                  alt="RecruitOS Logo"
+                  className="size-9 rounded-lg object-contain"
+                />
                 <span className="font-bold text-xl tracking-wider" style={{ color: theme.textPrimary }}>
                   RECRUIT-OS
                 </span>
@@ -308,7 +304,11 @@ const LoginPage = () => {
                         style={{ backgroundColor: theme.surfaceMuted, border: `1px solid ${hexToRgba(theme.border, 0.5)}` }}
                       >
                         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `linear-gradient(to top right, ${theme.accent}, transparent)` }} />
-                        <Zap className="size-7 relative z-10" style={{ color: theme.accent }} />
+                        <img
+                          src={RecruitOSLogo}
+                          alt="RecruitOS Logo"
+                          className="size-12 relative z-10 object-contain"
+                        />
                       </div>
                     </div>
                     <div>

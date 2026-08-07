@@ -29,6 +29,8 @@ export const candidateActions = {
 export const positionActions = {
   FETCH_JOBS: "FETCH_JOBS",
   FETCH_JOB_DETAIL: "FETCH_JOB_DETAIL",
+  FETCH_JOB_PIPELINE: "FETCH_JOB_PIPELINE",
+  UPDATE_APPLICATION_STATUS: "UPDATE_APPLICATION_STATUS",
   ADD_JOB: "ADD_JOB",
   UPDATE_JOB: "UPDATE_JOB",
 } as const;

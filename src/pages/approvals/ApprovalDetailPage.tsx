@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { theme } from '@/config/theme';
 import { 
   ArrowLeft, ExternalLink, Calendar, Mail, 
-  FileText, IndianRupee, Clock, User, Eye, Pencil, Save, X, Loader2, Send
+  FileText, IndianRupee, Clock, User, Eye, Pencil, Save, X, Loader2, Send, BarChart3
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { ReviewActionModal } from './components/ReviewActionModal';
@@ -131,14 +131,43 @@ const ApprovalDetailPage = () => {
       auth: true,
       body: { application_ids: Array.from(selectedApps) },
       setLoading: (val: boolean) => setSendingToClient(val),
-      getResponse: () => {
-        toast.success('Trackers successfully sent to the client!');
+      getResponse: (res: any) => {
+        if (res?.errors && res.errors.length > 0) {
+          toast.error(
+            <div className="flex flex-col gap-1">
+              <span className="font-semibold">{res.message || 'Partial Success'}</span>
+              <ul className="list-disc pl-4 text-sm opacity-90">
+                {res.errors.map((err: string, i: number) => (
+                  <li key={i}>{err}</li>
+                ))}
+              </ul>
+            </div>,
+            { duration: 6000 }
+          );
+        } else {
+          toast.success(res?.message || 'Trackers successfully sent to the client!');
+        }
         setSelectedApps(new Set());
         setSendClientModalOpen(false);
       },
       getError: (err: any) => {
         console.error("Failed to send trackers:", err);
-        toast.error('Failed to send trackers to the client');
+        const errorData = err?.response?.data;
+        if (errorData?.errors && Array.isArray(errorData.errors)) {
+          toast.error(
+            <div className="flex flex-col gap-1">
+              <span className="font-semibold">{errorData.message || 'Failed to send'}</span>
+              <ul className="list-disc pl-4 text-sm opacity-90">
+                {errorData.errors.map((errMsg: string, i: number) => (
+                  <li key={i}>{errMsg}</li>
+                ))}
+              </ul>
+            </div>,
+            { duration: 6000 }
+          );
+        } else {
+          toast.error(errorData?.message || errorData?.detail || errorData?.error || 'Failed to send trackers to the client');
+        }
       }
     });
   };
@@ -197,6 +226,15 @@ const ApprovalDetailPage = () => {
       getError: (err: any) => {
         console.error("Tracker preview failed:", err);
         setTrackerOpen(prev => ({ ...prev, [appId]: false }));
+        
+        const status = err?.response?.status;
+        const errMsg = err?.response?.data?.error || err?.response?.data?.detail || err?.response?.data?.message || 'Failed to load tracker preview';
+        
+        if (status === 404 || errMsg.toLowerCase().includes('not found')) {
+          toast.warning(errMsg);
+        } else {
+          toast.error(errMsg);
+        }
       },
     });
   };
@@ -351,17 +389,29 @@ const ApprovalDetailPage = () => {
           </div>
         </div>
 
-        {selectedApps.size > 0 && (
-          <Button 
-            onClick={() => setSendClientModalOpen(true)}
-            disabled={sendingToClient}
+        <div className="flex items-center gap-2">
+          <Button
+            // variant="outline"
             className="gap-2"
-            style={{ background: theme.accent }}
+            onClick={() => navigate(`/positions/${jobId}/pipeline`)}
+            // style={{ borderColor: theme.accent + '50', color: theme.accent }}
           >
-            {sendingToClient ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-            Send {selectedApps.size} to Client
+            <BarChart3 className="size-4" />
+            Check Status
           </Button>
-        )}
+
+          {selectedApps.size > 0 && (
+            <Button 
+              onClick={() => setSendClientModalOpen(true)}
+              disabled={sendingToClient}
+              className="gap-2"
+              style={{ background: theme.accent }}
+            >
+              {sendingToClient ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+              Send {selectedApps.size} to Client
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
@@ -682,6 +732,7 @@ const ApprovalDetailPage = () => {
               {/* Action Bar (Manager Only) */}
               {!isRecruiter && app.manager_review_status?.toLowerCase() === 'pending' && (
                 <div className="flex items-center justify-end gap-3 p-4 border-t" style={{ borderColor: theme.border, background: theme.surfaceMuted }}>
+                  Profile :- 
                   <Button variant="outline" size="sm" onClick={() => handleActionClick(app.id, 'rejected')} style={{ borderColor: theme.destructive + '50', color: theme.destructive }}>
                     Reject
                   </Button>
