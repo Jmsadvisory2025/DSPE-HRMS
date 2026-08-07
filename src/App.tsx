@@ -9,7 +9,7 @@ function App() {
   return (
     <AuthProvider>
       <RouterProvider router={router} />
-      <Toaster position="top-right" />
+      <Toaster position="top-right" richColors />
     </AuthProvider>
   );
 }

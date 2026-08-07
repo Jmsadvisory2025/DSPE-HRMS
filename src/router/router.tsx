@@ -1,5 +1,7 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import LoginPage from "../pages/auth/LoginPage";
+import LandingPage from "@/pages/public/LandingPage";
+import PrivacyPolicyPage from "@/pages/public/PrivacyPolicyPage";
 import DashboardLayout from "../components/layout/DashboardLayout";
 import DashboardPage from "../pages/dashboard/DashboardPage";
 import CandidatesPage from "@/pages/candidates/CandidatesPage";
@@ -11,6 +13,7 @@ import NewPositionPage from "@/pages/positions/NewPositionPage";
 import JobsPage from "@/pages/positions/JobsPage";
 import JobDetailPage from "@/pages/positions/JobDetailPage";
 import EditPositionPage from "@/pages/positions/EditPositionPage";
+import JobPipelinePage from "@/pages/positions/JobPipelinePage";
 import ApprovalsPage from "@/pages/approvals/ApprovalsPage";
 import ApprovalDetailPage from "@/pages/approvals/ApprovalDetailPage";
 import UsersPage from "@/pages/users/UsersPage";
@@ -22,19 +25,19 @@ import EditCandidatePage from "@/pages/candidates/EditCandidatePage";
 import SetPinPage from "@/pages/auth/SetPinPage";
 import TrackersPage from "@/pages/trackers/TrackersPage";
 
-const RootRedirect = () => {
-  return <Navigate to="/login" replace />;
-};
-
 export const router = createBrowserRouter([
   /* ── Public routes ─────────────────────────────────────────── */
   {
     path: "/",
-    element: <RootRedirect />,
+    element: <LandingPage />,
   },
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    path: "/privacy-policy",
+    element: <PrivacyPolicyPage />,
   },
   {
     path:"/set-pin",
@@ -95,6 +98,10 @@ export const router = createBrowserRouter([
       {
         path: "/positions/:jobId/edit",
         element: <EditPositionPage />,
+      },
+      {
+        path: "/positions/:jobId/pipeline",
+        element: <JobPipelinePage />,
       },
       {
         path: "/trackers",

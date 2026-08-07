@@ -8,9 +8,11 @@ export interface User {
   avatar: string | null;
   date_joined: string;
   role: string;
+  organization_name: string;
   jobs_count: number;
   recruiters_count: number;
-  created_by: string;
+  created_by_name: string | null;
+  is_active: boolean;
 }
 
 export interface AddUserPayload {

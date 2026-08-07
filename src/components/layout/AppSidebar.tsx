@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { theme } from "@/config/theme";
 import { useAuth, type UserRole } from "@/context/AuthContext";
+import RecruitOSLogo from "@/assets/RecruitOSLogo.png";
 
 /* ── Constants ────────────────────────────────────────────────── */
 export const SIDEBAR_COLLAPSED_W = 68;
@@ -135,12 +136,11 @@ const AppSidebar = ({
     >
       {/* ── Brand ─────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-4 h-16 shrink-0">
-        <div
-          className="flex size-9 shrink-0 items-center justify-center rounded-lg"
-          style={{ background: theme.accent }}
-        >
-          <Zap className="size-5" style={{ color: theme.accentForeground }} />
-        </div>
+        <img
+          src={RecruitOSLogo}
+          alt="RecruitOS Logo"
+          className="size-9 shrink-0 rounded-lg object-contain"
+        />
         <div
           className="overflow-hidden whitespace-nowrap"
           style={{
