@@ -8,15 +8,38 @@
   <meta name="description"
     content="RECRUIT-OS is a recruitment and applicant tracking platform that helps organizations manage the complete hiring lifecycle." />
   <title>RECRUIT-OS</title>
-  <script type="module" crossorigin src="/assets/index-BHTm8m1f.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-CJBOoFhK.css">
+  <script type="module" src="/src/main.tsx"></script>
 </head>
 
 <body>
+  <style>
+    .prerender-hero {
+      font-family: system-ui, -apple-system, sans-serif;
+      text-align: center;
+      padding: 100px 20px;
+      background: #09090b;
+      color: #fafafa;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .prerender-hero h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      margin-bottom: 20px;
+      line-height: 1.1;
+    }
+    .prerender-hero p {
+      font-size: 1.125rem;
+      max-width: 600px;
+      margin: 0 auto;
+      color: #a1a1aa;
+      line-height: 1.6;
+    }
+  </style>
   <div id="root">
-    <div style="position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap;">
-      <h1>RECRUIT-OS</h1>
-      <p>RECRUIT-OS is a recruitment and applicant tracking platform that helps organizations manage the complete hiring lifecycle — from sourcing and screening to interviews and signed offers.</p>
+    <div class="prerender-hero">
+      <h1>The Recruitment Platform<br>Built for Modern Hiring</h1>
+      <p>RECRUIT-OS helps organizations manage the complete recruitment lifecycle — from sourcing and screening to interviews and signed offers — all in one powerful platform.</p>
     </div>
   </div>
 </body>

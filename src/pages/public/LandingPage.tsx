@@ -97,7 +97,7 @@ const LandingPage = () => {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Brand */}
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <img src={RecruitOSLogo} alt="RecruitOS" className="size-9 object-contain" />
+            <img src={RecruitOSLogo} alt="RECRUIT-OS" className="size-9 object-contain" />
             <div>
               <span className="font-bold text-base tracking-wider" style={{ color: theme.textPrimary }}>
                 RECRUIT-OS
@@ -181,7 +181,7 @@ const LandingPage = () => {
             className="text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
             style={{ color: theme.textSecondary }}
           >
-            RecruitOS helps organizations manage the complete recruitment lifecycle — from sourcing
+            RECRUIT-OS helps organizations manage the complete recruitment lifecycle — from sourcing
             and screening to interviews and signed offers — all in one powerful platform.
           </p>
 
@@ -314,7 +314,7 @@ const LandingPage = () => {
               Built for Recruitment Teams
             </h2>
             <p className="text-base sm:text-lg max-w-2xl mx-auto mb-10 leading-relaxed" style={{ color: theme.textSecondary }}>
-              RecruitOS is designed for HR teams, recruiters, hiring managers, and organizations of all sizes
+              RECRUIT-OS is designed for HR teams, recruiters, hiring managers, and organizations of all sizes
               who want to streamline their hiring process and make smarter, data-driven recruitment decisions.
             </p>
 
@@ -364,7 +364,7 @@ const LandingPage = () => {
                 Ready to Transform Your Hiring?
               </h2>
               <p className="text-base sm:text-lg max-w-xl mx-auto mb-8 text-white/80">
-                Join teams that have streamlined their recruitment process with RecruitOS.
+                Join teams that have streamlined their recruitment process with RECRUIT-OS.
               </p>
               <button
                 onClick={() => navigate('/login')}
@@ -398,7 +398,7 @@ const LandingPage = () => {
             {/* Company info */}
             <div className="md:col-span-1">
               <div className="flex items-center gap-2.5 mb-4">
-                <img src={RecruitOSLogo} alt="RecruitOS" className="size-8 object-contain" />
+                <img src={RecruitOSLogo} alt="RECRUIT-OS" className="size-8 object-contain" />
                 <span className="font-bold text-base tracking-wider" style={{ color: theme.textPrimary }}>
                   RECRUIT-OS
                 </span>

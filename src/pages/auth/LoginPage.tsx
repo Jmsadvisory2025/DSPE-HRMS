@@ -186,7 +186,7 @@ const LoginPage = () => {
             <div className="flex items-center ">
               <img
                 src={RecruitOSLogo}
-                alt="RecruitOS Logo"
+                alt="RECRUIT-OS Logo"
                 className="size-20 rounded-xl object-contain drop-shadow-lg"
                 style={{
                   filter: `drop-shadow(0 10px 25px ${hexToRgba(theme.accent, 0.35)})`,
@@ -274,7 +274,7 @@ const LoginPage = () => {
               <div className="flex lg:hidden items-center justify-center gap-2 mb-6">
                 <img
                   src={RecruitOSLogo}
-                  alt="RecruitOS Logo"
+                  alt="RECRUIT-OS Logo"
                   className="size-9 rounded-lg object-contain"
                 />
                 <span className="font-bold text-xl tracking-wider" style={{ color: theme.textPrimary }}>
@@ -306,7 +306,7 @@ const LoginPage = () => {
                         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `linear-gradient(to top right, ${theme.accent}, transparent)` }} />
                         <img
                           src={RecruitOSLogo}
-                          alt="RecruitOS Logo"
+                          alt="RECRUIT-OS Logo"
                           className="size-12 relative z-10 object-contain"
                         />
                       </div>
@@ -316,7 +316,7 @@ const LoginPage = () => {
                         Welcome back
                       </CardTitle>
                       <CardDescription className="text-sm px-6 font-medium" style={{ color: theme.textMuted }}>
-                        Sign in with your Google Workspace account to access RecruitOS.
+                        Sign in with your Google Workspace account to access RECRUIT-OS.
                       </CardDescription>
                     </div>
                   </CardHeader>
@@ -405,7 +405,7 @@ const LoginPage = () => {
                 <Lock className="size-4" style={{ color: theme.accent }} />
               </div>
               <h3 className="text-lg font-bold" style={{ color: theme.textPrimary }}>Demo Access</h3>
-              <p className="text-xs mt-1" style={{ color: theme.textMuted }}>Enter your demo credentials to explore RecruitOS</p>
+              <p className="text-xs mt-1" style={{ color: theme.textMuted }}>Enter your demo credentials to explore RECRUIT-OS</p>
             </div>
 
             {/* Form */}
