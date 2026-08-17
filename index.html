@@ -13,33 +13,168 @@
 
 <body>
   <style>
-    .prerender-hero {
-      font-family: system-ui, -apple-system, sans-serif;
-      text-align: center;
-      padding: 100px 20px;
-      background: #09090b;
-      color: #fafafa;
-      min-height: 100vh;
-      box-sizing: border-box;
-    }
-    .prerender-hero h1 {
-      font-size: 3rem;
-      font-weight: 800;
-      margin-bottom: 20px;
-      line-height: 1.1;
-    }
-    .prerender-hero p {
-      font-size: 1.125rem;
-      max-width: 600px;
-      margin: 0 auto;
-      color: #a1a1aa;
-      line-height: 1.6;
+    .prerender{font-family:system-ui,-apple-system,sans-serif;background:#EDF4FF;color:#1A1D26;margin:0;padding:0;min-height:100vh}
+    .prerender-nav{padding:16px 24px;border-bottom:1px solid rgba(216,221,230,0.6);display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.85);backdrop-filter:blur(12px)}
+    .prerender-nav span{font-weight:700;font-size:16px;letter-spacing:0.05em;color:#1A1D26}
+    .prerender-nav small{font-size:10px;color:#7C8497}
+    .prerender-nav .signin{margin-left:auto;display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:9999px;font-size:14px;font-weight:600;background:#3B82C4;color:#FFFFFF;text-decoration:none;box-shadow:0 4px 14px rgba(59,130,196,0.3)}
+    .prerender-hero{text-align:center;padding:80px 20px 60px}
+    .prerender-hero .badge{display:inline-block;padding:6px 14px;border-radius:9999px;font-size:12px;font-weight:600;background:#E0EEF9;color:#3B82C4;margin-bottom:24px;border:1px solid rgba(59,130,196,0.2)}
+    .prerender-hero h1{font-size:clamp(2rem,5vw,3.5rem);font-weight:800;margin:0 0 20px;line-height:1.1;color:#1A1D26}
+    .prerender-hero h1 em{font-style:normal;background:linear-gradient(135deg,#3B82C4,#7367D6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .prerender-hero p{font-size:1.125rem;max-width:600px;margin:0 auto 32px;color:#4B5263;line-height:1.6}
+    .prerender-hero .cta-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px;margin-bottom:40px}
+    .prerender-hero .cta-primary{display:inline-flex;align-items:center;gap:10px;padding:14px 32px;border-radius:9999px;font-size:16px;font-weight:600;background:#3B82C4;color:#FFFFFF;text-decoration:none;box-shadow:0 8px 25px rgba(59,130,196,0.35)}
+    .prerender-hero .cta-secondary{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;border-radius:9999px;font-size:16px;font-weight:500;background:#FFFFFF;color:#4B5263;text-decoration:none;border:1px solid #D8DDE6}
+    .prerender-hero .trust-badges{display:flex;align-items:center;justify-content:center;gap:24px}
+    .prerender-hero .trust-badges .badge-item{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:#7C8497}
+    .prerender-hero .trust-badges .badge-icon{width:28px;height:28px;border-radius:50%;background:#E0EEF9;display:flex;align-items:center;justify-content:center;font-size:14px;color:#3B82C4}
+    .prerender-section{max-width:900px;margin:0 auto;padding:40px 20px;text-align:center}
+    .prerender-section h2{font-size:1.75rem;font-weight:800;margin:0 0 12px;color:#1A1D26}
+    .prerender-section p{color:#4B5263;line-height:1.6;margin:0 0 28px}
+    .prerender-section .section-badge{display:inline-block;padding:4px 12px;border-radius:9999px;font-size:12px;font-weight:600;background:#E0EEF9;color:#3B82C4;margin-bottom:16px}
+    .prerender-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;text-align:left}
+    .prerender-card{background:rgba(255,255,255,0.8);border:1px solid rgba(216,221,230,0.6);border-radius:16px;padding:24px;backdrop-filter:blur(12px)}
+    .prerender-card h3{font-size:1rem;font-weight:700;margin:0 0 8px;color:#1A1D26}
+    .prerender-card p{font-size:0.875rem;color:#4B5263;margin:0;line-height:1.5}
+    .prerender-who{max-width:700px;margin:0 auto;padding:48px 24px;text-align:center;background:rgba(255,255,255,0.9);border:1px solid rgba(216,221,230,0.5);border-radius:24px;backdrop-filter:blur(20px);box-shadow:0 20px 50px rgba(26,29,38,0.06)}
+    .prerender-who .bullet-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:360px;margin:0 auto;text-align:left}
+    .prerender-who .bullet-item{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:500;color:#1A1D26}
+    .prerender-who .bullet-item .check{color:#3AAF76;font-size:16px}
+    .prerender-cta{max-width:700px;margin:40px auto;padding:48px 24px;text-align:center;background:linear-gradient(135deg,#3B82C4,#7367D6);border-radius:24px;overflow:hidden;position:relative}
+    .prerender-cta h2{font-size:1.75rem;font-weight:800;margin:0 0 12px;color:#fff}
+    .prerender-cta p{color:rgba(255,255,255,0.8);margin:0 0 20px;line-height:1.6}
+    .prerender-cta .cta-btn{display:inline-block;padding:14px 32px;background:#fff;color:#3B82C4;border-radius:9999px;font-weight:600;text-decoration:none;font-size:16px}
+    .prerender-cta .oauth-note{font-size:0.85rem;color:rgba(255,255,255,0.6);margin-top:16px;line-height:1.5}
+    .prerender-footer{border-top:1px solid #D8DDE6;padding:40px 24px;max-width:900px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr;gap:32px;font-size:0.875rem;color:#4B5263;background:rgba(255,255,255,0.5)}
+    .prerender-footer h4{color:#1A1D26;font-size:0.875rem;margin:0 0 12px}
+    .prerender-footer a{color:#4B5263;text-decoration:none}
+    .prerender-footer a:hover{text-decoration:underline}
+    .prerender-footer .copyright{margin-top:12px;font-size:12px;color:#7C8497}
+    @media(max-width:640px){
+      .prerender-footer{grid-template-columns:1fr}
+      .prerender-who .bullet-grid{grid-template-columns:1fr}
+      .prerender-hero .cta-row{flex-direction:column}
     }
   </style>
   <div id="root">
-    <div class="prerender-hero">
-      <h1>The Recruitment Platform<br>Built for Modern Hiring</h1>
-      <p>RECRUIT-OS helps organizations manage the complete recruitment lifecycle — from sourcing and screening to interviews and signed offers — all in one powerful platform.</p>
+    <div class="prerender">
+      <!-- Navbar -->
+      <nav class="prerender-nav">
+        <span>RECRUIT-OS</span>
+        <small>by JMS Tech</small>
+        <a href="/login" class="signin">Sign In →</a>
+      </nav>
+
+      <!-- Hero Section -->
+      <section class="prerender-hero">
+        <div class="badge">✦ AI-Powered Recruitment Platform</div>
+        <h1>The Recruitment Platform<br><em>Built for Modern Hiring</em></h1>
+        <p>RECRUIT-OS helps organizations manage the complete recruitment lifecycle — from sourcing and screening to interviews and signed offers — all in one powerful platform.</p>
+
+        <!-- CTA Buttons -->
+        <div class="cta-row">
+          <a href="/login" class="cta-primary">Get Started →</a>
+          <a href="#features" class="cta-secondary">Explore Features ›</a>
+        </div>
+
+        <!-- Trust Badges -->
+        <div class="trust-badges">
+          <div class="badge-item">
+            <div class="badge-icon">✦</div>
+            <span>AI-Powered</span>
+          </div>
+          <div class="badge-item">
+            <div class="badge-icon">🛡</div>
+            <span>Enterprise Security</span>
+          </div>
+          <div class="badge-item">
+            <div class="badge-icon">⚡</div>
+            <span>Lightning Fast</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features Section -->
+      <section class="prerender-section" id="features">
+        <div class="section-badge">⚡ Features</div>
+        <h2>Everything You Need to Hire Smarter</h2>
+        <p>A comprehensive suite of tools designed to streamline every step of your recruitment process.</p>
+        <div class="prerender-grid">
+          <div class="prerender-card">
+            <h3>Candidate Management</h3>
+            <p>Organize and track candidates throughout the entire hiring pipeline with a centralized database.</p>
+          </div>
+          <div class="prerender-card">
+            <h3>Resume Parsing</h3>
+            <p>Automatically extract and structure candidate information from resumes with AI-powered parsing.</p>
+          </div>
+          <div class="prerender-card">
+            <h3>AI Candidate Matching</h3>
+            <p>Leverage intelligent algorithms to match the right candidates to the right positions in seconds.</p>
+          </div>
+          <div class="prerender-card">
+            <h3>Job Posting</h3>
+            <p>Create, manage, and distribute job postings across your organization with streamlined workflows.</p>
+          </div>
+          <div class="prerender-card">
+            <h3>Interview Scheduling</h3>
+            <p>Coordinate interviews effortlessly with integrated calendar management and automated reminders.</p>
+          </div>
+          <div class="prerender-card">
+            <h3>Recruitment Analytics</h3>
+            <p>Gain actionable insights with real-time dashboards, hiring metrics, and performance reports.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Who It's For Section -->
+      <section class="prerender-section" id="who">
+        <div class="prerender-who">
+          <div class="section-badge">👥 Who It's For</div>
+          <h2>Built for Recruitment Teams</h2>
+          <p>RECRUIT-OS is designed for HR teams, recruiters, hiring managers, and organizations of all sizes who want to streamline their hiring process and make smarter, data-driven recruitment decisions.</p>
+          <div class="bullet-grid">
+            <div class="bullet-item"><span class="check">✓</span> HR Departments</div>
+            <div class="bullet-item"><span class="check">✓</span> Recruitment Agencies</div>
+            <div class="bullet-item"><span class="check">✓</span> Hiring Managers</div>
+            <div class="bullet-item"><span class="check">✓</span> Talent Acquisition Teams</div>
+            <div class="bullet-item"><span class="check">✓</span> Staffing Firms</div>
+            <div class="bullet-item"><span class="check">✓</span> Enterprise Organizations</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA Banner with OAuth scope explanation -->
+      <section class="prerender-section">
+        <div class="prerender-cta">
+          <h2>Ready to Transform Your Hiring?</h2>
+          <p>Join teams that have streamlined their recruitment process with RECRUIT-OS.</p>
+          <a href="/login" class="cta-btn">Sign In with Google Workspace →</a>
+          <p class="oauth-note">🔒 Sign in with your Google Workspace account to securely access RECRUIT-OS and manage your organization's hiring pipeline. We only access your basic profile (name &amp; email) for authentication — no other Google data is read or stored.</p>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="prerender-footer" id="company">
+        <div>
+          <h4>RECRUIT-OS</h4>
+          <p>AI-powered recruitment management platform developed by JMS Tech. Streamlining how organizations source, screen, and hire top talent.</p>
+          <p class="copyright">© 2026 JMS Tech. All rights reserved.</p>
+        </div>
+        <div>
+          <h4>Quick Links</h4>
+          <p><a href="#features">Features</a></p>
+          <p><a href="#who">Who It's For</a></p>
+          <p><a href="/login">Sign In</a></p>
+        </div>
+        <div>
+          <h4>Legal &amp; Contact</h4>
+          <p><a href="/privacy-policy">Privacy Policy</a></p>
+          <p><a href="mailto:recruitosjmstech@gmail.com">recruitosjmstech@gmail.com</a></p>
+          <p><a href="https://recruitos.jmstech.co">recruitos.jmstech.co</a></p>
+        </div>
+      </footer>
     </div>
   </div>
 </body>

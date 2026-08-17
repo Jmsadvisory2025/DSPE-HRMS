@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, MapPin, Building2, User, FileText, 
   Mail, Phone, Globe, Link as LinkIcon, 
-  Briefcase, GraduationCap, Calendar, Download, Loader2, CheckCircle2, Edit
+  Briefcase, GraduationCap, Calendar, Download, Loader2, CheckCircle2, Edit,
+  Clock, Video, MapPinned, UserCheck, CalendarClock, History, Award, MonitorPlay, Building, Shield
 } from 'lucide-react';
 import { theme } from '@/config/theme';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -129,14 +130,21 @@ const CandidateDetailPage = () => {
               Edit Profile
             </Button>
             {candidate.resume && (
-              <Button 
-                variant="outline"
-                className="flex-1 md:flex-none gap-2 rounded-full border-white/10 hover:bg-white/5"
-                onClick={() => window.open(candidate.resume, '_blank')}
-              >
-                <FileText className="size-4" />
-                View Resume
-              </Button>
+              <div className="flex flex-col items-start gap-1">
+                <Button 
+                  variant="outline"
+                  className="flex-1 md:flex-none gap-2 rounded-full border-white/10 hover:bg-white/5"
+                  onClick={() => window.open(candidate.resume, '_blank')}
+                >
+                  <FileText className="size-4" />
+                  View Resume
+                </Button>
+                {candidate.resume_file_name && (
+                  <span className="text-[11px] font-medium pl-1 max-w-[200px] truncate" style={{ color: theme.textMuted }}>
+                    {candidate.resume_file_name}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -323,7 +331,7 @@ const CandidateDetailPage = () => {
            {candidate.applications && candidate.applications.length > 0 && (
              <motion.div variants={itemVariants} className="space-y-6">
                <h3 className="text-xl font-bold border-b pb-2 flex items-center gap-2" style={{ color: theme.textPrimary, borderColor: theme.border }}>
-                 <FileText className="size-5" style={{ color: theme.accent }}/> Applications
+                 <FileText className="size-5" style={{ color: theme.accent }}/> Applications ({candidate.applications.length})
                </h3>
                <div className="grid gap-4">
                  {candidate.applications.map((app: any, index: number) => (
@@ -331,14 +339,93 @@ const CandidateDetailPage = () => {
                      <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-3">
                        <div>
                          <h4 className="font-bold text-lg" style={{ color: theme.textPrimary }}>{app.job_title}</h4>
-                         <p className="text-xs font-medium mt-1" style={{ color: theme.textMuted }}>
-                           Submitted by {app.submitted_by?.name || "System"} on {new Date(app.created_at).toLocaleDateString()}
-                         </p>
+                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                           <p className="text-xs font-medium" style={{ color: theme.textMuted }}>
+                             Submitted by {app.submitted_by?.name || "System"} on {new Date(app.created_at).toLocaleDateString()}
+                           </p>
+                           {app.share_date && (
+                             <p className="text-xs font-medium flex items-center gap-1" style={{ color: theme.textMuted }}>
+                               <CalendarClock className="size-3" /> Shared: {new Date(app.share_date).toLocaleDateString()}
+                             </p>
+                           )}
+                         </div>
                        </div>
-                       <Badge variant="outline" className="px-3 py-1 font-semibold uppercase tracking-wider text-[10px]" style={{ background: theme.surfaceMuted, borderColor: theme.border, color: theme.textSecondary }}>
-                         {app.status?.replace(/-/g, ' ')}
-                       </Badge>
+                       <div className="flex items-center gap-2">
+                         {app.stage_name && (
+                           <Badge className="px-2.5 py-1 font-semibold text-[10px]" style={{ background: theme.accent + '15', color: theme.accent, border: `1px solid ${theme.accent}30` }}>
+                             {app.stage_name}
+                           </Badge>
+                         )}
+                         <Badge variant="outline" className="px-3 py-1 font-semibold uppercase tracking-wider text-[10px]" style={{ background: theme.surfaceMuted, borderColor: theme.border, color: theme.textSecondary }}>
+                           {app.status?.replace(/-/g, ' ')}
+                         </Badge>
+                       </div>
                      </div>
+
+                     {/* Interview Schedule */}
+                     {app.interview_schedule && (
+                       <div className="mt-4 p-4 rounded-xl border" style={{ background: theme.accentSoft, borderColor: theme.accent + '30' }}>
+                         <div className="flex items-center gap-2 mb-3">
+                           <CalendarClock className="size-4" style={{ color: theme.accent }} />
+                           <span className="text-sm font-bold" style={{ color: theme.accent }}>Interview Scheduled</span>
+                         </div>
+                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                           <div>
+                             <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>Date</p>
+                             <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>
+                               {new Date(app.interview_schedule.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                             </p>
+                           </div>
+                           <div>
+                             <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>Time</p>
+                             <p className="text-sm font-bold flex items-center gap-1" style={{ color: theme.textPrimary }}>
+                               <Clock className="size-3" />
+                               {app.interview_schedule.time?.slice(0, 5)}
+                             </p>
+                           </div>
+                           <div>
+                             <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>Mode</p>
+                             <p className="text-sm font-bold flex items-center gap-1 capitalize" style={{ color: theme.textPrimary }}>
+                               {app.interview_schedule.mode === 'online' ? <Video className="size-3" /> : <Building2 className="size-3" />}
+                               {app.interview_schedule.mode}
+                             </p>
+                           </div>
+                           <div>
+                             <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>Interviewer</p>
+                             <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>{app.interview_schedule.interviewer_name}</p>
+                           </div>
+                         </div>
+                         <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: theme.accent + '20' }}>
+                           {app.interview_schedule.manager_approval_status && (
+                             <Badge className="text-[10px] font-semibold px-2.5 py-1" style={{
+                               background: app.interview_schedule.manager_approval_status === 'approved' ? theme.successSoft : theme.warningSoft,
+                               color: app.interview_schedule.manager_approval_status === 'approved' ? theme.success : theme.warning,
+                               border: `1px solid ${app.interview_schedule.manager_approval_status === 'approved' ? theme.success : theme.warning}30`
+                             }}>
+                               <Shield className="size-3 mr-1" />
+                               {app.interview_schedule.manager_approval_status}
+                             </Badge>
+                           )}
+                           {app.interview_schedule.attendance_status && (
+                             <Badge className="text-[10px] font-semibold px-2.5 py-1" style={{
+                               background: app.interview_schedule.attendance_status === 'attended' ? theme.successSoft : app.interview_schedule.attendance_status === 'absent' ? theme.destructiveSoft : theme.surfaceMuted,
+                               color: app.interview_schedule.attendance_status === 'attended' ? theme.success : app.interview_schedule.attendance_status === 'absent' ? theme.destructive : theme.textMuted,
+                               border: `1px solid ${app.interview_schedule.attendance_status === 'attended' ? theme.success : app.interview_schedule.attendance_status === 'absent' ? theme.destructive : theme.border}30`
+                             }}>
+                               <UserCheck className="size-3 mr-1" />
+                               {app.interview_schedule.attendance_status}
+                             </Badge>
+                           )}
+                         </div>
+                         {app.interview_schedule.notes && (
+                           <p className="text-xs mt-2 italic" style={{ color: theme.textMuted }}>
+                             Note: {app.interview_schedule.notes}
+                           </p>
+                         )}
+                       </div>
+                     )}
+
+                     {/* Manager Review */}
                      {app.manager_review_status && app.manager_review_status !== 'pending' && (
                        <div className="mt-4 p-3 rounded-lg border" style={{ background: theme.surfaceMuted, borderColor: theme.border }}>
                          <div className="flex items-center gap-2 mb-1.5">
@@ -352,6 +439,94 @@ const CandidateDetailPage = () => {
                          )}
                        </div>
                      )}
+
+                     {/* Application-specific CV */}
+                     {app.candidate_cv && (
+                       <div className="mt-3 flex items-center">
+                         <a
+                           href={app.candidate_cv}
+                           target="_blank"
+                           rel="noreferrer"
+                           className="text-xs font-medium flex items-center gap-1.5 hover:underline"
+                           style={{ color: theme.accent }}
+                         >
+                           <Download className="size-3" /> Download Application CV
+                         </a>
+                       </div>
+                     )}
+                   </div>
+                 ))}
+               </div>
+             </motion.div>
+           )}
+
+           {/* Past Jobs */}
+           {candidate.past_jobs && candidate.past_jobs.length > 0 && (
+             <motion.div variants={itemVariants} className="space-y-6">
+               <h3 className="text-xl font-bold border-b pb-2 flex items-center gap-2" style={{ color: theme.textPrimary, borderColor: theme.border }}>
+                 <History className="size-5" style={{ color: theme.accent }}/> Past Jobs ({candidate.past_jobs.length})
+               </h3>
+               <div className="grid gap-4">
+                 {candidate.past_jobs.map((job: any, index: number) => (
+                   <div key={job.application_id || index} className="p-5 rounded-xl border shadow-sm" style={{ background: theme.surface, borderColor: theme.border }}>
+                     <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-3">
+                       <div>
+                         <h4 className="font-bold text-base" style={{ color: theme.textPrimary }}>{job.job_title}</h4>
+                         <div className="flex flex-wrap items-center gap-2 mt-1">
+                           <span className="text-xs font-medium flex items-center gap-1" style={{ color: theme.textSecondary }}>
+                             <Building className="size-3" /> {job.company_name}
+                           </span>
+                           {job.job_location && (
+                             <span className="text-xs font-medium flex items-center gap-1" style={{ color: theme.textMuted }}>
+                               <MapPin className="size-3" /> {job.job_location}
+                             </span>
+                           )}
+                           {job.job_mode && (
+                             <Badge className="text-[10px] font-medium px-2 py-0.5 capitalize" style={{ background: theme.surfaceHover, color: theme.textSecondary, border: `1px solid ${theme.border}` }}>
+                               {job.job_mode === 'online' ? <Video className="size-3 mr-1" /> : <MonitorPlay className="size-3 mr-1" />}
+                               {job.job_mode}
+                             </Badge>
+                           )}
+                         </div>
+                       </div>
+                       <Badge variant="outline" className="px-3 py-1 font-semibold uppercase tracking-wider text-[10px]" style={{ background: theme.surfaceMuted, borderColor: theme.border, color: theme.textSecondary }}>
+                         {job.status?.replace(/-/g, ' ')}
+                       </Badge>
+                     </div>
+                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 pt-3 border-t" style={{ borderColor: theme.border }}>
+                       {job.recruiter_name && (
+                         <div>
+                           <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>Recruiter</p>
+                           <p className="text-xs font-bold" style={{ color: theme.textPrimary }}>{job.recruiter_name}</p>
+                         </div>
+                       )}
+                       {job.manager_name && (
+                         <div>
+                           <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>Manager</p>
+                           <p className="text-xs font-bold" style={{ color: theme.textPrimary }}>{job.manager_name}</p>
+                         </div>
+                       )}
+                       {job.stage && (
+                         <div>
+                           <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>Stage</p>
+                           <p className="text-xs font-bold" style={{ color: theme.textPrimary }}>{job.stage}</p>
+                         </div>
+                       )}
+                       {job.manager_review_status && (
+                         <div>
+                           <p className="text-[10px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>Review</p>
+                           <p className="text-xs font-bold capitalize" style={{ color: job.manager_review_status === 'accepted' ? theme.success : job.manager_review_status === 'rejected' ? theme.destructive : theme.warning }}>
+                             {job.manager_review_status}
+                           </p>
+                         </div>
+                       )}
+                     </div>
+                     {job.manager_review_notes && (
+                       <p className="text-xs italic mt-2" style={{ color: theme.textMuted }}>"{job.manager_review_notes}"</p>
+                     )}
+                     <p className="text-[10px] mt-3" style={{ color: theme.textMuted }}>
+                       Applied: {new Date(job.created_at).toLocaleDateString()} · Updated: {new Date(job.updated_at).toLocaleDateString()}
+                     </p>
                    </div>
                  ))}
                </div>
@@ -433,19 +608,53 @@ const CandidateDetailPage = () => {
                 </span>
               </div>
             </div>
+
+            {candidate.updated_at && (
+              <div>
+                <p className="text-xs font-semibold mb-1" style={{ color: theme.textMuted }}>Last Updated</p>
+                <div className="flex items-center gap-2">
+                  <History className="size-4" style={{ color: theme.textSecondary }} />
+                  <span className="text-sm font-medium" style={{ color: theme.textPrimary }}>
+                    {new Date(candidate.updated_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </span>
+                </div>
+              </div>
+            )}
             
             {candidate.uploaded_by && (
               <div className="pt-3 border-t" style={{ borderColor: theme.border }}>
                 <p className="text-xs font-semibold mb-2" style={{ color: theme.textMuted }}>Sourced By</p>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs" style={{ background: theme.accent + '20', color: theme.accent }}>
-                    {candidate.uploaded_by.name?.charAt(0) || <User className="size-4"/>}
-                  </div>
+                  {candidate.uploaded_by.avatar ? (
+                    <img 
+                      src={candidate.uploaded_by.avatar} 
+                      alt={candidate.uploaded_by.name} 
+                      className="w-9 h-9 rounded-full object-cover border-2"
+                      style={{ borderColor: theme.accent + '40' }}
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs" style={{ background: theme.accent + '20', color: theme.accent }}>
+                      {candidate.uploaded_by.name?.charAt(0) || <User className="size-4"/>}
+                    </div>
+                  )}
                   <div>
                     <p className="text-sm font-medium" style={{ color: theme.textPrimary }}>{candidate.uploaded_by.name}</p>
                     <p className="text-xs" style={{ color: theme.textMuted }}>{candidate.uploaded_by.email}</p>
+                    {candidate.uploaded_by.role && (
+                      <Badge className="mt-1 text-[10px] font-semibold px-2 py-0.5 capitalize" style={{ background: theme.accent + '15', color: theme.accent, border: `1px solid ${theme.accent}30` }}>
+                        {candidate.uploaded_by.role}
+                      </Badge>
+                    )}
                   </div>
                 </div>
+                {candidate.uploaded_by.organization && (
+                  <div className="flex items-center gap-2 mt-3 pt-2 border-t" style={{ borderColor: theme.border }}>
+                    <Building className="size-3.5" style={{ color: theme.textMuted }} />
+                    <span className="text-xs font-medium" style={{ color: theme.textSecondary }}>
+                      {candidate.uploaded_by.organization.name}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </motion.div>

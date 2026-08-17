@@ -15,6 +15,7 @@ import {
   Globe,
   CheckCircle2,
   ChevronRight,
+  Lock,
 } from 'lucide-react';
 
 /* ── Helpers ──────────────────────────────────────────────────── */
@@ -377,6 +378,12 @@ const LandingPage = () => {
                 Sign In with Google Workspace
                 <ArrowRight className="size-5" />
               </button>
+              <p className="flex items-center justify-center gap-1.5 text-sm mt-4 text-white/60">
+                <Lock className="size-3.5" />
+                Sign in with your Google Workspace account to securely access RECRUIT-OS and manage
+                your organization's hiring pipeline. We only access your basic profile (name &amp; email)
+                for authentication — no other Google data is read or stored.
+              </p>
             </div>
           </div>
         </div>

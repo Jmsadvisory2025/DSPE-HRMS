@@ -82,6 +82,7 @@ const EditCandidatePage = () => {
 
   const [formData, setFormData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string[]>>({});
 
   // Fetch candidate details if not already in state
   useEffect(() => {
@@ -134,23 +135,92 @@ const EditCandidatePage = () => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
   };
 
+  // Human-readable labels for field names used in toast messages
+  const fieldLabels: Record<string, string> = {
+    current_ctc: 'Current CTC',
+    expected_ctc: 'Expected CTC',
+    offer_in_hand: 'Offer in Hand',
+    candidate_name: 'Candidate Name',
+    email: 'Email',
+    contact: 'Contact',
+    experience: 'Experience',
+    notice_period: 'Notice Period',
+    hike: 'Hike',
+    dob: 'Date of Birth',
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData) return;
+
+    // Clear previous errors
+    setFormErrors({});
+
+    // Build sanitized payload — convert numeric fields properly
+    const sanitizedData = { ...formData };
+
+    // Convert CTC and offer_in_hand to numbers or null
+    const numericFields = ['current_ctc', 'expected_ctc', 'offer_in_hand'];
+    for (const field of numericFields) {
+      const val = sanitizedData[field];
+      if (val === '' || val === null || val === undefined) {
+        sanitizedData[field] = null;
+      } else {
+        const num = parseFloat(val);
+        if (isNaN(num)) {
+          // Show error immediately without hitting API
+          const label = fieldLabels[field] || field;
+          toast.error(`${label} must be a valid number.`);
+          setFormErrors(prev => ({ ...prev, [field]: ['A valid number is required.'] }));
+          return;
+        }
+        sanitizedData[field] = num;
+      }
+    }
 
     dispatch({
       type: candidateActions.UPDATE_CANDIDATE,
       method: "PATCH",
       endPoint: `/api/v1/candidates/${candidateId}/`,
-      body: formData,
+      body: sanitizedData,
       auth: true,
-      showSuccessMessage: true,
       setLoading: (val: boolean) => setIsSubmitting(val),
       getResponse: () => {
         toast.success("Candidate updated successfully.");
         navigate(`/candidates/${candidateId}`);
+      },
+      getError: (err: any) => {
+        setIsSubmitting(false);
+        const errorData = err?.response?.data;
+        if (errorData?.field_errors) {
+          setFormErrors(errorData.field_errors);
+          // Show each field error as a toast so the user can easily see what went wrong
+          const fieldErrors = errorData.field_errors as Record<string, string[]>;
+          Object.entries(fieldErrors).forEach(([field, messages]) => {
+            const label = fieldLabels[field] || field.replace(/_/g, ' ');
+            messages.forEach((msg: string) => {
+              toast.error(`${label}: ${msg}`);
+            });
+          });
+        } else {
+          toast.error(errorData?.detail || errorData?.error || err.message || 'Failed to update candidate.');
+        }
       }
     });
+  };
+
+  // Inline field error component
+  const FieldError = ({ name }: { name: string }) => {
+    if (!formErrors[name] || formErrors[name].length === 0) return null;
+    return (
+      <div className="mt-1">
+        {formErrors[name].map((msg, i) => (
+          <p key={i} className="text-xs font-medium" style={{ color: theme.destructive }}>
+            {msg}
+          </p>
+        ))}
+      </div>
+    );
   };
 
   if (candidateDetailLoading || !formData) {
@@ -301,18 +371,28 @@ const EditCandidatePage = () => {
             <div className="space-y-2">
               <Label style={{ color: theme.textPrimary }}>Current CTC</Label>
               <Input 
+                type="number"
+                step="any"
+                min="0"
+                placeholder="e.g. 1200000"
                 value={formData.current_ctc} 
                 onChange={e => handleInputChange('current_ctc', e.target.value)}
-                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+                style={{ background: theme.surface, borderColor: formErrors.current_ctc ? theme.destructive : theme.border, color: theme.textPrimary }}
               />
+              <FieldError name="current_ctc" />
             </div>
             <div className="space-y-2">
               <Label style={{ color: theme.textPrimary }}>Expected CTC</Label>
               <Input 
+                type="number"
+                step="any"
+                min="0"
+                placeholder="e.g. 1500000"
                 value={formData.expected_ctc} 
                 onChange={e => handleInputChange('expected_ctc', e.target.value)}
-                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+                style={{ background: theme.surface, borderColor: formErrors.expected_ctc ? theme.destructive : theme.border, color: theme.textPrimary }}
               />
+              <FieldError name="expected_ctc" />
             </div>
             <div className="space-y-2">
               <Label style={{ color: theme.textPrimary }}>Hike</Label>
@@ -333,10 +413,15 @@ const EditCandidatePage = () => {
             <div className="space-y-2">
               <Label style={{ color: theme.textPrimary }}>Offer in Hand</Label>
               <Input 
+                type="number"
+                step="any"
+                min="0"
+                placeholder="e.g. 1800000"
                 value={formData.offer_in_hand} 
                 onChange={e => handleInputChange('offer_in_hand', e.target.value)}
-                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+                style={{ background: theme.surface, borderColor: formErrors.offer_in_hand ? theme.destructive : theme.border, color: theme.textPrimary }}
               />
+              <FieldError name="offer_in_hand" />
             </div>
             <div className="space-y-2">
               <Label style={{ color: theme.textPrimary }}>Preferred Location</Label>
