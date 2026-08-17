@@ -646,14 +646,16 @@ const ApprovalDetailPage = () => {
                       </Button>
                       <TooltipProvider>
                         <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleFetchPastJobs(app.id, app.candidate_name)}
-                            >
-                              <FileClock className="size-4" />
-                            </Button>
+                          <TooltipTrigger 
+                            render={
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleFetchPastJobs(app.id, app.candidate_name)}
+                              />
+                            }
+                          >
+                            <FileClock className="size-4" />
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>Check this candidate's past applications</p>
