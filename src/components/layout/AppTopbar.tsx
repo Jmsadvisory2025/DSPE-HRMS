@@ -5,10 +5,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LogOut, Settings, User as UserIcon } from 'lucide-react';
 import { theme } from '@/config/theme';
 import { useAuth } from '@/context/AuthContext';
+import NotificationBell from './NotificationBell';
+import { useNotificationSocket } from '@/hooks/useNotificationSocket';
 
 const AppTopbar = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // Initialize WebSocket connection for real-time notifications
+  useNotificationSocket();
 
   return (
     <header
@@ -22,8 +27,10 @@ const AppTopbar = () => {
         <AppBreadcrumb />
       </div>
 
-      {/* Profile Section */}
-      <div className="ml-auto flex items-center gap-4 shrink-0 relative group">
+      {/* Notification Bell + Profile Section */}
+      <div className="ml-auto flex items-center gap-2 shrink-0">
+        <NotificationBell />
+        <div className="relative group">
         <button
           className="flex items-center gap-3 outline-none text-left rounded-full py-1 pl-1 pr-3 transition-colors"
           style={{ border: `1px solid transparent` }}
@@ -115,6 +122,7 @@ const AppTopbar = () => {
               Log out
             </button>
           </div>
+        </div>
         </div>
       </div>
     </header>

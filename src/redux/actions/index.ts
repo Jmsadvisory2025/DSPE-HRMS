@@ -47,6 +47,7 @@ export const approvalActions = {
   PREVIEW_TRACKER: "PREVIEW_TRACKER",
   UPDATE_TRACKER_PREVIEW: "UPDATE_TRACKER_PREVIEW",
   REVIEW_APPLICATION: "REVIEW_APPLICATION",
+  UPDATE_APPLICATION: "UPDATE_APPLICATION",
   SEND_TO_CLIENT: "SEND_TO_CLIENT",
 } as const;
 
@@ -61,6 +62,13 @@ export const userActions = {
 export const auditActions = {
   FETCH_AUDIT_LOGS: "FETCH_AUDIT_LOGS",
   FETCH_AUDIT_LOG_DETAIL: "FETCH_AUDIT_LOG_DETAIL",
+} as const;
+
+/* ── Notifications ────────────────────────────────────────────── */
+export const notificationActions = {
+  FETCH_NOTIFICATIONS: "FETCH_NOTIFICATIONS",
+  MARK_NOTIFICATIONS_READ: "MARK_NOTIFICATIONS_READ",
+  MARK_ALL_NOTIFICATIONS_READ: "MARK_ALL_NOTIFICATIONS_READ",
 } as const;
 
 /* ── Dashboard ────────────────────────────────────────────────── */

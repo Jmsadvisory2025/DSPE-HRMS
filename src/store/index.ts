@@ -35,6 +35,7 @@ import approvalReducer from "@/redux/slices/approvalSlice";
 import userReducer from "@/redux/slices/userSlice";
 import auditReducer from "@/redux/slices/auditSlice";
 import dashboardReducer from "@/redux/slices/dashboardSlice";
+import notificationReducer from "@/redux/slices/notificationSlice";
 
 /* ── Saga Middleware ──────────────────────────────────────────── */
 const sagaMiddleware = createSagaMiddleware();
@@ -56,6 +57,7 @@ const rootReducer = combineReducers({
   users: userReducer,
   audit: auditReducer,
   dashboard: dashboardReducer,
+  notifications: notificationReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

@@ -116,11 +116,6 @@ const EditCandidatePage = () => {
         current_ctc: candidateDetail.current_ctc || '',
         expected_ctc: candidateDetail.expected_ctc || '',
         notice_period: candidateDetail.notice_period || '',
-        hike: candidateDetail.hike || '',
-        preferred_location: candidateDetail.preferred_location || '',
-        offer_in_hand: candidateDetail.offer_in_hand || '',
-        reason_for_change: candidateDetail.reason_for_change || '',
-        dob: candidateDetail.dob || '',
         education: candidateDetail.education || [],
         skills: candidateDetail.skills || [],
         certifications: candidateDetail.certifications || [],
@@ -139,14 +134,11 @@ const EditCandidatePage = () => {
   const fieldLabels: Record<string, string> = {
     current_ctc: 'Current CTC',
     expected_ctc: 'Expected CTC',
-    offer_in_hand: 'Offer in Hand',
     candidate_name: 'Candidate Name',
     email: 'Email',
     contact: 'Contact',
     experience: 'Experience',
     notice_period: 'Notice Period',
-    hike: 'Hike',
-    dob: 'Date of Birth',
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -160,7 +152,7 @@ const EditCandidatePage = () => {
     const sanitizedData = { ...formData };
 
     // Convert CTC and offer_in_hand to numbers or null
-    const numericFields = ['current_ctc', 'expected_ctc', 'offer_in_hand'];
+    const numericFields = ['current_ctc', 'expected_ctc'];
     for (const field of numericFields) {
       const val = sanitizedData[field];
       if (val === '' || val === null || val === undefined) {
@@ -395,56 +387,10 @@ const EditCandidatePage = () => {
               <FieldError name="expected_ctc" />
             </div>
             <div className="space-y-2">
-              <Label style={{ color: theme.textPrimary }}>Hike</Label>
-              <Input 
-                value={formData.hike} 
-                onChange={e => handleInputChange('hike', e.target.value)}
-                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
-              />
-            </div>
-            <div className="space-y-2">
               <Label style={{ color: theme.textPrimary }}>Notice Period</Label>
               <Input 
                 value={formData.notice_period} 
                 onChange={e => handleInputChange('notice_period', e.target.value)}
-                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label style={{ color: theme.textPrimary }}>Offer in Hand</Label>
-              <Input 
-                type="number"
-                step="any"
-                min="0"
-                placeholder="e.g. 1800000"
-                value={formData.offer_in_hand} 
-                onChange={e => handleInputChange('offer_in_hand', e.target.value)}
-                style={{ background: theme.surface, borderColor: formErrors.offer_in_hand ? theme.destructive : theme.border, color: theme.textPrimary }}
-              />
-              <FieldError name="offer_in_hand" />
-            </div>
-            <div className="space-y-2">
-              <Label style={{ color: theme.textPrimary }}>Preferred Location</Label>
-              <Input 
-                value={formData.preferred_location} 
-                onChange={e => handleInputChange('preferred_location', e.target.value)}
-                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label style={{ color: theme.textPrimary }}>Reason for Change</Label>
-              <Input 
-                value={formData.reason_for_change} 
-                onChange={e => handleInputChange('reason_for_change', e.target.value)}
-                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label style={{ color: theme.textPrimary }}>Date of Birth</Label>
-              <Input 
-                type="date"
-                value={formData.dob} 
-                onChange={e => handleInputChange('dob', e.target.value)}
                 style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
               />
             </div>
