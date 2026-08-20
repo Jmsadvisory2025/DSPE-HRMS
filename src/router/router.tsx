@@ -24,6 +24,7 @@ import CandidateDetailPage from "@/pages/candidates/CandidateDetailPage";
 import EditCandidatePage from "@/pages/candidates/EditCandidatePage";
 import SetPinPage from "@/pages/auth/SetPinPage";
 import TrackersPage from "@/pages/trackers/TrackersPage";
+import NotificationsPage from "@/pages/notifications/NotificationsPage";
 
 export const router = createBrowserRouter([
   /* ── Public routes ─────────────────────────────────────────── */
@@ -130,6 +131,10 @@ export const router = createBrowserRouter([
       {
         path: "/settings",
         element: <SettingsPage />,
+      },
+      {
+        path: "/notifications",
+        element: <NotificationsPage />,
       },
       {
         path: "/messages",

@@ -30,6 +30,7 @@ const ROUTE_LABELS: Record<string, string> = {
   approvals: 'Approval Queue',
   users: 'Users',
   'audit-logs': 'Audit Logs',
+  notifications: 'Notifications',
 };
 
 const AppBreadcrumb = () => {

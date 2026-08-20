@@ -34,13 +34,14 @@ export const useNotificationSocket = () => {
       wsRef.current = null;
     }
 
-    const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL;
+    const wsBaseUrl = (import.meta.env.VITE_WS_BASE_URL || '').replace(/\/+$/, '');
     if (!wsBaseUrl) {
       console.warn('[WS] VITE_WS_BASE_URL is not configured.');
       return;
     }
 
     const url = `${wsBaseUrl}/ws/notifications/?token=${accessToken}`;
+    console.log('[WS] Connecting to:', url.replace(/token=.*/, 'token=***'));
     const ws = new WebSocket(url);
 
     ws.onopen = () => {
@@ -52,8 +53,12 @@ export const useNotificationSocket = () => {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        console.log('[WS] Message received:', data);
 
-        if (data.type === 'notification.created' && data.notification) {
+        // Backend sends "event" key (per websocket_integration_guide.md)
+        const eventType = data.event || data.type;
+
+        if (eventType === 'notification.created' && data.notification) {
           const notification = data.notification;
 
           // Add to Redux store
