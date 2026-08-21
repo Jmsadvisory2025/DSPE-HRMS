@@ -146,7 +146,7 @@ export const useNotificationSocket = () => {
     if (!activePopup) return null;
 
     let IconComponent = Info;
-    let iconColor = theme.accent;
+    let iconColor: string = theme.accent;
 
     switch (activePopup.type) {
       case 'success':

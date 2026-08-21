@@ -36,11 +36,9 @@ const ActionMenu = ({ onOpenSubmit, onEdit }: { onOpenSubmit: () => void, onEdit
   return (
     <div onClick={(e) => e.stopPropagation()}>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-muted/50 data-[state=open]:bg-muted">
-            <span className="sr-only">Open menu</span>
-            <MoreHorizontal className="h-4 w-4" style={{ color: theme.textSecondary }} />
-          </Button>
+        <DropdownMenuTrigger className="h-8 w-8 p-0 hover:bg-muted/50 data-[state=open]:bg-muted flex items-center justify-center rounded-md transition-colors bg-transparent border-0 cursor-pointer">
+          <span className="sr-only">Open menu</span>
+          <MoreHorizontal className="h-4 w-4" style={{ color: theme.textSecondary }} />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[180px] p-1" style={{ borderColor: theme.border, background: theme.surface }}>
           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }} onSelect={(e) => { e.stopPropagation(); onEdit(); }} className="cursor-pointer gap-2 py-2">
