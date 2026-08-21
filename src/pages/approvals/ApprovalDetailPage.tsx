@@ -27,8 +27,14 @@ import {
   CheckCircle2,
   MessageSquare,
   Briefcase,
+  Phone,
+  MapPin,
+  GraduationCap,
+  CalendarClock,
+  Video,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { setApplicationDetail } from "@/redux/slices/approvalSlice";
 import { ReviewActionModal } from "./components/ReviewActionModal";
 import { approvalActions } from "@/redux/actions";
 import { toast } from "sonner";
@@ -51,6 +57,13 @@ interface Application {
   id: string;
   candidate_name: string;
   candidate_email: string;
+  candidate_contact: string;
+  candidate_experience: string;
+  candidate_current_profile: string;
+  candidate_current_company: string;
+  candidate_current_location: string;
+  candidate_skills: string[];
+  candidate_education: string[];
   job_title: string;
   status: string;
   stage_name: string | null;
@@ -59,6 +72,7 @@ interface Application {
   current_ctc: string;
   expected_ctc: string;
   notice_period: string;
+  synopsis: string;
   submitted_by: {
     id: string;
     name: string;
@@ -66,6 +80,7 @@ interface Application {
     role: string;
   };
   candidate_cv: string;
+  interview_schedule: any | null;
   manager_review_status: string;
   manager_review_notes: string;
 }
@@ -134,6 +149,11 @@ const ApprovalDetailPage = () => {
   const [pastJobsData, setPastJobsData] = useState<any[]>([]);
   const [pastJobsCandidateName, setPastJobsCandidateName] = useState<string>("");
 
+  // Synopsis Editing State
+  const [editingSynopsisId, setEditingSynopsisId] = useState<string | null>(null);
+  const [synopsisValue, setSynopsisValue] = useState("");
+  const [synopsisSaving, setSynopsisSaving] = useState(false);
+
   const handleFetchPastJobs = (appId: string, candidateName: string) => {
     setPastJobsModalOpen(true);
     setPastJobsLoading(true);
@@ -169,8 +189,10 @@ const ApprovalDetailPage = () => {
         getResponse: (res: GroupedResponse[]) => {
           if (res && res.length > 0) {
             setData(res[0]);
+            dispatch(setApplicationDetail(res[0]));
           } else {
             setData(null);
+            dispatch(setApplicationDetail(null));
           }
         },
         getError: (err: any) => console.error("Error fetching approvals:", err),
@@ -282,6 +304,34 @@ const ApprovalDetailPage = () => {
         fetchDetail();
       },
       getError: (err: any) => console.error("Action failed:", err),
+    });
+  };
+
+  const handleEditSynopsis = (appId: string, currentSynopsis: string) => {
+    setEditingSynopsisId(appId);
+    setSynopsisValue(currentSynopsis || "");
+  };
+
+  const handleSaveSynopsis = (appId: string) => {
+    setSynopsisSaving(true);
+    dispatch({
+      type: approvalActions.UPDATE_APPLICATION,
+      method: "PATCH",
+      endPoint: `/api/v1/candidates/applications/${appId}/`,
+      auth: true,
+      body: { synopsis: synopsisValue },
+      setLoading: (val: boolean) => {
+        if (!val) setSynopsisSaving(false);
+      },
+      getResponse: () => {
+        toast.success("Synopsis updated successfully");
+        setEditingSynopsisId(null);
+        fetchDetail();
+      },
+      getError: (err: any) => {
+        console.error("Failed to update synopsis:", err);
+        toast.error("Failed to update synopsis");
+      },
     });
   };
 
@@ -592,15 +642,31 @@ const ApprovalDetailPage = () => {
                     </div>
 
                     <div
-                      className="flex items-center gap-2 text-sm"
+                      className="flex items-center flex-wrap gap-x-3 gap-y-1 text-sm mt-1"
                       style={{ color: theme.textSecondary }}
                     >
-                      <Mail className="size-3.5" />
-                      <span>{app.candidate_email}</span>
+                      <span className="flex items-center gap-1.5"><Mail className="size-3.5" /> {app.candidate_email}</span>
+                      <span className="hidden sm:inline">•</span>
+                      <span className="flex items-center gap-1.5"><Phone className="size-3.5" /> {app.candidate_contact || "Not specified"}</span>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm mt-2" style={{ color: theme.textMuted }}>
+                      <div className="flex items-center gap-1.5">
+                        <Briefcase className="size-3.5" />
+                        <span>{app.candidate_experience || "Not specified"}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Building className="size-3.5" />
+                        <span className="truncate max-w-[150px]" title={app.candidate_current_company || ""}>{app.candidate_current_company || "Not specified"}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="size-3.5" />
+                        <span>{app.candidate_current_location || "Not specified"}</span>
+                      </div>
                     </div>
 
                     <div
-                      className="flex items-center gap-2 text-sm mt-2"
+                      className="flex items-center gap-2 text-sm mt-2 pt-2 border-t"
                       style={{ color: theme.textMuted }}
                     >
                       <User className="size-3.5" />
@@ -729,6 +795,119 @@ const ApprovalDetailPage = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Extra Details & Synopsis */}
+                <div className="mt-4 space-y-4">
+                  <div className="p-3 rounded-md bg-muted/40 text-sm border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-semibold text-muted-foreground mr-2">Synopsis:</span>
+                      {editingSynopsisId !== app.id && (
+                        <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => handleEditSynopsis(app.id, app.synopsis)}>
+                          <Pencil className="size-3 mr-1" /> Edit
+                        </Button>
+                      )}
+                    </div>
+                    {editingSynopsisId === app.id ? (
+                      <div className="mt-2 space-y-2">
+                        <textarea
+                          className="w-full min-h-[80px] p-2 rounded-md border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+                          value={synopsisValue}
+                          onChange={(e) => setSynopsisValue(e.target.value)}
+                          placeholder="Enter synopsis..."
+                        />
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setEditingSynopsisId(null)} disabled={synopsisSaving}>Cancel</Button>
+                          <Button size="sm" className="h-7 text-xs" onClick={() => handleSaveSynopsis(app.id)} disabled={synopsisSaving} style={{ background: theme.accent }}>
+                            {synopsisSaving ? <Loader2 className="size-3 animate-spin mr-1" /> : <Save className="size-3 mr-1" />} Save
+                          </Button>
+                        </div>
+                      </div>
+                    ) : app.synopsis ? (
+                      <div className="whitespace-pre-wrap mt-1">{app.synopsis}</div>
+                    ) : (
+                      <div className="text-muted-foreground italic mt-1">Not specified</div>
+                    )}
+                  </div>
+
+                  {/* Skills & Education */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 rounded-lg border bg-muted/10">
+                    {app.candidate_skills && app.candidate_skills.length > 0 ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          <CheckCircle2 className="size-3.5" /> Skills
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {app.candidate_skills.map((skill, idx) => (
+                            <Badge key={idx} variant="secondary" className="font-normal text-xs bg-background shadow-sm border">{skill}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          <CheckCircle2 className="size-3.5" /> Skills
+                        </div>
+                        <p className="text-sm text-muted-foreground">No skills specified</p>
+                      </div>
+                    )}
+                    
+                    {app.candidate_education && app.candidate_education.length > 0 ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          <GraduationCap className="size-3.5" /> Education
+                        </div>
+                        <div className="text-sm space-y-2">
+                          {app.candidate_education.map((edu, idx) => (
+                            <div key={idx} className="flex items-start gap-2">
+                              <span className="mt-1.5 size-1.5 rounded-full bg-muted-foreground/50 shrink-0"></span>
+                              <span className="text-muted-foreground leading-snug">{edu}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          <GraduationCap className="size-3.5" /> Education
+                        </div>
+                        <p className="text-sm text-muted-foreground">No education details specified</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Interview Schedule */}
+                {app.interview_schedule && (
+                  <div className="mt-4 p-4 rounded-xl border bg-primary/5 border-primary/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <CalendarClock className="size-4 text-primary" />
+                      <span className="text-sm font-bold text-primary">Interview Scheduled</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div>
+                        <div className="text-xs font-medium text-muted-foreground mb-1">Date</div>
+                        <div className="text-sm font-medium">{new Date(app.interview_schedule.date).toLocaleDateString()}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium text-muted-foreground mb-1">Time</div>
+                        <div className="text-sm font-medium">{app.interview_schedule.time}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium text-muted-foreground mb-1">Mode</div>
+                        <div className="text-sm font-medium capitalize flex items-center gap-1.5">
+                          {app.interview_schedule.mode === 'online' ? <Video className="size-3.5" /> : <Building className="size-3.5" />}
+                          {app.interview_schedule.mode}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium text-muted-foreground mb-1">Interviewer</div>
+                        <div className="text-sm font-medium truncate max-w-[120px]" title={app.interview_schedule.interviewer_name || 'TBD'}>
+                          {app.interview_schedule.interviewer_name || 'TBD'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* ── Tracker Preview Panel ──────────────────────────────── */}
                 {trackerOpen[app.id] && (

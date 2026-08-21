@@ -24,30 +24,35 @@ import {
 } from 'lucide-react';
 import { theme } from '@/config/theme';
 import { SubmitCandidateModal } from './components/SubmitCandidateModal';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Edit, Send } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
-const ActionMenu = ({ onOpenSubmit }: { onOpenSubmit: () => void }) => {
-  const [open, setOpen] = useState(false);
-  
+const ActionMenu = ({ onOpenSubmit, onEdit }: { onOpenSubmit: () => void, onEdit: () => void }) => {
   return (
-    <div className="relative inline-block" onClick={(e) => { e.stopPropagation(); }}>
-       <button onClick={() => setOpen(!open)} className="p-1 rounded-md hover:bg-black/10 transition-colors">
-          <MoreHorizontal className="size-4 text-muted-foreground" />
-       </button>
-       {open && (
-         <>
-           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-           <div className="absolute right-0 top-full mt-1 w-40 rounded-md border bg-popover shadow-md z-50 py-1" style={{ borderColor: theme.border, background: theme.surface }}>
-             <button 
-               className="w-full text-left px-3 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground" 
-               style={{ color: theme.textPrimary }}
-               onClick={() => { setOpen(false); onOpenSubmit(); }}
-             >
-               Submit Candidate
-             </button>
-           </div>
-         </>
-       )}
+    <div onClick={(e) => e.stopPropagation()}>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-muted/50 data-[state=open]:bg-muted">
+            <span className="sr-only">Open menu</span>
+            <MoreHorizontal className="h-4 w-4" style={{ color: theme.textSecondary }} />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-[180px] p-1" style={{ borderColor: theme.border, background: theme.surface }}>
+          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }} onSelect={(e) => { e.stopPropagation(); onEdit(); }} className="cursor-pointer gap-2 py-2">
+            <Edit className="size-4" />
+            <span className="font-medium">Edit Candidate</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onOpenSubmit(); }} onSelect={(e) => { e.stopPropagation(); onOpenSubmit(); }} className="cursor-pointer gap-2 py-2">
+            <Send className="size-4" />
+            <span className="font-medium">Submit Candidate</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };
@@ -118,14 +123,14 @@ const CandidatesPage = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" className="gap-1.5">
+          {/* <Button variant="outline" size="sm" className="gap-1.5">
             <Upload className="size-3.5" />
             <span>Bulk Upload</span>
           </Button>
           <Button variant="outline" size="sm" className="gap-1.5">
             <Download className="size-3.5" />
             <span>Export</span>
-          </Button>
+          </Button> */}
           <Button size="sm" className="gap-1.5" onClick={() => navigate('/candidates/new')}>
             <Plus className="size-3.5" />
             <span>Add Candidate</span>
@@ -402,6 +407,7 @@ const CandidatesPage = () => {
                            setTargetCandidateId(candidate.id);
                            setSubmitModalOpen(true);
                         }} 
+                        onEdit={() => navigate(`/candidates/${candidate.id}/edit`)}
                      />
                   </TableCell>
                 </TableRow>

@@ -127,6 +127,8 @@ const TrackersPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingColumns, setEditingColumns] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [headerColor, setHeaderColor] = useState('#1e293b');
+  const [textColor, setTextColor] = useState('#ffffff');
 
   useEffect(() => {
     dispatch({
@@ -183,6 +185,8 @@ const TrackersPage = () => {
   const handleEditClick = () => {
     setIsEditing(true);
     setEditingColumns(selectedFormat ? [...selectedFormat.columns] : ['']);
+    setHeaderColor(selectedFormat?.header_color || '#1e293b');
+    setTextColor(selectedFormat?.text_color || '#ffffff');
   };
 
   const handleCancelEdit = () => {
@@ -216,8 +220,8 @@ const TrackersPage = () => {
         ? `/api/v1/clients/tracker-formats/${selectedFormat.id}/` 
         : `/api/v1/clients/tracker-formats/`,
       body: isUpdate 
-        ? { columns: validColumns } 
-        : { client: selectedClient, team_member_id: selectedTeamMember, columns: validColumns },
+        ? { columns: validColumns, header_color: headerColor, text_color: textColor } 
+        : { client: selectedClient, team_member_id: selectedTeamMember, columns: validColumns, header_color: headerColor, text_color: textColor },
       auth: true,
       showSuccessMessage: true,
       setLoading: (val: boolean) => setIsSaving(val),
@@ -355,6 +359,20 @@ const TrackersPage = () => {
                     }
                   </p>
                 </div>
+
+                <div className="pt-2 border-t mt-2">
+                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Theme Colors</p>
+                  <div className="flex gap-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded border shadow-sm" style={{ backgroundColor: selectedFormat?.header_color || '#1e293b' }}></div>
+                      <span className="text-xs font-medium uppercase">{selectedFormat?.header_color || '#1e293b'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded border shadow-sm" style={{ backgroundColor: selectedFormat?.text_color || '#ffffff' }}></div>
+                      <span className="text-xs font-medium uppercase">{selectedFormat?.text_color || '#ffffff'}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -441,6 +459,47 @@ const TrackersPage = () => {
                       <Plus className="h-4 w-4" />
                       Add Field
                     </button>
+                    
+                    <div className="mt-6 pt-4 border-t flex flex-wrap gap-6">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold uppercase text-muted-foreground">Header Color</label>
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="color" 
+                            value={headerColor} 
+                            onChange={e => setHeaderColor(e.target.value)} 
+                            className="w-10 h-10 rounded cursor-pointer p-0 border-0 bg-transparent shrink-0" 
+                          />
+                          <input 
+                            type="text"
+                            value={headerColor}
+                            onChange={e => setHeaderColor(e.target.value)}
+                            className="h-10 w-28 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring uppercase font-medium"
+                            placeholder="#000000"
+                            maxLength={7}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold uppercase text-muted-foreground">Text Color</label>
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="color" 
+                            value={textColor} 
+                            onChange={e => setTextColor(e.target.value)} 
+                            className="w-10 h-10 rounded cursor-pointer p-0 border-0 bg-transparent shrink-0" 
+                          />
+                          <input 
+                            type="text"
+                            value={textColor}
+                            onChange={e => setTextColor(e.target.value)}
+                            className="h-10 w-28 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring uppercase font-medium"
+                            placeholder="#000000"
+                            maxLength={7}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

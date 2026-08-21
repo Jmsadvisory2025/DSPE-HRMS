@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,13 +6,14 @@ import {
   ArrowLeft, MapPin, Building2, User, FileText, 
   Mail, Phone, Globe, Link as LinkIcon, 
   Briefcase, GraduationCap, Calendar, Download, Loader2, CheckCircle2, Edit,
-  Clock, Video, MapPinned, UserCheck, CalendarClock, History, Award, MonitorPlay, Building, Shield
+  Clock, Video, MapPinned, UserCheck, CalendarClock, History, Award, MonitorPlay, Building, Shield, Send
 } from 'lucide-react';
 import { theme } from '@/config/theme';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { candidateActions } from '@/redux/actions';
 import { setCandidateDetail, setCandidateDetailLoading, setError } from '@/redux/slices/candidateSlice';
 import { motion } from 'framer-motion';
+import { SubmitCandidateModal } from './components/SubmitCandidateModal';
 
 const CandidateDetailPage = () => {
   const { candidateId } = useParams();
@@ -22,6 +23,8 @@ const CandidateDetailPage = () => {
   const { candidateDetail: candidate, candidateDetailLoading: loading } = useAppSelector(
     (state) => state.candidates
   );
+
+  const [submitModalOpen, setSubmitModalOpen] = useState(false);
 
   useEffect(() => {
     if (candidateId) {
@@ -121,6 +124,14 @@ const CandidateDetailPage = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <Button 
+              className="flex-1 md:flex-none gap-2 rounded-full shadow-sm hover:shadow-md transition-all"
+              style={{ background: theme.accent, color: theme.accentForeground }}
+              onClick={() => setSubmitModalOpen(true)}
+            >
+              <Send className="size-4" />
+              Submit Candidate
+            </Button>
             <Button 
               variant="outline"
               className="flex-1 md:flex-none gap-2 rounded-full border-white/10 hover:bg-white/5"
@@ -243,28 +254,8 @@ const CandidateDetailPage = () => {
                 <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>{candidate.expected_ctc && candidate.expected_ctc !== "0.00" ? candidate.expected_ctc : "Not specified"}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.textMuted }}>Hike</p>
-                <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>{candidate.hike || "Not specified"}</p>
-              </div>
-              <div>
                 <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.textMuted }}>Notice Period</p>
                 <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>{candidate.notice_period || "Not specified"}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.textMuted }}>Offer in Hand</p>
-                <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>{candidate.offer_in_hand || "Not specified"}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.textMuted }}>Pref. Location</p>
-                <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>{candidate.preferred_location || "Not specified"}</p>
-              </div>
-              <div className="col-span-2 md:col-span-3">
-                <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.textMuted }}>Reason for Change</p>
-                <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>{candidate.reason_for_change || "Not specified"}</p>
-              </div>
-              <div className="col-span-2 md:col-span-3">
-                <p className="text-xs font-semibold mb-1 uppercase tracking-wider" style={{ color: theme.textMuted }}>Date of Birth</p>
-                <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>{candidate.dob ? new Date(candidate.dob).toLocaleDateString() : "Not specified"}</p>
               </div>
             </div>
           </motion.div>
@@ -660,6 +651,12 @@ const CandidateDetailPage = () => {
           </motion.div>
         </div>
       </div>
+
+      <SubmitCandidateModal 
+         isOpen={submitModalOpen} 
+         onClose={() => setSubmitModalOpen(false)} 
+         candidateId={candidateId || null} 
+      />
     </motion.div>
   );
 };
