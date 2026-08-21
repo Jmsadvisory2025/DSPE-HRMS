@@ -127,12 +127,15 @@ const NotificationBell = () => {
     // Navigate if link is present
     if (notification.link) {
       setOpen(false);
-      // If it's an internal link, use navigate; otherwise open external
-      if (notification.link.startsWith('/')) {
-        navigate(notification.link);
-      } else {
-        window.open(notification.link, '_blank');
-      }
+      navigate(notification.link);
+    }
+  };
+
+  const handleToggleOpen = () => {
+    setOpen(!open);
+    // Request native OS notification permission on direct user interaction (fixes browser blocking)
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(console.error);
     }
   };
 
@@ -141,7 +144,7 @@ const NotificationBell = () => {
       {/* Bell Button */}
       <button
         ref={bellRef}
-        onClick={() => setOpen(!open)}
+        onClick={handleToggleOpen}
         className="relative flex items-center justify-center size-10 rounded-full transition-all duration-200"
         style={{
           background: open ? theme.surface : 'transparent',
@@ -178,82 +181,54 @@ const NotificationBell = () => {
       {open && (
         <div
           ref={panelRef}
-          className="absolute right-0 top-full mt-2 w-[380px] rounded-xl shadow-xl border overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
-          style={{
-            background: theme.surface,
-            borderColor: theme.borderStrong,
-            zIndex: 100,
-          }}
+          className="absolute right-0 top-full mt-2 w-[400px] rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 bg-white/95 backdrop-blur-xl"
+          style={{ zIndex: 100 }}
         >
           {/* Header */}
-          <div
-            className="flex items-center justify-between px-4 py-3 border-b"
-            style={{ borderColor: theme.border, background: theme.surfaceMuted }}
-          >
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-white/50">
             <div className="flex items-center gap-2">
-              <h3
-                className="text-sm font-bold"
-                style={{ color: theme.textPrimary }}
-              >
+              <h3 className="text-base font-bold text-slate-800">
                 Notifications
               </h3>
               {/* WS Status Indicator */}
               <div className="flex items-center gap-1" title={wsConnected ? 'Live connection active' : 'Reconnecting...'}>
                 {wsConnected ? (
-                  <Wifi className="size-3" style={{ color: theme.success }} />
+                  <Wifi className="size-3 text-emerald-500" />
                 ) : (
-                  <WifiOff className="size-3" style={{ color: theme.textMuted }} />
+                  <WifiOff className="size-3 text-slate-400" />
                 )}
               </div>
             </div>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md transition-colors"
-                style={{ color: theme.accent }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = theme.accent + '12')
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = 'transparent')
-                }
+                className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
               >
-                <CheckCheck className="size-3" />
-                Mark all read
+                <CheckCheck className="size-4" />
+                Mark all as read
               </button>
             )}
+          </div>
+
+          <div className="px-5 py-2 bg-slate-50/80 border-b border-slate-100 text-xs font-semibold text-slate-500">
+            Today
           </div>
 
           {/* Notification List */}
           <div className="max-h-[400px] overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2
-                  className="size-6 animate-spin"
-                  style={{ color: theme.accent }}
-                />
+                <Loader2 className="size-6 animate-spin text-slate-400" />
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                <div
-                  className="size-14 rounded-full flex items-center justify-center mb-3"
-                  style={{ background: theme.surfaceMuted }}
-                >
-                  <Bell
-                    className="size-7 opacity-40"
-                    style={{ color: theme.textMuted }}
-                  />
+                <div className="size-14 rounded-full flex items-center justify-center mb-3 bg-slate-50 border border-slate-100">
+                  <Bell className="size-7 text-slate-300" />
                 </div>
-                <p
-                  className="text-sm font-medium"
-                  style={{ color: theme.textPrimary }}
-                >
+                <p className="text-sm font-medium text-slate-700">
                   No notifications yet
                 </p>
-                <p
-                  className="text-xs mt-1"
-                  style={{ color: theme.textMuted }}
-                >
+                <p className="text-xs mt-1 text-slate-500">
                   We'll notify you when something important happens.
                 </p>
               </div>
@@ -262,66 +237,38 @@ const NotificationBell = () => {
                 <button
                   key={notification.id}
                   onClick={() => handleNotificationClick(notification)}
-                  className="w-full text-left flex items-start gap-3 px-4 py-3 border-b transition-colors"
-                  style={{
-                    borderColor: theme.border + '50',
-                    background: notification.is_read
-                      ? 'transparent'
-                      : theme.accent + '06',
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = theme.surfaceHover)
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = notification.is_read
-                      ? 'transparent'
-                      : theme.accent + '06')
-                  }
+                  className={`w-full text-left flex items-start gap-4 px-5 py-4 border-b border-slate-100 transition-colors ${
+                    !notification.is_read ? 'bg-emerald-50/40 hover:bg-emerald-50' : 'bg-transparent hover:bg-slate-50'
+                  }`}
                 >
                   {/* Type Icon */}
-                  <div
-                    className="size-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-                    style={{ background: theme.surfaceMuted }}
-                  >
+                  <div className="size-10 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-white border border-slate-200 shadow-sm">
                     <TypeIcon type={notification.type} />
                   </div>
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <p
-                        className={`text-sm leading-tight ${!notification.is_read ? 'font-semibold' : 'font-medium'}`}
-                        style={{ color: theme.textPrimary }}
-                      >
-                        {notification.title}
-                      </p>
-                      {!notification.is_read && (
-                        <div
-                          className="size-2 rounded-full shrink-0 mt-1.5"
-                          style={{ background: theme.accent }}
-                        />
-                      )}
-                    </div>
-                    <p
-                      className="text-xs mt-0.5 line-clamp-2 leading-relaxed"
-                      style={{ color: theme.textSecondary }}
-                    >
-                      {notification.message}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span
-                        className="text-[10px] font-medium"
-                        style={{ color: theme.textMuted }}
-                      >
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-1.5">
+                        {!notification.is_read && (
+                          <div className="size-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        )}
+                        <p className={`text-sm leading-tight ${!notification.is_read ? 'font-bold text-slate-800' : 'font-semibold text-slate-700'}`}>
+                          {notification.title}
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-medium text-slate-400 shrink-0 mt-0.5">
                         {timeAgo(notification.created_at)}
                       </span>
-                      {notification.link && (
-                        <ExternalLink
-                          className="size-3"
-                          style={{ color: theme.textMuted }}
-                        />
-                      )}
                     </div>
+                    {notification.from && (
+                      <p className="text-[11px] font-bold uppercase tracking-wider mb-1 text-slate-400">
+                        From {notification.from.name}
+                      </p>
+                    )}
+                    <p className="text-sm leading-relaxed text-slate-600 line-clamp-2">
+                      {notification.message}
+                    </p>
                   </div>
                 </button>
               ))
@@ -329,29 +276,17 @@ const NotificationBell = () => {
           </div>
 
           {/* Footer */}
-          {notifications.length > 0 && (
-            <div
-              className="px-4 py-2.5 border-t text-center"
-              style={{ borderColor: theme.border, background: theme.surfaceMuted }}
+          <div className="px-5 py-3 border-t border-slate-100 bg-white/50 text-left">
+            <button
+              onClick={() => {
+                setOpen(false);
+                navigate('/notifications');
+              }}
+              className="text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors"
             >
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  navigate('/notifications');
-                }}
-                className="text-xs font-semibold transition-colors"
-                style={{ color: theme.accent }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.opacity = '0.8')
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.opacity = '1')
-                }
-              >
-                View all notifications →
-              </button>
-            </div>
-          )}
+              View all notifications
+            </button>
+          </div>
         </div>
       )}
     </div>

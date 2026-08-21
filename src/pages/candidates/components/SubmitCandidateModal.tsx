@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -33,8 +33,25 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
   const [synopsis, setSynopsis] = useState<string>('');
   const [selectedJobDetail, setSelectedJobDetail] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [modalCandidateLoading, setModalCandidateLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submissionErrors, setSubmissionErrors] = useState<Record<string, string[]> | null>(null);
+  const errorBoxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (errorBoxRef.current && !errorBoxRef.current.contains(event.target as Node)) {
+        setSubmissionErrors(null);
+      }
+    }
+    
+    if (submissionErrors) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [submissionErrors]);
 
   useEffect(() => {
     if (isOpen) {
@@ -59,7 +76,7 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
           method: 'GET',
           endPoint: `/api/v1/candidates/${candidateId}/`,
           auth: true,
-          setLoading: (val: boolean) => dispatch(setCandidateDetailLoading(val)),
+          setLoading: setModalCandidateLoading,
           getResponse: (data: any) => dispatch(setCandidateDetail(data)),
           getError: (err: any) => console.error("Failed to fetch candidate details", err),
         });
@@ -197,7 +214,7 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
 
               {/* Validation Errors Box */}
               {submissionErrors && (
-                <div className="rounded-lg p-4 border shadow-sm animate-in fade-in zoom-in-95" style={{ background: theme.destructiveSoft, borderColor: theme.destructive + '40' }}>
+                <div ref={errorBoxRef} className="rounded-lg p-4 border shadow-sm animate-in fade-in zoom-in-95" style={{ background: theme.destructiveSoft, borderColor: theme.destructive + '40' }}>
                   <div className="flex items-center gap-2 mb-2">
                     <div className="p-1 rounded-full shrink-0" style={{ background: theme.destructive, color: '#fff' }}>
                       {submissionErrors.non_field_errors ? (
@@ -233,7 +250,7 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
               )}
 
               {/* Past Applications */}
-              {candidateDetail && !candidateDetailLoading && candidateDetail.applications && candidateDetail.applications.length > 0 && (
+              {candidateDetail && !modalCandidateLoading && !candidateDetailLoading && candidateDetail.applications && candidateDetail.applications.length > 0 && (
                 <div className="space-y-4 pt-6 mt-6 border-t border-border/40 animate-in fade-in zoom-in-95">
                   <h4 className="text-sm font-semibold flex items-center gap-2" style={{ color: theme.textSecondary }}>
                     <Briefcase className="size-4" />

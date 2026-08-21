@@ -43,11 +43,11 @@ const ActionMenu = ({ onOpenSubmit, onEdit }: { onOpenSubmit: () => void, onEdit
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[180px] p-1" style={{ borderColor: theme.border, background: theme.surface }}>
-          <DropdownMenuItem onClick={onEdit} className="cursor-pointer gap-2 py-2">
+          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }} onSelect={(e) => { e.stopPropagation(); onEdit(); }} className="cursor-pointer gap-2 py-2">
             <Edit className="size-4" />
             <span className="font-medium">Edit Candidate</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={onOpenSubmit} className="cursor-pointer gap-2 py-2">
+          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onOpenSubmit(); }} onSelect={(e) => { e.stopPropagation(); onOpenSubmit(); }} className="cursor-pointer gap-2 py-2">
             <Send className="size-4" />
             <span className="font-medium">Submit Candidate</span>
           </DropdownMenuItem>

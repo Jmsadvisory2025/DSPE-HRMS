@@ -1,5 +1,11 @@
 /* ── Notification Module — Type Definitions ──────────────────── */
 
+export interface NotificationFrom {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export interface Notification {
   id: string;
   title: string;
@@ -11,6 +17,7 @@ export interface Notification {
   link: string;
   created_at: string;
   is_read: boolean;
+  from?: NotificationFrom;
 }
 
 export interface NotificationState {

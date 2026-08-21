@@ -13,10 +13,12 @@ const AppTopbar = () => {
   const { user } = useAuth();
 
   // Initialize WebSocket connection for real-time notifications
-  useNotificationSocket();
+  const { RealtimeNotificationModal } = useNotificationSocket();
 
   return (
-    <header
+    <>
+      <RealtimeNotificationModal />
+      <header
       className="h-16 flex items-center px-6 sticky top-0 z-40 relative"
       style={{
         background: theme.background,
@@ -126,6 +128,7 @@ const AppTopbar = () => {
         </div>
       </div>
     </header>
+    </>
   );
 };
 

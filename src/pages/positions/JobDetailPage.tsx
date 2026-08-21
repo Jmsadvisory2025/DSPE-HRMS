@@ -89,9 +89,9 @@ const JobDetailPage = () => {
               Edit
             </Button>
           )}
-          <Button size="sm">
+          {/* <Button size="sm">
             Submit Candidate
-          </Button>
+          </Button> */}
         </div>
       </div>
 
