@@ -166,13 +166,18 @@ export const useNotificationSocket = () => {
     return (
       <div 
         className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
-        onClick={() => setActivePopup(null)}
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) {
+            setActivePopup(null);
+          }
+        }}
       >
         <button 
           onClick={(e) => {
             e.stopPropagation();
             if (activePopup.link) {
-              navigate(activePopup.link);
+              const linkPath = activePopup.link.startsWith('/') ? activePopup.link : `/${activePopup.link}`;
+              navigate(linkPath);
             }
             setActivePopup(null);
           }}

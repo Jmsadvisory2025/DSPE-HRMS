@@ -127,7 +127,8 @@ const NotificationBell = () => {
     // Navigate if link is present
     if (notification.link) {
       setOpen(false);
-      navigate(notification.link);
+      const linkPath = notification.link.startsWith('/') ? notification.link : `/${notification.link}`;
+      navigate(linkPath);
     }
   };
 
