@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { theme } from "@/config/theme";
+import { getJobStatusStyle } from "@/lib/statusUtils";
 import {
   ArrowLeft,
   Briefcase,
@@ -34,8 +35,9 @@ import {
   Phone,
   Square,
   CheckSquare2,
+  Download,
 } from "lucide-react";
-import { positionActions } from "@/redux/actions";
+import { positionActions, candidateActions } from "@/redux/actions";
 import { toast } from "sonner";
 import {
   DragDropContext,
@@ -265,6 +267,7 @@ const JobPipelinePage = () => {
   // Bulk send-to-client selection state
   const [selectedForSend, setSelectedForSend] = useState<Set<string>>(new Set());
   const [bulkSendLoading, setBulkSendLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
 
   useEffect(() => {
     if (jobId) {
@@ -761,6 +764,35 @@ const JobPipelinePage = () => {
     });
   }, [dispatch, selectedForSend]);
 
+  const handleExportSelected = () => {
+    if (selectedForSend.size === 0) return;
+    dispatch({
+      type: candidateActions.EXPORT_CANDIDATES,
+      method: "GET",
+      endPoint: `/api/v1/candidates/export/?application_ids=${Array.from(selectedForSend).join(",")}&job_id=${jobId}`,
+      auth: true,
+      responseType: "blob",
+      setLoading: (val: boolean) => setExportLoading(val),
+      getResponse: (res: any) => {
+        const blob = new Blob([res], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `candidates_export_${new Date().getTime()}.xlsx`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        toast.success("Successfully exported candidates!");
+        setSelectedForSend(new Set());
+      },
+      getError: (err: any) => {
+        console.error("Failed to export candidates:", err);
+        toast.error("Failed to export candidates. Please try again.");
+      },
+    });
+  };
+
   /* ── Update Interview Attendance (Step 6) ───────────────────── */
   const handleUpdateAttendance = useCallback(() => {
     const { candidate } = attendanceModal;
@@ -896,20 +928,21 @@ const JobPipelinePage = () => {
                   >
                     {job.title}
                   </h1>
-                  <Badge
-                    variant="outline"
-                    className="capitalize text-xs border-0 font-medium"
-                    style={{
-                      color:
-                        job.status === "open" ? theme.success : theme.textMuted,
-                      background:
-                        job.status === "open"
-                          ? theme.successSoft
-                          : theme.surfaceMuted,
-                    }}
-                  >
-                    {job.status}
-                  </Badge>
+                  {(() => {
+                    const statusStyle = getJobStatusStyle(job.status);
+                    return (
+                      <Badge
+                        variant="outline"
+                        className="capitalize text-xs border-0 font-medium"
+                        style={{
+                          color: statusStyle.color,
+                          background: statusStyle.background,
+                        }}
+                      >
+                        {statusStyle.label}
+                      </Badge>
+                    );
+                  })()}
                 </div>
                 <p
                   className="text-xs mt-0.5"
@@ -1994,6 +2027,21 @@ const JobPipelinePage = () => {
               Clear
             </Button>
             
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs font-bold gap-2 px-4 h-9 rounded-full transition-transform hover:scale-105"
+              onClick={handleExportSelected}
+              disabled={exportLoading || bulkSendLoading}
+            >
+              {exportLoading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Download className="size-4" />
+              )}
+              Export CSV
+            </Button>
+
             <Button
               size="sm"
               className="text-xs font-bold gap-2 px-6 h-9 rounded-full transition-transform hover:scale-105"

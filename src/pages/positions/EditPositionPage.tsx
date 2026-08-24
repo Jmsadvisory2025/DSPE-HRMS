@@ -159,8 +159,8 @@ const EditPositionPage = () => {
     if (!formData.title?.trim()) errors.title = ['This field is required.'];
     if (!formData.description?.trim()) errors.description = ['This field is required.'];
     if (!formData.location?.trim()) errors.location = ['This field is required.'];
-    if (formData.min_experience === undefined || formData.min_experience < 0) errors.min_experience = ['Invalid experience.'];
-    if (formData.max_experience === undefined || formData.max_experience < 0 || formData.max_experience < formData.min_experience) errors.max_experience = ['Invalid max experience.'];
+    if (formData.min_experience === undefined || Number(formData.min_experience) < 0) errors.min_experience = ['Invalid experience.'];
+    if (formData.max_experience === undefined || Number(formData.max_experience) < 0 || Number(formData.max_experience) < Number(formData.min_experience)) errors.max_experience = ['Invalid max experience.'];
     
     if (!formData.client) errors.client = ['Client must be selected.'];
     if (!formData.team_member_id) errors.team_member_id = ['Client POC must be selected.'];
@@ -259,8 +259,9 @@ const EditPositionPage = () => {
                 style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary, border: `1px solid ${theme.border}` }}
               >
                 <option value="open">Open</option>
-                <option value="closed">Closed</option>
-                <option value="on-hold">On Hold</option>
+                <option value="ongoing">Ongoing</option>
+                <option value="close">Closed</option>
+                <option value="hold">On Hold</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 size-4 pointer-events-none" style={{ color: theme.textMuted }} />
             </div>

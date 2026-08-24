@@ -11,4 +11,5 @@ export function* watchApprovalsSaga() {
   yield takeLatest(approvalActions.REVIEW_APPLICATION, genericSaga);
   yield takeLatest(approvalActions.UPDATE_APPLICATION, genericSaga);
   yield takeLatest(approvalActions.SEND_TO_CLIENT, genericSaga);
+  yield takeLatest(approvalActions.CLIENT_REMINDER, genericSaga);
 }

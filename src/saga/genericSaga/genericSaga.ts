@@ -14,6 +14,7 @@ interface GenericSagaAction {
   getError?: (error: unknown) => void;
   setLoading?: (val: boolean) => void;
   showSuccessMessage?: boolean;
+  responseType?: "arraybuffer" | "blob" | "document" | "json" | "text" | "stream";
 }
 
 export function* genericSaga(action: GenericSagaAction): Generator {
@@ -28,6 +29,7 @@ export function* genericSaga(action: GenericSagaAction): Generator {
       method,
       url: endPoint,
       data: body,
+      responseType: action.responseType,
     };
 
     if (auth) {

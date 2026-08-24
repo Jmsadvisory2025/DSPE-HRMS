@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Search, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React, { useState, useEffect, useRef } from "react";
+import { ChevronDown, Search, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface Option {
   value: string;
   label: string;
+  description?: string;
 }
 
 export const SearchableDropdown = ({
@@ -23,24 +24,27 @@ export const SearchableDropdown = ({
   loading?: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredOptions = options.filter(opt => 
-    opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredOptions = options.filter((opt) =>
+    opt.label.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  const selectedOption = options.find(opt => opt.value === value);
+  const selectedOption = options.find((opt) => opt.value === value);
 
   return (
     <div className="relative w-full" ref={wrapperRef}>
@@ -51,11 +55,17 @@ export const SearchableDropdown = ({
         className={cn(
           "flex w-full items-center justify-between rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors",
           "focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
-          isOpen && "ring-1 ring-ring"
+          isOpen && "ring-1 ring-ring",
         )}
       >
-        <span className={cn("truncate", !selectedOption && "text-muted-foreground")}>
-          {loading ? "Loading..." : (selectedOption ? selectedOption.label : placeholder)}
+        <span
+          className={cn("truncate", !selectedOption && "text-muted-foreground")}
+        >
+          {loading
+            ? "Loading..."
+            : selectedOption
+              ? selectedOption.label
+              : placeholder}
         </span>
         <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
       </button>
@@ -84,15 +94,24 @@ export const SearchableDropdown = ({
                   onClick={() => {
                     onChange(opt.value);
                     setIsOpen(false);
-                    setSearchTerm('');
+                    setSearchTerm("");
                   }}
                   className={cn(
                     "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-                    value === opt.value && "bg-accent text-accent-foreground"
+                    value === opt.value && "bg-accent text-accent-foreground",
                   )}
                 >
-                  <span className="flex-1 truncate">{opt.label}</span>
-                  {value === opt.value && <Check className="ml-2 h-4 w-4 shrink-0" />}
+                  <div className="flex-1 overflow-hidden">
+                    <div className="truncate">{opt.label}</div>
+                    {opt.description && (
+                      <div className="truncate text-xs opacity-70 mt-0.5">
+                        {opt.description}
+                      </div>
+                    )}
+                  </div>
+                  {value === opt.value && (
+                    <Check className="ml-2 h-4 w-4 shrink-0" />
+                  )}
                 </div>
               ))
             )}

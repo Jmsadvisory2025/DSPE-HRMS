@@ -17,6 +17,7 @@ import { positionActions, candidateActions } from '@/redux/actions';
 import { setJobs, setLoading as setJobsLoading } from '@/redux/slices/positionSlice';
 import { setCandidateDetail, setCandidateDetailLoading } from '@/redux/slices/candidateSlice';
 import { theme } from '@/config/theme';
+import { getJobStatusStyle } from '@/lib/statusUtils';
 import { toast } from 'sonner';
 
 interface Props {
@@ -86,7 +87,7 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
       setSubmissionErrors(null);
       setSynopsis('');
     }
-  }, [isOpen, dispatch]);
+  }, [isOpen, dispatch, candidateId]);
 
   useEffect(() => {
     if (selectedJobId) {
@@ -250,15 +251,26 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
               )}
 
               {/* Past Applications */}
-              {candidateDetail && !modalCandidateLoading && !candidateDetailLoading && candidateDetail.applications && candidateDetail.applications.length > 0 && (
+              {candidateId && (
                 <div className="space-y-4 pt-6 mt-6 border-t border-border/40 animate-in fade-in zoom-in-95">
                   <h4 className="text-sm font-semibold flex items-center gap-2" style={{ color: theme.textSecondary }}>
                     <Briefcase className="size-4" />
                     Application History
-                    <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: theme.accent + '15', color: theme.accent }}>{candidateDetail.applications.length} records</span>
+                    {candidateDetail?.applications && candidateDetail.applications.length > 0 && !modalCandidateLoading && (
+                      <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: theme.accent + '15', color: theme.accent }}>
+                        {candidateDetail.applications.length} records
+                      </span>
+                    )}
                   </h4>
-                  <div className="space-y-3">
-                    {candidateDetail.applications.map((app: any) => {
+                  
+                  {modalCandidateLoading ? (
+                    <div className="flex flex-col items-center justify-center py-8 space-y-3">
+                      <Loader2 className="size-6 animate-spin" style={{ color: theme.accent }} />
+                      <p className="text-xs" style={{ color: theme.textMuted }}>Loading past applications...</p>
+                    </div>
+                  ) : candidateDetail?.applications && candidateDetail.applications.length > 0 ? (
+                    <div className="space-y-3">
+                      {candidateDetail.applications.map((app: any) => {
                       const statusColor = app.status === 'offered' || app.status === 'hired' ? theme.success 
                         : app.status === 'rejected' ? theme.destructive 
                         : app.status === 'screening' ? '#f59e0b'
@@ -387,7 +399,12 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
                         </div>
                       );
                     })}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center rounded-lg border border-dashed" style={{ borderColor: theme.border, background: theme.surfaceMuted }}>
+                      <p className="text-sm" style={{ color: theme.textMuted }}>No past candidate application data found.</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -422,9 +439,14 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
                       <span className="font-medium">{selectedJobDetail.client?.name || 'Internal'}</span>
                       <span style={{ color: theme.textMuted }}>•</span>
                       <span className="font-mono text-xs px-2 py-0.5 rounded-md font-medium" style={{ background: theme.surfaceMuted }}>{selectedJobDetail.code}</span>
-                      <Badge variant="outline" className="text-[10px] uppercase tracking-wider py-0 px-2 font-semibold" style={{ borderColor: selectedJobDetail.status === 'open' ? theme.success : theme.border, color: selectedJobDetail.status === 'open' ? theme.success : theme.textSecondary }}>
-                        {selectedJobDetail.status}
-                      </Badge>
+                      {(() => {
+                        const sStyle = getJobStatusStyle(selectedJobDetail.status);
+                        return (
+                          <Badge variant="outline" className="text-[10px] uppercase tracking-wider py-0 px-2 font-semibold" style={{ borderColor: sStyle.borderColor, color: sStyle.color }}>
+                            {sStyle.label}
+                          </Badge>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

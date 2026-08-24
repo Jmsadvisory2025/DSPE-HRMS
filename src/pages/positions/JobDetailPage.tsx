@@ -2,8 +2,9 @@ import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Users, Briefcase, MapPin, Calendar, FileText, Loader2 } from 'lucide-react';
+import { ArrowLeft, Users, Briefcase, MapPin, Calendar, FileText, Loader2, ChevronDown } from 'lucide-react';
 import { theme } from '@/config/theme';
+import { getJobStatusStyle } from '@/lib/statusUtils';
 import { useAuth } from '@/context/AuthContext';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { positionActions } from '@/redux/actions';
@@ -43,6 +44,31 @@ const JobDetailPage = () => {
     );
   }
 
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newStatus = e.target.value;
+    if (jobId && newStatus) {
+      dispatch({
+        type: positionActions.CHANGE_JOB_STATUS,
+        method: 'PATCH',
+        endPoint: `/api/v1/jobs/${jobId}/status/`,
+        auth: true,
+        body: { status: newStatus },
+        getResponse: () => {
+          // Re-fetch job details after successful status update
+          dispatch({
+            type: positionActions.FETCH_JOB_DETAIL,
+            method: 'GET',
+            endPoint: `/api/v1/jobs/${jobId}/`,
+            auth: true,
+            getResponse: (data: JobDetail) => dispatch(setSelectedJob(data)),
+          });
+        }
+      });
+    }
+  };
+
+  const statusStyle = getJobStatusStyle(job.status);
+
   return (
     <div className="space-y-6  pb-10">
       {/* Back button */}
@@ -69,17 +95,38 @@ const JobDetailPage = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Badge
-            variant="outline"
-            className="text-xs px-2.5 py-1 font-medium capitalize"
-            style={{
-              color: job.status.toLowerCase() === 'open' ? theme.info : theme.textPrimary,
-              background: job.status.toLowerCase() === 'open' ? theme.infoSoft : theme.surfaceMuted,
-              borderColor: job.status.toLowerCase() === 'open' ? theme.info + '50' : theme.border,
-            }}
-          >
-            {job.status.replace('_', ' ')}
-          </Badge>
+          {isRecruiter ? (
+            <Badge
+              variant="outline"
+              className="text-xs px-2.5 py-1 font-medium capitalize"
+              style={{
+                color: statusStyle.color,
+                background: statusStyle.background,
+                borderColor: statusStyle.borderColor,
+              }}
+            >
+              {statusStyle.label}
+            </Badge>
+          ) : (
+            <div className="relative">
+              <select
+                value={job.status.toLowerCase()}
+                onChange={handleStatusChange}
+                className="appearance-none rounded-full px-3 py-1 pr-7 text-xs font-medium outline-none cursor-pointer border"
+                style={{
+                  color: statusStyle.color,
+                  background: statusStyle.background,
+                  borderColor: statusStyle.borderColor,
+                }}
+              >
+                <option value="open">Open</option>
+                <option value="ongoing">Ongoing</option>
+                <option value="close">Closed</option>
+                <option value="hold">On Hold</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 size-3 pointer-events-none" style={{ color: statusStyle.color }} />
+            </div>
+          )}
           {!isRecruiter && (
             <Button
               variant="link"

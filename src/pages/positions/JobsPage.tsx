@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, ChevronDown, Loader2 } from 'lucide-react';
+import { Search, Plus, ChevronDown, Loader2, MoreHorizontal } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuGroup } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { positionActions, clientActions } from '@/redux/actions';
@@ -11,7 +12,9 @@ import { setJobs, setLoading, setError } from '@/redux/slices/positionSlice';
 import type { JobResponse } from '@/types/position.types';
 import { useAuth } from '@/context/AuthContext';
 import { theme } from '@/config/theme';
+import { getJobStatusStyle } from '@/lib/statusUtils';
 import { SearchableDropdown } from '@/components/ui/searchable-dropdown';
+import { toast } from 'sonner';
 
 const JobsPage = () => {
   const navigate = useNavigate();
@@ -23,8 +26,37 @@ const JobsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedClient, setSelectedClient] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('open');
   const [clientsData, setClientsData] = useState<{client: {client_id: string, name: string}}[]>([]);
   const [clientsLoading, setClientsLoading] = useState(false);
+
+  const handleStatusChange = (jobId: string, jobTitle: string, newStatus: string) => {
+    dispatch({
+      type: positionActions.CHANGE_JOB_STATUS,
+      method: 'PATCH',
+      endPoint: `/api/v1/jobs/${jobId}/status/`,
+      auth: true,
+      body: { status: newStatus },
+      getResponse: () => {
+        toast.success(`${jobTitle} status updated to ${newStatus}`);
+        
+        // Refresh the jobs list
+        let endpoint = '/api/v1/jobs/?';
+        if (debouncedSearch) endpoint += `search=${encodeURIComponent(debouncedSearch)}&`;
+        if (selectedClient) endpoint += `client=${encodeURIComponent(selectedClient)}&`;
+        if (selectedStatus) endpoint += `status=${encodeURIComponent(selectedStatus)}&`;
+        
+        dispatch({
+          type: positionActions.FETCH_JOBS,
+          method: 'GET',
+          endPoint: endpoint,
+          auth: true,
+          getResponse: (data: JobResponse) => dispatch(setJobs(data.results || [])),
+          getError: (err: any) => console.error(err),
+        });
+      }
+    });
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
@@ -51,6 +83,7 @@ const JobsPage = () => {
     let endpoint = '/api/v1/jobs/?';
     if (debouncedSearch) endpoint += `search=${encodeURIComponent(debouncedSearch)}&`;
     if (selectedClient) endpoint += `client=${encodeURIComponent(selectedClient)}&`;
+    if (selectedStatus) endpoint += `status=${encodeURIComponent(selectedStatus)}&`;
 
     dispatch({
       type: positionActions.FETCH_JOBS,
@@ -61,7 +94,7 @@ const JobsPage = () => {
       getResponse: (data: JobResponse) => dispatch(setJobs(data.results || [])),
       getError: (err: any) => dispatch(setError(err.message)),
     });
-  }, [dispatch, debouncedSearch, selectedClient]);
+  }, [dispatch, debouncedSearch, selectedClient, selectedStatus]);
 
   const clientOptions = [
     { value: '', label: 'All Clients' },
@@ -69,6 +102,14 @@ const JobsPage = () => {
       value: c.client.client_id,
       label: c.client.name,
     }))
+  ];
+
+  const statusOptions = [
+    { value: '', label: 'All Status' },
+    { value: 'open', label: 'Open' },
+    { value: 'ongoing', label: 'Ongoing' },
+    { value: 'close', label: 'Closed' },
+    { value: 'hold', label: 'On Hold' },
   ];
 
   const filteredPositions = jobs;
@@ -109,7 +150,14 @@ const JobsPage = () => {
               loading={clientsLoading}
             />
           </div>
-
+          <div className="w-full sm:w-40 shrink-0">
+            <SearchableDropdown
+              options={statusOptions}
+              value={selectedStatus}
+              onChange={setSelectedStatus}
+              placeholder="Status"
+            />
+          </div>
           <div className="relative w-full sm:w-64">
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 size-4"
@@ -146,6 +194,7 @@ const JobsPage = () => {
                 <TableHead>Location</TableHead>
               
                 <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -179,17 +228,49 @@ const JobsPage = () => {
                     </TableCell>
                    
                     <TableCell>
-                      <Badge
-                        variant="outline"
-                        className="capitalize"
-                        style={{
-                          color: job.status.toLowerCase() === 'open' ? theme.info : theme.textMuted,
-                          background: job.status.toLowerCase() === 'open' ? theme.infoSoft : theme.surfaceMuted,
-                          border: 0,
-                        }}
-                      >
-                        {job.status.replace('_', ' ')}
-                      </Badge>
+                      {(() => {
+                        const statusStyle = getJobStatusStyle(job.status);
+                        return (
+                          <Badge
+                            variant="outline"
+                            className="capitalize"
+                            style={{
+                              color: statusStyle.color,
+                              background: statusStyle.background,
+                              border: 0,
+                            }}
+                          >
+                            {statusStyle.label}
+                          </Badge>
+                        );
+                      })()}
+                    </TableCell>
+                    
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" style={{ color: theme.textSecondary }} />}>
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuGroup>
+                            <DropdownMenuLabel>Update Status</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleStatusChange(job.id, job.title, 'open')}>
+                              Open
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(job.id, job.title, 'ongoing')}>
+                              Ongoing
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(job.id, job.title, 'close')}>
+                              Closed
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(job.id, job.title, 'hold')}>
+                              On Hold
+                            </DropdownMenuItem>
+                          </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))

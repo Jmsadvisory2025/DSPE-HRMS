@@ -1,4 +1,4 @@
-export type JobStatus = 'Open' | 'On Hold' | 'Filled' | 'Closed';
+export type JobStatus = 'open' | 'ongoing' | 'close' | 'hold';
 export type JobPriority = 'High' | 'Medium' | 'Low';
 export type JobMode = 'Office' | 'Hybrid' | 'Remote';
 export type JobType = 'Permanent' | 'Contractual';

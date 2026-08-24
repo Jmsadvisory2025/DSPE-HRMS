@@ -32,11 +32,13 @@ import {
   GraduationCap,
   CalendarClock,
   Video,
+  Download,
+  Bell,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { setApplicationDetail } from "@/redux/slices/approvalSlice";
 import { ReviewActionModal } from "./components/ReviewActionModal";
-import { approvalActions } from "@/redux/actions";
+import { approvalActions, candidateActions } from "@/redux/actions";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -154,6 +156,13 @@ const ApprovalDetailPage = () => {
   const [synopsisValue, setSynopsisValue] = useState("");
   const [synopsisSaving, setSynopsisSaving] = useState(false);
 
+  // Export State
+  const [exportLoading, setExportLoading] = useState(false);
+
+  // Client Reminder State
+  const [sendingReminder, setSendingReminder] = useState(false);
+  const [reminderModalOpen, setReminderModalOpen] = useState(false);
+
   const handleFetchPastJobs = (appId: string, candidateName: string) => {
     setPastJobsModalOpen(true);
     setPastJobsLoading(true);
@@ -199,6 +208,76 @@ const ApprovalDetailPage = () => {
       });
     }
   };
+
+const handleExportSelected = () => {
+  if (selectedApps.size === 0) return;
+  dispatch({
+    type: candidateActions.EXPORT_CANDIDATES,
+    method: "GET",
+    endPoint: `/api/v1/candidates/export/?application_ids=${Array.from(selectedApps).join(",")}&job_id=${jobId}`,
+    auth: true,
+    responseType: "blob",
+    setLoading: (val: boolean) => setExportLoading(val),
+    getResponse: (res: any) => {
+      const blob = new Blob([res], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `candidates_export_${new Date().getTime()}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success("Successfully exported candidates!");
+    },
+    getError: (err: any) => {
+      console.error("Failed to export candidates:", err);
+      toast.error("Failed to export candidates. Please try again.");
+    },
+  });
+};
+
+const handleClientReminder = () => {
+  if (selectedApps.size === 0) return;
+  dispatch({
+    type: approvalActions.CLIENT_REMINDER,
+    method: "POST",
+    endPoint: "/api/v1/candidates/applications/client-reminder/",
+    auth: true,
+    body: { application_ids: Array.from(selectedApps) },
+    setLoading: (val: boolean) => setSendingReminder(val),
+    getResponse: (res: any) => {
+      if (res?.errors && res.errors.length > 0) {
+        toast.error(
+          <div className="flex flex-col gap-1">
+            <span className="font-semibold">
+              {res.message || "Partial Success"}
+            </span>
+            <ul className="list-disc pl-4 text-sm opacity-90">
+              {res.errors.map((err: string, i: number) => (
+                <li key={i}>{err}</li>
+              ))}
+            </ul>
+          </div>,
+          { duration: 6000 },
+        );
+      } else {
+        toast.success(
+          res?.message || "Successfully sent reminders to client!",
+        );
+      }
+      setSelectedApps(new Set());
+      setReminderModalOpen(false);
+    },
+    getError: (err: any) => {
+      console.error("Failed to send client reminder:", err);
+      const errorData = (err as any)?.response?.data;
+      toast.error(
+        errorData?.message || errorData?.detail || "Failed to send reminder. Please try again.",
+      );
+    },
+  });
+};
 
   const handleToggleSelect = (appId: string) => {
     setSelectedApps((prev) => {
@@ -571,19 +650,49 @@ const ApprovalDetailPage = () => {
           </Button>
 
           {selectedApps.size > 0 && (
-            <Button
-              onClick={() => setSendClientModalOpen(true)}
-              disabled={sendingToClient}
-              className="gap-2"
-              style={{ background: theme.accent }}
-            >
-              {sendingToClient ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Send className="size-4" />
-              )}
-              Send {selectedApps.size} to Client
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={handleExportSelected}
+                disabled={exportLoading}
+                className="gap-2"
+              >
+                {exportLoading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Download className="size-4" />
+                )}
+                Export CSV
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => setReminderModalOpen(true)}
+                disabled={sendingReminder}
+                className="gap-2"
+              >
+                {sendingReminder ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Bell className="size-4" />
+                )}
+                Client Reminder
+              </Button>
+
+              <Button
+                onClick={() => setSendClientModalOpen(true)}
+                disabled={sendingToClient}
+                className="gap-2"
+                style={{ background: theme.accent }}
+              >
+                {sendingToClient ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Send className="size-4" />
+                )}
+                Send {selectedApps.size} to Client
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -1442,6 +1551,77 @@ const ApprovalDetailPage = () => {
                 </>
               ) : (
                 "Confirm & Send"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Client Reminder Confirmation Modal ─────────────────── */}
+      <Dialog
+        open={reminderModalOpen}
+        onOpenChange={(open) =>
+          !sendingReminder && setReminderModalOpen(open)
+        }
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Client Reminder</DialogTitle>
+            <DialogDescription className="text-base pt-2">
+              <span
+                className="font-semibold block mb-2"
+                style={{ color: theme.textPrimary }}
+              >
+                Send a follow-up reminder for:
+              </span>
+              <ul
+                className="list-disc pl-5 mb-4 max-h-40 overflow-y-auto space-y-1 text-sm"
+                style={{ color: theme.textSecondary }}
+              >
+                {data?.applications
+                  .filter((app) => selectedApps.has(app.id))
+                  .map((app) => (
+                    <li key={app.id}>{app.candidate_name}</li>
+                  ))}
+              </ul>
+              <div
+                className="p-3 rounded-lg text-sm"
+                style={{
+                  background: theme.infoSoft,
+                  border: `1px solid ${theme.info}50`,
+                  color: theme.textPrimary,
+                }}
+              >
+                <strong style={{ color: theme.info }}>Info:</strong>{" "}
+                A reminder email with candidate resumes will be sent to the
+                assigned client team member (or fallback to the main client
+                contact).
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-2">
+            <Button
+              variant="outline"
+              onClick={() => setReminderModalOpen(false)}
+              disabled={sendingReminder}
+            >
+              Cancel
+            </Button>
+            <Button
+              style={{
+                background: theme.accent,
+                color: theme.accentForeground,
+              }}
+              onClick={handleClientReminder}
+              disabled={sendingReminder}
+            >
+              {sendingReminder ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                "Send Reminder"
               )}
             </Button>
           </DialogFooter>

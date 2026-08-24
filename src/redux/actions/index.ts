@@ -23,6 +23,7 @@ export const candidateActions = {
   FETCH_CANDIDATE_DETAIL: "FETCH_CANDIDATE_DETAIL",
   UPDATE_CANDIDATE: "UPDATE_CANDIDATE",
   SUBMIT_CANDIDATE: "SUBMIT_CANDIDATE",
+  EXPORT_CANDIDATES: "EXPORT_CANDIDATES",
 } as const;
 
 /* ── Positions ────────────────────────────────────────────────── */
@@ -38,6 +39,7 @@ export const positionActions = {
   APPROVE_INTERVIEW_SCHEDULE: "APPROVE_INTERVIEW_SCHEDULE",
   SEND_INTERVIEW_TO_CLIENT: "SEND_INTERVIEW_TO_CLIENT",
   UPDATE_INTERVIEW_ATTENDANCE: "UPDATE_INTERVIEW_ATTENDANCE",
+  CHANGE_JOB_STATUS: "CHANGE_JOB_STATUS",
 } as const;
 
 export const approvalActions = {
@@ -49,6 +51,7 @@ export const approvalActions = {
   REVIEW_APPLICATION: "REVIEW_APPLICATION",
   UPDATE_APPLICATION: "UPDATE_APPLICATION",
   SEND_TO_CLIENT: "SEND_TO_CLIENT",
+  CLIENT_REMINDER: "CLIENT_REMINDER",
 } as const;
 
 /* ── Users ─────────────────────────────────────────────────────── */

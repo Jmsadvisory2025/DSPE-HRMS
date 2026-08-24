@@ -17,8 +17,8 @@ export interface Job {
   status: string;
   location: string;
   openings: number;
-  min_experience: number;
-  max_experience: number;
+  min_experience: number | string;
+  max_experience: number | string;
   budget: string;
   hiring_for: string;
   candidate_count: number;
@@ -71,8 +71,8 @@ export interface JobDetail {
   description_file: string | null;
   skills: string[];
   education: string;
-  min_experience: number;
-  max_experience: number;
+  min_experience: number | string;
+  max_experience: number | string;
   location: string;
   openings: number;
   budget: string;
@@ -109,9 +109,9 @@ export interface AddJobPayload {
   description_file?: File | null;
   skills?: string[];
   education?: string;
-  min_experience: number;
-  max_experience: number;
+  min_experience: number | string;
+  max_experience: number | string;
   openings?: number;
   budget?: number;
-  status?: "open" | "closed" | "on-hold";
+  status?: "open" | "ongoing" | "close" | "hold";
 }

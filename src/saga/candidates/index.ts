@@ -8,4 +8,5 @@ export function* watchCandidatesSaga() {
   yield takeLatest(candidateActions.FETCH_CANDIDATE_DETAIL as any, genericSaga);
   yield takeLatest(candidateActions.UPDATE_CANDIDATE as any, genericSaga);
   yield takeLatest(candidateActions.SUBMIT_CANDIDATE as any, genericSaga);
+  yield takeLatest(candidateActions.EXPORT_CANDIDATES as any, genericSaga);
 }

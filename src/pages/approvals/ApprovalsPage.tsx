@@ -11,6 +11,7 @@ import { setJobs, setLoading, setError } from '@/redux/slices/positionSlice';
 import type { JobResponse } from '@/types/position.types';
 import { useAuth } from '@/context/AuthContext';
 import { theme } from '@/config/theme';
+import { getJobStatusStyle } from '@/lib/statusUtils';
 import { SearchableDropdown } from '@/components/ui/searchable-dropdown';
 
 const ApprovalsPage = () => {
@@ -166,17 +167,22 @@ const ApprovalsPage = () => {
                       {job.location}
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant="outline"
-                        className="capitalize"
-                        style={{
-                          color: job.status.toLowerCase() === 'open' ? theme.info : theme.textMuted,
-                          background: job.status.toLowerCase() === 'open' ? theme.infoSoft : theme.surfaceMuted,
-                          border: 0,
-                        }}
-                      >
-                        {job.status.replace('_', ' ')}
-                      </Badge>
+                      {(() => {
+                        const statusStyle = getJobStatusStyle(job.status);
+                        return (
+                          <Badge
+                            variant="outline"
+                            className="capitalize"
+                            style={{
+                              color: statusStyle.color,
+                              background: statusStyle.background,
+                              border: 0,
+                            }}
+                          >
+                            {statusStyle.label}
+                          </Badge>
+                        );
+                      })()}
                     </TableCell>
                   </TableRow>
                 ))
