@@ -112,6 +112,6 @@ export interface AddJobPayload {
   min_experience: number | string;
   max_experience: number | string;
   openings?: number;
-  budget?: number;
+  budget?: number | string;
   status?: "open" | "ongoing" | "close" | "hold";
 }

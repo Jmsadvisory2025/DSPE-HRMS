@@ -23,7 +23,7 @@ const INITIAL_FORM: AddJobPayload = {
   min_experience: '',
   max_experience: '',
   location: '',
-  budget: 0,
+  budget: '',
   client: null,
   team_member_id: null,
   status: 'open',
@@ -122,8 +122,8 @@ const NewPositionPage = () => {
     if (!formData.title?.trim()) errors.title = ['This field is required.'];
     if (!formData.description?.trim()) errors.description = ['This field is required.'];
     if (!formData.location?.trim()) errors.location = ['This field is required.'];
-    if (!formData.min_experience && formData.min_experience !== 0) errors.min_experience = ['Min experience is required.'];
-    if (!formData.max_experience && formData.max_experience !== 0) errors.max_experience = ['Max experience is required.'];
+    if (!String(formData.min_experience)?.trim()) errors.min_experience = ['Min experience is required.'];
+    if (!String(formData.max_experience)?.trim()) errors.max_experience = ['Max experience is required.'];
     
     if (!formData.client) errors.client = ['Client must be selected.'];
     if (!formData.team_member_id) errors.team_member_id = ['Client POC must be selected.'];
@@ -339,9 +339,9 @@ const NewPositionPage = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Budget</label>
               <Input
-                type="number"
+                type="text"
                 value={formData.budget || ''}
-                onChange={(e) => setFormData({ ...formData, budget: e.target.value ? Number(e.target.value) : undefined })}
+                onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
                 placeholder="e.g., 1500000"
                 style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }}
               />
@@ -400,8 +400,10 @@ const NewPositionPage = () => {
                 description: `${u.email} • ${u.role.charAt(0).toUpperCase() + u.role.slice(1)}` 
               }))}
               value={''}
+              multiple={true}
+              selectedValues={formData.assigned_recruiter_ids || []}
               onChange={(val) => {
-                if (val && !formData.assigned_recruiter_ids!.includes(val)) {
+                if (val) {
                   toggleRecruiter(val);
                 }
               }}

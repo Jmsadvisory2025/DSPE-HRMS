@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppDispatch } from '@/store/hooks';
 import { clientActions } from '@/redux/actions';
-import { ChevronDown, Search, Check, Pencil, X, Plus, Save, Loader2 } from 'lucide-react';
+import { ChevronDown, Search, Check, Pencil, X, Plus, Save, Loader2, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
+import { toast } from 'sonner';
 interface ClientDetails {
   client: {
     client_id: string;
@@ -129,6 +129,52 @@ const TrackersPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [headerColor, setHeaderColor] = useState('#1e293b');
   const [textColor, setTextColor] = useState('#ffffff');
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [xlsxFile, setXlsxFile] = useState<File | null>(null);
+
+  const handleDownloadTemplate = async (trackerId: string) => {
+    try {
+      setIsDownloading(true);
+      const loginDataRaw = localStorage.getItem("RecruitOS_Login_Data");
+      let token = "";
+      if (loginDataRaw) {
+        try {
+          const loginData = JSON.parse(loginDataRaw);
+          token = loginData?.accessToken || "";
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/clients/tracker-formats/${trackerId}/export-template/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download template');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Tracker_Template_${selectedMemberDetails?.name?.replace(/\s+/g, '_') || 'Export'}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success('Template downloaded successfully!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to download template. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   useEffect(() => {
     dispatch({
@@ -192,6 +238,7 @@ const TrackersPage = () => {
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditingColumns([]);
+    setXlsxFile(null);
   };
 
   const handleAddColumn = () => {
@@ -213,20 +260,40 @@ const TrackersPage = () => {
 
     const isUpdate = !!selectedFormat;
     
+    let payload: any;
+    
+    if (xlsxFile) {
+      const fd = new FormData();
+      if (!isUpdate) {
+        fd.append('client', selectedClient);
+        fd.append('team_member_id', selectedTeamMember);
+      }
+      if (validColumns.length > 0) {
+        fd.append('columns', JSON.stringify(validColumns));
+      }
+      fd.append('header_color', headerColor);
+      fd.append('text_color', textColor);
+      fd.append('xlsx_file', xlsxFile);
+      payload = fd;
+    } else {
+      payload = isUpdate 
+        ? { columns: validColumns, header_color: headerColor, text_color: textColor } 
+        : { client: selectedClient, team_member_id: selectedTeamMember, columns: validColumns, header_color: headerColor, text_color: textColor };
+    }
+
     dispatch({
       type: isUpdate ? clientActions.UPDATE_TRACKER_FORMAT : clientActions.CREATE_TRACKER_FORMAT,
       method: isUpdate ? "PATCH" : "POST",
       endPoint: isUpdate 
         ? `/api/v1/clients/tracker-formats/${selectedFormat.id}/` 
         : `/api/v1/clients/tracker-formats/`,
-      body: isUpdate 
-        ? { columns: validColumns, header_color: headerColor, text_color: textColor } 
-        : { client: selectedClient, team_member_id: selectedTeamMember, columns: validColumns, header_color: headerColor, text_color: textColor },
+      body: payload,
       auth: true,
       showSuccessMessage: true,
       setLoading: (val: boolean) => setIsSaving(val),
       getResponse: () => {
         setIsEditing(false);
+        setXlsxFile(null);
         dispatch({
           type: clientActions.FETCH_TRACKER_FORMATS,
           method: "GET",
@@ -384,13 +451,23 @@ const TrackersPage = () => {
                   <p className="text-sm text-muted-foreground mt-0.5">Expected fields for this tracker format</p>
                 </div>
                 {!isEditing ? (
-                  <button 
-                    onClick={handleEditClick}
-                    className="flex items-center gap-1.5 text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md font-medium hover:bg-primary/90 transition-colors"
-                  >
-                    <Pencil className="h-4 w-4" />
-                    Edit
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => handleDownloadTemplate(selectedFormat.id)}
+                      disabled={isDownloading}
+                      className="flex items-center gap-1.5 text-sm bg-secondary text-secondary-foreground px-3 py-1.5 rounded-md font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50"
+                    >
+                      {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                      Download
+                    </button>
+                    <button 
+                      onClick={handleEditClick}
+                      className="flex items-center gap-1.5 text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md font-medium hover:bg-primary/90 transition-colors"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Edit
+                    </button>
+                  </div>
                 ) : (
                   <div className="flex items-center gap-2">
                     <button 
@@ -461,6 +538,21 @@ const TrackersPage = () => {
                     </button>
                     
                     <div className="mt-6 pt-4 border-t flex flex-wrap gap-6">
+                      <div className="flex flex-col gap-1.5 w-full">
+                        <label className="text-xs font-semibold uppercase text-muted-foreground">Upload Tracker Format File (Optional)</label>
+                        <input
+                          type="file"
+                          accept=".xlsx,.xls"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              setXlsxFile(e.target.files[0]);
+                            } else {
+                              setXlsxFile(null);
+                            }
+                          }}
+                          className="flex h-10 w-full max-w-sm rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring file:border-0 file:bg-transparent file:text-sm file:font-medium"
+                        />
+                      </div>
                       <div className="flex flex-col gap-1.5">
                         <label className="text-xs font-semibold uppercase text-muted-foreground">Header Color</label>
                         <div className="flex items-center gap-3">

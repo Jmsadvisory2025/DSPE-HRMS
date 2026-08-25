@@ -34,6 +34,7 @@ import {
   Video,
   Download,
   Bell,
+  AlertCircle,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { setApplicationDetail } from "@/redux/slices/approvalSlice";
@@ -144,6 +145,7 @@ const ApprovalDetailPage = () => {
   const [selectedApps, setSelectedApps] = useState<Set<string>>(new Set());
   const [sendingToClient, setSendingToClient] = useState(false);
   const [sendClientModalOpen, setSendClientModalOpen] = useState(false);
+  const [ccEmails, setCcEmails] = useState("");
 
   // Past Jobs State
   const [pastJobsModalOpen, setPastJobsModalOpen] = useState(false);
@@ -293,12 +295,21 @@ const handleClientReminder = () => {
 
   const handleSendToClient = () => {
     if (selectedApps.size === 0) return;
+
+    const parsedCcEmails = ccEmails
+      .split(",")
+      .map((email) => email.trim())
+      .filter((email) => email !== "");
+
     dispatch({
       type: approvalActions.SEND_TO_CLIENT,
       method: "POST",
       endPoint: "/api/v1/candidates/applications/send-to-client/",
       auth: true,
-      body: { application_ids: Array.from(selectedApps) },
+      body: { 
+        application_ids: Array.from(selectedApps),
+        ...(parsedCcEmails.length > 0 ? { cc_emails: parsedCcEmails } : {})
+      },
       setLoading: (val: boolean) => setSendingToClient(val),
       getResponse: (res: any) => {
         if (res?.errors && res.errors.length > 0) {
@@ -321,6 +332,7 @@ const handleClientReminder = () => {
           );
         }
         setSelectedApps(new Set());
+        setCcEmails("");
         setSendClientModalOpen(false);
       },
       getError: (err: any) => {
@@ -1490,48 +1502,95 @@ const handleClientReminder = () => {
 
       <Dialog
         open={sendClientModalOpen}
-        onOpenChange={(open) =>
-          !sendingToClient && setSendClientModalOpen(open)
-        }
+        onOpenChange={(open) => {
+          if (!sendingToClient) {
+            setSendClientModalOpen(open);
+            if (!open) setCcEmails("");
+          }
+        }}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Send to Client</DialogTitle>
-            <DialogDescription className="text-base pt-2">
-              <span
-                className="font-semibold block mb-2"
-                style={{ color: theme.textPrimary }}
-              >
-                Selected Candidates:
-              </span>
-              <ul
-                className="list-disc pl-5 mb-4 max-h-40 overflow-y-auto space-y-1 text-sm"
-                style={{ color: theme.textSecondary }}
-              >
-                {data?.applications
-                  .filter((app) => selectedApps.has(app.id))
-                  .map((app) => (
-                    <li key={app.id}>{app.candidate_name}</li>
-                  ))}
-              </ul>
+            <div className="flex items-center gap-3 mb-2">
               <div
-                className="p-3 rounded-lg text-sm"
-                style={{
-                  background: theme.warningSoft,
-                  border: `1px solid ${theme.warning}50`,
-                  color: theme.textPrimary,
-                }}
+                className="w-10 h-10 rounded-full flex items-center justify-center"
+                style={{ background: `${theme.accent}15`, color: theme.accent }}
               >
-                <strong style={{ color: theme.warning }}>Please Note:</strong>{" "}
-                Before sending, verify all details and the tracker manually for
-                each candidate to ensure accuracy.
+                <Send className="w-5 h-5" />
               </div>
+              <DialogTitle className="text-xl">Send Trackers to Client</DialogTitle>
+            </div>
+            <DialogDescription className="text-sm pt-2 text-left">
+              You are about to send candidate profiles and their trackers directly to the client.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="mt-2">
+
+          <div className="flex flex-col gap-5 py-2 text-left">
+            <div>
+              <span
+                className="text-sm font-semibold mb-2 flex items-center gap-2"
+                style={{ color: theme.textPrimary }}
+              >
+                <User className="w-4 h-4 text-muted-foreground" />
+                Selected Candidates ({Array.from(selectedApps).length})
+              </span>
+              <div 
+                className="max-h-40 overflow-y-auto rounded-md border p-2 bg-muted/20"
+                style={{ borderColor: theme.border }}
+              >
+                <ul className="space-y-2">
+                  {data?.applications
+                    .filter((app) => selectedApps.has(app.id))
+                    .map((app) => (
+                      <li key={app.id} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded bg-background shadow-sm border border-border">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <span className="font-medium" style={{ color: theme.textPrimary }}>{app.candidate_name}</span>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: theme.textPrimary }}>
+                <Mail className="w-4 h-4 text-muted-foreground" />
+                CC Emails (Optional)
+              </label>
+              <Input
+                placeholder="e.g., manager@company.com, HR@company.com"
+                value={ccEmails}
+                onChange={(e) => setCcEmails(e.target.value)}
+                disabled={sendingToClient}
+                className="shadow-sm"
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Separate multiple emails with commas.
+              </p>
+            </div>
+
+            <div
+              className="flex items-start gap-3 p-3 rounded-lg text-sm border"
+              style={{
+                background: theme.warningSoft,
+                borderColor: `${theme.warning}50`,
+                color: theme.textSecondary,
+              }}
+            >
+              <AlertCircle className="w-5 h-5 shrink-0" style={{ color: theme.warning }} />
+              <div>
+                <strong style={{ color: theme.warning }} className="block mb-0.5">Double check details</strong>
+                Before sending, verify all details and the tracker manually for each candidate to ensure accuracy.
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-4 gap-2 sm:gap-0">
             <Button
               variant="outline"
-              onClick={() => setSendClientModalOpen(false)}
+              onClick={() => {
+                setSendClientModalOpen(false);
+                setCcEmails("");
+              }}
               disabled={sendingToClient}
             >
               Cancel
@@ -1543,6 +1602,7 @@ const handleClientReminder = () => {
               }}
               onClick={handleSendToClient}
               disabled={sendingToClient}
+              className="shadow-md hover:shadow-lg transition-shadow"
             >
               {sendingToClient ? (
                 <>
@@ -1550,7 +1610,10 @@ const handleClientReminder = () => {
                   Sending...
                 </>
               ) : (
-                "Confirm & Send"
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Confirm & Send
+                </>
               )}
             </Button>
           </DialogFooter>

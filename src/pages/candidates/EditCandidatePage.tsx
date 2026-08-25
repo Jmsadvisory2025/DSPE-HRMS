@@ -148,25 +148,14 @@ const EditCandidatePage = () => {
     // Clear previous errors
     setFormErrors({});
 
-    // Build sanitized payload — convert numeric fields properly
+    // Build sanitized payload
     const sanitizedData = { ...formData };
 
-    // Convert CTC and offer_in_hand to numbers or null
     const numericFields = ['current_ctc', 'expected_ctc'];
     for (const field of numericFields) {
       const val = sanitizedData[field];
       if (val === '' || val === null || val === undefined) {
         sanitizedData[field] = null;
-      } else {
-        const num = parseFloat(val);
-        if (isNaN(num)) {
-          // Show error immediately without hitting API
-          const label = fieldLabels[field] || field;
-          toast.error(`${label} must be a valid number.`);
-          setFormErrors(prev => ({ ...prev, [field]: ['A valid number is required.'] }));
-          return;
-        }
-        sanitizedData[field] = num;
       }
     }
 
@@ -363,9 +352,7 @@ const EditCandidatePage = () => {
             <div className="space-y-2">
               <Label style={{ color: theme.textPrimary }}>Current CTC</Label>
               <Input 
-                type="number"
-                step="any"
-                min="0"
+                type="text"
                 placeholder="e.g. 1200000"
                 value={formData.current_ctc} 
                 onChange={e => handleInputChange('current_ctc', e.target.value)}
@@ -376,9 +363,7 @@ const EditCandidatePage = () => {
             <div className="space-y-2">
               <Label style={{ color: theme.textPrimary }}>Expected CTC</Label>
               <Input 
-                type="number"
-                step="any"
-                min="0"
+                type="text"
                 placeholder="e.g. 1500000"
                 value={formData.expected_ctc} 
                 onChange={e => handleInputChange('expected_ctc', e.target.value)}

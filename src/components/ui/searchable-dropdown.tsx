@@ -15,6 +15,8 @@ export const SearchableDropdown = ({
   placeholder,
   disabled = false,
   loading = false,
+  multiple = false,
+  selectedValues = [],
 }: {
   options: Option[];
   value: string;
@@ -22,6 +24,8 @@ export const SearchableDropdown = ({
   placeholder: string;
   disabled?: boolean;
   loading?: boolean;
+  multiple?: boolean;
+  selectedValues?: string[];
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -82,7 +86,7 @@ export const SearchableDropdown = ({
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="max-h-[200px] overflow-y-auto p-1">
+          <div className="max-h-[200px] overflow-y-auto p-1.5 space-y-0.5">
             {filteredOptions.length === 0 ? (
               <div className="py-6 text-center text-sm text-muted-foreground">
                 No results found.
@@ -93,14 +97,28 @@ export const SearchableDropdown = ({
                   key={opt.value}
                   onClick={() => {
                     onChange(opt.value);
-                    setIsOpen(false);
-                    setSearchTerm("");
+                    if (!multiple) {
+                      setIsOpen(false);
+                      setSearchTerm("");
+                    }
                   }}
                   className={cn(
-                    "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-                    value === opt.value && "bg-accent text-accent-foreground",
+                    "relative flex cursor-pointer select-none items-center rounded-md px-3 py-2 text-sm outline-none transition-colors",
+                    "hover:bg-accent hover:text-accent-foreground",
+                    !multiple && value === opt.value && "bg-accent text-accent-foreground",
+                    multiple && selectedValues.includes(opt.value) && "bg-accent/10"
                   )}
                 >
+                  {multiple && (
+                    <div className={cn(
+                      "mr-3 flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border",
+                      selectedValues.includes(opt.value) 
+                        ? "bg-primary border-primary text-primary-foreground" 
+                        : "border-primary/50"
+                    )}>
+                      {selectedValues.includes(opt.value) && <Check className="h-3 w-3 font-bold" />}
+                    </div>
+                  )}
                   <div className="flex-1 overflow-hidden">
                     <div className="truncate">{opt.label}</div>
                     {opt.description && (
@@ -109,7 +127,7 @@ export const SearchableDropdown = ({
                       </div>
                     )}
                   </div>
-                  {value === opt.value && (
+                  {!multiple && value === opt.value && (
                     <Check className="ml-2 h-4 w-4 shrink-0" />
                   )}
                 </div>

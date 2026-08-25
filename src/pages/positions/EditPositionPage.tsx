@@ -12,6 +12,7 @@ import { setClients } from '@/redux/slices/clientSlice';
 import { setUsers } from '@/redux/slices/userSlice';
 import { updateJob, setDetailLoading, setSelectedJob, setError } from '@/redux/slices/positionSlice';
 import type { AddJobPayload, JobDetail } from '@/types/position.types';
+import { SearchableDropdown } from '@/components/ui/searchable-dropdown';
 
 const INITIAL_FORM: AddJobPayload = {
   title: '',
@@ -19,10 +20,10 @@ const INITIAL_FORM: AddJobPayload = {
   description_file: null,
   skills: [],
   education: '',
-  min_experience: 0,
-  max_experience: 0,
+  min_experience: '',
+  max_experience: '',
   location: '',
-  budget: 0,
+  budget: '',
   client: null,
   team_member_id: null,
   status: 'open',
@@ -71,10 +72,10 @@ const EditPositionPage = () => {
         description_file: null,
         skills: selectedJob.skills || [],
         education: selectedJob.education || '',
-        min_experience: selectedJob.min_experience ?? 0,
-        max_experience: selectedJob.max_experience ?? 0,
+        min_experience: selectedJob.min_experience ?? '',
+        max_experience: selectedJob.max_experience ?? '',
         location: selectedJob.location || '',
-        budget: selectedJob.budget ? parseFloat(selectedJob.budget as any) : 0,
+        budget: selectedJob.budget ?? '',
         client: selectedJob.client?.id || null,
         team_member_id: selectedJob.client?.team_member?.id || null,
         status: selectedJob.status?.toLowerCase() as any || 'open',
@@ -159,8 +160,8 @@ const EditPositionPage = () => {
     if (!formData.title?.trim()) errors.title = ['This field is required.'];
     if (!formData.description?.trim()) errors.description = ['This field is required.'];
     if (!formData.location?.trim()) errors.location = ['This field is required.'];
-    if (formData.min_experience === undefined || Number(formData.min_experience) < 0) errors.min_experience = ['Invalid experience.'];
-    if (formData.max_experience === undefined || Number(formData.max_experience) < 0 || Number(formData.max_experience) < Number(formData.min_experience)) errors.max_experience = ['Invalid max experience.'];
+    if (!String(formData.min_experience)?.trim()) errors.min_experience = ['Min experience is required.'];
+    if (!String(formData.max_experience)?.trim()) errors.max_experience = ['Max experience is required.'];
     
     if (!formData.client) errors.client = ['Client must be selected.'];
     if (!formData.team_member_id) errors.team_member_id = ['Client POC must be selected.'];
@@ -381,10 +382,9 @@ const EditPositionPage = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Min Experience (yrs) *</label>
               <Input
-                type="number"
-                min="0"
+                type="text"
                 value={formData.min_experience}
-                onChange={(e) => setFormData({ ...formData, min_experience: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, min_experience: e.target.value })}
                 style={{ background: theme.background, borderColor: formErrors.min_experience ? theme.destructive : theme.border, color: theme.textPrimary }}
               />
               {formErrors.min_experience && <p className="text-xs" style={{ color: theme.destructive }}>{formErrors.min_experience[0]}</p>}
@@ -393,10 +393,9 @@ const EditPositionPage = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Max Experience (yrs) *</label>
               <Input
-                type="number"
-                min="0"
+                type="text"
                 value={formData.max_experience}
-                onChange={(e) => setFormData({ ...formData, max_experience: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, max_experience: e.target.value })}
                 style={{ background: theme.background, borderColor: formErrors.max_experience ? theme.destructive : theme.border, color: theme.textPrimary }}
               />
               {formErrors.max_experience && <p className="text-xs" style={{ color: theme.destructive }}>{formErrors.max_experience[0]}</p>}
@@ -405,9 +404,9 @@ const EditPositionPage = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Budget</label>
               <Input
-                type="number"
+                type="text"
                 value={formData.budget || ''}
-                onChange={(e) => setFormData({ ...formData, budget: e.target.value ? Number(e.target.value) : undefined })}
+                onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
                 placeholder="e.g., 1500000"
                 style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }}
               />
@@ -448,67 +447,51 @@ const EditPositionPage = () => {
             )}
           </div>
 
-          <div className="space-y-3 relative">
-            <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Assign Recruiters</label>
-            <div className="relative">
-              <div 
-                onClick={() => setRecruiterDropdownOpen(!recruiterDropdownOpen)}
-                className="w-full flex items-center justify-between appearance-none rounded-md px-3 py-2 text-sm outline-none cursor-pointer"
-                style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary, border: `1px solid ${theme.border}` }}
-              >
-                <span className={formData.assigned_recruiter_ids!.length > 0 ? '' : 'opacity-60'}>
-                  {formData.assigned_recruiter_ids!.length > 0 
-                    ? `${formData.assigned_recruiter_ids!.length} recruiter(s) selected` 
-                    : 'Select recruiters...'}
-                </span>
-                <ChevronDown className="size-4 opacity-50" />
+          <div className="space-y-3 w-xl">
+            <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Assign Users</label>
+            <SearchableDropdown
+              options={users.map((u: any) => ({ 
+                value: u.id, 
+                label: u.name,
+                description: `${u.email} • ${u.role.charAt(0).toUpperCase() + u.role.slice(1)}` 
+              }))}
+              value={''}
+              multiple={true}
+              selectedValues={formData.assigned_recruiter_ids || []}
+              onChange={(val) => {
+                if (val) {
+                  toggleRecruiter(val);
+                }
+              }}
+              placeholder="Search and select recruiters..."
+            />
+            
+            {formData.assigned_recruiter_ids && formData.assigned_recruiter_ids.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {formData.assigned_recruiter_ids.map((userId) => {
+                  const user = users.find((u: any) => u.id === userId);
+                  return (
+                    <Badge
+                      key={userId}
+                      variant="outline"
+                      className="text-xs px-2.5 py-1 font-medium flex items-center gap-1"
+                      style={{ color: theme.accent, background: theme.accentSoft, borderColor: theme.accent + '40' }}
+                    >
+                      {user ? user.name : userId}
+                      <span 
+                        className="cursor-pointer opacity-70 hover:opacity-100 p-0.5" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleRecruiter(userId);
+                        }}
+                      >
+                        <X className="size-3" />
+                      </span>
+                    </Badge>
+                  );
+                })}
               </div>
-
-              {recruiterDropdownOpen && (
-                <div 
-                  className="absolute z-50 w-full mt-1 rounded-md shadow-lg border max-h-60 overflow-y-auto"
-                  style={{ background: theme.surface, borderColor: theme.border }}
-                >
-                  <div className="p-1 flex flex-col gap-1">
-                    {users
-                      .filter((u: any) => u.role === 'recruiter')
-                      .map((recruiter) => {
-                        const isAssigned = formData.assigned_recruiter_ids?.includes(recruiter.id);
-                        return (
-                          <label
-                            key={recruiter.id}
-                            className="flex items-center gap-3 px-3 py-2 rounded-sm cursor-pointer hover:opacity-80 transition-opacity"
-                            style={{ background: isAssigned ? theme.accentSoft : 'transparent' }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isAssigned}
-                              onChange={() => toggleRecruiter(recruiter.id)}
-                              className="accent-current"
-                              style={{ color: theme.accent }}
-                            />
-                            <div>
-                              <p className="text-sm font-medium" style={{ color: isAssigned ? theme.accent : theme.textPrimary }}>
-                                {recruiter.name}
-                              </p>
-                              <p className="text-xs" style={{ color: theme.textMuted }}>{recruiter.email}</p>
-                            </div>
-                          </label>
-                        );
-                    })}
-                    {users.filter((u: any) => u.role === 'recruiter').length === 0 && (
-                      <p className="text-sm p-3" style={{ color: theme.textMuted }}>No recruiters found.</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-            {/* Backdrop to close dropdown */}
-            {recruiterDropdownOpen && (
-              <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setRecruiterDropdownOpen(false)}
-              />
             )}
           </div>
 
