@@ -46,7 +46,6 @@ const EditPositionPage = () => {
   const [clientTeamMembers, setClientTeamMembers] = useState<any[]>([]);
   const [isFetchingClient, setIsFetchingClient] = useState(false);
   const [selectedClientDetail, setSelectedClientDetail] = useState<any>(null);
-  const [recruiterDropdownOpen, setRecruiterDropdownOpen] = useState(false);
 
   // Fetch job details if not already present
   useEffect(() => {
@@ -542,21 +541,7 @@ const EditPositionPage = () => {
             )}
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Job Description *</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full rounded-md p-3 text-sm min-h-[120px] outline-none"
-              placeholder="Describe the mandate, must-haves, nice-to-haves..."
-              style={{
-                background: theme.background,
-                border: `1px solid ${formErrors.description ? theme.destructive : theme.border}`,
-                color: theme.textPrimary,
-              }}
-            />
-            {formErrors.description && <p className="text-xs" style={{ color: theme.destructive }}>{formErrors.description[0]}</p>}
-          </div>
+
 
           <div className="flex items-center justify-end gap-3 pt-6" style={{ borderTop: `1px solid ${theme.border}` }}>
             <Button variant="outline" disabled={isSubmitting} onClick={() => navigate(-1)}>

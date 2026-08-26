@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,7 @@ interface Props {
 
 export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { jobs, loading: jobsLoading } = useAppSelector((state) => state.positions);
   const { candidateDetail, candidateDetailLoading } = useAppSelector((state) => state.candidates);
   const [selectedJobId, setSelectedJobId] = useState<string>('');
@@ -132,6 +134,7 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
       },
       getResponse: () => {
          onClose();
+         navigate(`/approvals/${selectedJobId}`);
       },
       getError: (err: any) => {
          const data = err?.response?.data;
