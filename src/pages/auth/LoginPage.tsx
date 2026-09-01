@@ -17,7 +17,7 @@ import RecruitOSLogo from '@/assets/RecruitOSLogo.png';
 const CustomGoogleLoginButton = ({ onAuthCode, theme }: { onAuthCode: (code: string) => void, theme: any }) => {
   const login = useGoogleLogin({
     flow: 'auth-code',
-    scope: 'openid email profile https://www.googleapis.com/auth/gmail.send',
+    scope: 'openid email profile https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.settings.basic',
     onSuccess: (codeResponse) => {
       onAuthCode(codeResponse.code);
     },

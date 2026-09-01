@@ -65,24 +65,26 @@ const AddCandidatePage = () => {
       showSuccessMessage: true,
       setLoading: (val: boolean) => setIsUploading(val),
       getResponse: (res: any) => {
-        // Extract the candidate_id from the actual API response format provided
-        let candidateId = null;
-        if (res?.results && Array.isArray(res.results) && res.results.length > 0) {
-          candidateId = res.results[0]?.candidate_id;
-        } else if (Array.isArray(res) && res.length > 0) {
-          candidateId = res[0]?.id;
-        } else if (res?.candidates && Array.isArray(res.candidates) && res.candidates.length > 0) {
-          candidateId = res.candidates[0]?.id;
-        } else if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-          candidateId = res.data[0]?.id;
-        } else if (res?.data?.id) {
-          candidateId = res.data.id;
-        } else if (res?.id) {
-          candidateId = res.id;
+        let candidateIds: string[] = [];
+
+        if (res?.results && Array.isArray(res.results)) {
+          candidateIds = res.results.map((r: any) => r.candidate_id || r.id).filter(Boolean);
+        } else if (Array.isArray(res)) {
+          candidateIds = res.map((r: any) => r.id).filter(Boolean);
+        } else if (res?.candidates && Array.isArray(res.candidates)) {
+          candidateIds = res.candidates.map((r: any) => r.id).filter(Boolean);
+        } else if (res?.data && Array.isArray(res.data)) {
+          candidateIds = res.data.map((r: any) => r.id).filter(Boolean);
+        } else if (res?.data?.id || res?.id) {
+          candidateIds = [res?.data?.id || res?.id];
         }
+
         setTimeout(() => {
-          if (candidateId) {
-            navigate(`/candidates/${candidateId}/edit`);
+          if (candidateIds.length > 0) {
+            const firstId = candidateIds[0];
+            const queue = candidateIds.slice(1).join(',');
+            const url = queue ? `/candidates/${firstId}/edit?queue=${queue}` : `/candidates/${firstId}/edit`;
+            navigate(url);
           } else {
             navigate('/candidates');
           }

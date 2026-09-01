@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { theme } from '@/config/theme';
 import type { ClientDetail } from '@/types/client.types';
-import ClientPOCCard from './ClientPOCCard';
 
 interface ClientOverviewProps {
   client: ClientDetail;
@@ -78,12 +77,13 @@ const ClientOverview = ({ client }: ClientOverviewProps) => {
             style={{ background: theme.surface, border: `1px solid ${theme.border}` }}
           >
             <h3 className="text-sm font-semibold mb-4" style={{ color: theme.textPrimary }}>
-              Contact & Address
+              Account & Location
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
-              <DetailRow icon={Mail} label="Email" value={client.email || '—'} />
-              <DetailRow icon={Phone} label="Phone" value={client.contact || '—'} />
+              <DetailRow icon={Building2} label="Company" value={client.company_name || '—'} />
               <DetailRow icon={MapPin} label="Address" value={[client.street, client.city, client.state, client.postal_code, client.country].filter(Boolean).join(', ') || '—'} />
+              <DetailRow icon={Calendar} label="Created At" value={new Date(client.created_at).toLocaleDateString()} />
+              <DetailRow icon={UserCheck} label="Created By" value={client.created_by?.name || '—'} />
             </div>
           </div>
 
@@ -95,7 +95,6 @@ const ClientOverview = ({ client }: ClientOverviewProps) => {
               Commercials & Details
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
-              <DetailRow icon={Building2} label="Industry" value={client.industry || '—'} />
               <DetailRow icon={Building2} label="GST" value={client.gst_number || '—'} />
               <DetailRow icon={Calendar} label="Agreement Date" value={client.agreement_date ? new Date(client.agreement_date).toLocaleDateString() : '—'} />
               <DetailRow icon={File} label="Document" value={
@@ -109,7 +108,6 @@ const ClientOverview = ({ client }: ClientOverviewProps) => {
               <DetailRow icon={Percent} label="Commercials" value={client.commercial_decided || 'N/A'} />
               <DetailRow icon={Clock} label="Payment period" value={client.payment_period_days ? `${client.payment_period_days} days` : '—'} />
               <DetailRow icon={RefreshCw} label="Replacement" value={client.replacement_period_days ? `${client.replacement_period_days} days` : '—'} />
-              <DetailRow icon={Award} label="Status" value={<span className="capitalize">{client.status || '—'}</span>} />
             </div>
             
             {client.notes && (
@@ -121,25 +119,8 @@ const ClientOverview = ({ client }: ClientOverviewProps) => {
           </div>
         </div>
 
-        {/* ── POC Cards ─────────────────────────────────────────── */}
+        {/* ── Team Members ─────────────────────────────────────────── */}
         <div className="space-y-4">
-          {client.pocs?.hiring && client.pocs.hiring.map((poc, idx) => (
-            <ClientPOCCard
-              key={poc.id || `hiring-${idx}`}
-              title="Hiring POC"
-              poc={poc}
-              accentColor={theme.success}
-            />
-          ))}
-          {client.pocs?.payment && client.pocs.payment.map((poc, idx) => (
-            <ClientPOCCard
-              key={poc.id || `payment-${idx}`}
-              title="Payment POC"
-              poc={poc}
-              accentColor={theme.chart2}
-            />
-          ))}
-          
           {/* Team Members List (Overview) */}
           {client.team_members && client.team_members.length > 0 && (
              <div className="rounded-xl p-5" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>

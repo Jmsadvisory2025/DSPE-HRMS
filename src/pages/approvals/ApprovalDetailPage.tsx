@@ -112,7 +112,7 @@ const ApprovalDetailPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [targetAppId, setTargetAppId] = useState<string | null>(null);
   const [actionType, setActionType] = useState<
-    "accepted" | "rejected" | "resubmit" | null
+    "accepted" | "rejected" | null
   >(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -199,8 +199,17 @@ const ApprovalDetailPage = () => {
         setLoading: (val: boolean) => setLoading(val),
         getResponse: (res: GroupedResponse[]) => {
           if (res && res.length > 0) {
-            setData(res[0]);
-            dispatch(setApplicationDetail(res[0]));
+            const group = res[0];
+            // Sort applications so pending ones are first
+            if (group.applications && Array.isArray(group.applications)) {
+              group.applications.sort((a, b) => {
+                if (a.manager_review_status === "pending" && b.manager_review_status !== "pending") return -1;
+                if (a.manager_review_status !== "pending" && b.manager_review_status === "pending") return 1;
+                return 0;
+              });
+            }
+            setData(group);
+            dispatch(setApplicationDetail(group));
           } else {
             setData(null);
             dispatch(setApplicationDetail(null));
@@ -277,6 +286,31 @@ const handleClientReminder = () => {
       toast.error(
         errorData?.message || errorData?.detail || "Failed to send reminder. Please try again.",
       );
+    },
+  });
+};
+
+const handleBulkReview = (status: "accepted" | "rejected") => {
+  if (selectedApps.size === 0) return;
+  setSendingToClient(true);
+  dispatch({
+    type: approvalActions.REVIEW_APPLICATION,
+    method: "POST",
+    endPoint: "/api/v1/candidates/applications/bulk-review/",
+    auth: true,
+    body: { application_ids: Array.from(selectedApps), status },
+    setLoading: (val: boolean) => {
+      if (!val) setSendingToClient(false);
+    },
+    getResponse: (res: any) => {
+      toast.success(res?.message || `Successfully bulk ${status} applications`);
+      setSelectedApps(new Set());
+      fetchDetail();
+    },
+    getError: (err: any) => {
+      console.error("Failed bulk review:", err);
+      const errorData = (err as any)?.response?.data;
+      toast.error(errorData?.message || errorData?.detail || errorData?.error || "Failed to bulk review. Please try again.");
     },
   });
 };
@@ -370,7 +404,7 @@ const handleClientReminder = () => {
 
   const handleActionClick = (
     appId: string,
-    type: "accepted" | "rejected" | "resubmit",
+    type: "accepted" | "rejected",
   ) => {
     setTargetAppId(appId);
     setActionType(type);
@@ -691,6 +725,25 @@ const handleClientReminder = () => {
                 Client Reminder
               </Button>
 
+              {!isRecruiter && (
+                <>
+                  <Button
+                    onClick={() => handleBulkReview("accepted")}
+                    disabled={sendingToClient}
+                    className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    Bulk Approve
+                  </Button>
+                  <Button
+                    onClick={() => handleBulkReview("rejected")}
+                    disabled={sendingToClient}
+                    className="gap-2 bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    Bulk Reject
+                  </Button>
+                </>
+              )}
+
               <Button
                 onClick={() => setSendClientModalOpen(true)}
                 disabled={sendingToClient}
@@ -744,17 +797,13 @@ const handleClientReminder = () => {
                               ? theme.warning
                               : app.manager_review_status === "accepted"
                                 ? theme.success
-                                : app.manager_review_status === "resubmit"
-                                  ? theme.info
-                                  : theme.destructive,
+                                : theme.destructive,
                           background:
                             app.manager_review_status === "pending"
                               ? theme.warningSoft
                               : app.manager_review_status === "accepted"
                                 ? theme.successSoft
-                                : app.manager_review_status === "resubmit"
-                                  ? theme.infoSoft
-                                  : theme.destructiveSoft,
+                                : theme.destructiveSoft,
                           border: 0,
                         }}
                       >
@@ -1419,17 +1468,6 @@ const handleClientReminder = () => {
                       }}
                     >
                       Reject
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleActionClick(app.id, "resubmit")}
-                      style={{
-                        borderColor: theme.warning + "50",
-                        color: theme.warning,
-                      }}
-                    >
-                      Re-Submission
                     </Button>
                     <Button
                       size="sm"

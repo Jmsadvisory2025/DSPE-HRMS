@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -74,6 +74,7 @@ const ArrayInput = ({
 const EditCandidatePage = () => {
   const { candidateId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const dispatch = useAppDispatch();
   
   const { candidateDetail, candidateDetailLoading } = useAppSelector(
@@ -104,24 +105,16 @@ const EditCandidatePage = () => {
     if (candidateDetail) {
       setFormData({
         candidate_name: candidateDetail.candidate_name || '',
-        profile_name: candidateDetail.profile_name || '',
         email: candidateDetail.email || '',
         contact: candidateDetail.contact || '',
         current_profile: candidateDetail.current_profile || '',
         current_company: candidateDetail.current_company || '',
         experience: candidateDetail.experience || '',
         current_location: candidateDetail.current_location || '',
-        linkedin_url: candidateDetail.linkedin_url || '',
-        portfolio_url: candidateDetail.portfolio_url || '',
         current_ctc: candidateDetail.current_ctc || '',
         expected_ctc: candidateDetail.expected_ctc || '',
         notice_period: candidateDetail.notice_period || '',
         education: candidateDetail.education || [],
-        skills: candidateDetail.skills || [],
-        certifications: candidateDetail.certifications || [],
-        experience_details: candidateDetail.experience_details || [],
-        tags: candidateDetail.tags || [],
-        is_duplicate: !!candidateDetail.is_duplicate,
       });
     }
   }, [candidateDetail]);
@@ -168,7 +161,22 @@ const EditCandidatePage = () => {
       setLoading: (val: boolean) => setIsSubmitting(val),
       getResponse: () => {
         toast.success("Candidate updated successfully.");
-        navigate(`/candidates/${candidateId}`);
+        const queueParams = searchParams.get('queue');
+        if (queueParams) {
+          const ids = queueParams.split(',');
+          const nextId = ids[0];
+          const nextQueue = ids.slice(1).join(',');
+          
+          setFormData(null); // Clear form to trigger loading state for next item
+
+          if (nextQueue) {
+             navigate(`/candidates/${nextId}/edit?queue=${nextQueue}`);
+          } else {
+             navigate(`/candidates/${nextId}/edit`);
+          }
+        } else {
+          navigate(`/candidates/${candidateId}`);
+        }
       },
       getError: (err: any) => {
         setIsSubmitting(false);
@@ -259,14 +267,6 @@ const EditCandidatePage = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label style={{ color: theme.textPrimary }}>Profile Name</Label>
-              <Input 
-                value={formData.profile_name} 
-                onChange={e => handleInputChange('profile_name', e.target.value)}
-                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
-              />
-            </div>
-            <div className="space-y-2">
               <Label style={{ color: theme.textPrimary }}>Email</Label>
               <Input 
                 type="email"
@@ -325,28 +325,6 @@ const EditCandidatePage = () => {
         </div>
 
         <div className="p-6 rounded-2xl border shadow-sm space-y-6" style={{ background: theme.surface, borderColor: theme.border }}>
-          <h3 className="text-lg font-bold border-b pb-3" style={{ color: theme.textPrimary, borderColor: theme.border }}>Links & Socials</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label style={{ color: theme.textPrimary }}>LinkedIn URL</Label>
-              <Input 
-                value={formData.linkedin_url} 
-                onChange={e => handleInputChange('linkedin_url', e.target.value)}
-                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label style={{ color: theme.textPrimary }}>Portfolio URL</Label>
-              <Input 
-                value={formData.portfolio_url} 
-                onChange={e => handleInputChange('portfolio_url', e.target.value)}
-                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6 rounded-2xl border shadow-sm space-y-6" style={{ background: theme.surface, borderColor: theme.border }}>
           <h3 className="text-lg font-bold border-b pb-3" style={{ color: theme.textPrimary, borderColor: theme.border }}>Compensation & Preferences</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -376,8 +354,9 @@ const EditCandidatePage = () => {
               <Input 
                 value={formData.notice_period} 
                 onChange={e => handleInputChange('notice_period', e.target.value)}
-                style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+                style={{ background: theme.surface, borderColor: formErrors.notice_period ? theme.destructive : theme.border, color: theme.textPrimary }}
               />
+              <FieldError name="notice_period" />
             </div>
           </div>
         </div>
@@ -386,46 +365,11 @@ const EditCandidatePage = () => {
           <h3 className="text-lg font-bold border-b pb-3" style={{ color: theme.textPrimary, borderColor: theme.border }}>Detailed Background (Arrays)</h3>
           <div className="grid grid-cols-1 gap-8">
             <ArrayInput 
-              label="Skills" 
-              values={formData.skills} 
-              onChange={vals => handleInputChange('skills', vals)} 
-              placeholder="e.g. Python, Django, AWS..."
-            />
-            <ArrayInput 
               label="Education" 
               values={formData.education} 
               onChange={vals => handleInputChange('education', vals)} 
             />
-            <ArrayInput 
-              label="Certifications" 
-              values={formData.certifications} 
-              onChange={vals => handleInputChange('certifications', vals)} 
-            />
-            <ArrayInput 
-              label="Experience Details" 
-              values={formData.experience_details} 
-              onChange={vals => handleInputChange('experience_details', vals)} 
-            />
-            <ArrayInput 
-              label="Tags" 
-              values={formData.tags} 
-              onChange={vals => handleInputChange('tags', vals)} 
-              placeholder="e.g. backend, senior..."
-            />
           </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <input 
-            type="checkbox" 
-            id="is_duplicate"
-            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
-            checked={formData.is_duplicate}
-            onChange={(e) => handleInputChange('is_duplicate', e.target.checked)}
-          />
-          <Label htmlFor="is_duplicate" className="cursor-pointer" style={{ color: theme.textPrimary }}>
-            Flag as Duplicate Profile
-          </Label>
         </div>
 
         <div className="flex justify-end gap-4 pt-4">

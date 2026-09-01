@@ -24,6 +24,7 @@ const ApprovalsPage = () => {
   const [selectedClient, setSelectedClient] = useState('');
   const [clientsData, setClientsData] = useState<{client: {client_id: string, name: string}}[]>([]);
   const [clientsLoading, setClientsLoading] = useState(false);
+  const [approvalStats, setApprovalStats] = useState<{ status: string; count: number }[]>([]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
@@ -57,7 +58,14 @@ const ApprovalsPage = () => {
       endPoint: endpoint,
       auth: true,
       setLoading: (val: boolean) => dispatch(setLoading(val)),
-      getResponse: (data: JobResponse) => dispatch(setJobs(data.results || [])),
+      getResponse: (data: JobResponse) => {
+        dispatch(setJobs(data.results || []));
+        if (data.approval_stats) {
+          setApprovalStats(data.approval_stats);
+        } else {
+          setApprovalStats([]);
+        }
+      },
       getError: (err: any) => dispatch(setError(err.message)),
     });
   }, [dispatch, debouncedSearch, selectedClient]);
@@ -88,6 +96,24 @@ const ApprovalsPage = () => {
           </p>
         </div>
       </div>
+
+      {/* Approval Stats Summary */}
+      {approvalStats.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {approvalStats.map((stat, i) => (
+            <div 
+              key={i} 
+              className="p-4 rounded-xl flex items-center justify-between"
+              style={{ background: theme.surface, border: `1px solid ${theme.border}` }}
+            >
+              <div>
+                <p className="text-sm font-medium capitalize" style={{ color: theme.textSecondary }}>{stat.status} Applications</p>
+                <h3 className="text-2xl font-bold mt-1" style={{ color: theme.textPrimary }}>{stat.count}</h3>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Search & Client Filter */}
       <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -134,13 +160,14 @@ const ApprovalsPage = () => {
                 <TableHead>Designation</TableHead>
                 <TableHead>Client</TableHead>
                 <TableHead>Location</TableHead>
+                <TableHead>Approvals</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredPositions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8" style={{ color: theme.textMuted }}>
+                  <TableCell colSpan={6} className="text-center py-8" style={{ color: theme.textMuted }}>
                     No jobs found matching your criteria.
                   </TableCell>
                 </TableRow>
@@ -165,6 +192,41 @@ const ApprovalsPage = () => {
                     </TableCell>
                     <TableCell style={{ color: theme.textSecondary }} className="capitalize">
                       {job.location}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {job.approval_stats?.map((stat) => {
+                          let color: string = theme.textMuted;
+                          let bgClass = "bg-muted/50";
+                          let isPendingAction = false;
+                          
+                          if (stat.status === 'pending') {
+                            color = theme.warning;
+                            if (stat.count > 0) {
+                              isPendingAction = true;
+                              bgClass = "bg-orange-500/10 border border-orange-500/30 animate-pulse shadow-sm";
+                              color = "#f97316"; // brighter orange
+                            }
+                          } else if (stat.status === 'approved' || stat.status === 'accepted') {
+                            color = theme.success;
+                          } else if (stat.status === 'rejected') {
+                            color = theme.destructive;
+                          }
+                          
+                          return (
+                            <div 
+                              key={stat.status}
+                              className={`flex flex-col items-center justify-center rounded-md px-2 py-1 min-w-[40px] ${bgClass}`}
+                              title={`${stat.count} ${stat.status}`}
+                            >
+                              <span className={`text-xs ${isPendingAction ? 'font-extrabold' : 'font-bold'}`} style={{ color }}>{stat.count}</span>
+                              <span className="text-[9px] uppercase tracking-wider" style={{ color: isPendingAction ? color : theme.textMuted }}>
+                                {stat.status.slice(0, 3)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {(() => {

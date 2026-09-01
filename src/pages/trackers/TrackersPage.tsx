@@ -1,9 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useAppDispatch } from '@/store/hooks';
-import { clientActions } from '@/redux/actions';
-import { ChevronDown, Search, Check, Pencil, X, Plus, Save, Loader2, Download } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import React, { useState, useEffect, useRef } from "react";
+import { useAppDispatch } from "@/store/hooks";
+import { clientActions } from "@/redux/actions";
+import {
+  ChevronDown,
+  Search,
+  Check,
+  Pencil,
+  X,
+  Plus,
+  Save,
+  Loader2,
+  Download,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 interface ClientDetails {
   client: {
     client_id: string;
@@ -34,24 +44,27 @@ const SearchableDropdown = ({
   loading?: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredOptions = options.filter(opt => 
-    opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredOptions = options.filter((opt) =>
+    opt.label.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  const selectedOption = options.find(opt => opt.value === value);
+  const selectedOption = options.find((opt) => opt.value === value);
 
   return (
     <div className="relative w-full" ref={wrapperRef}>
@@ -62,11 +75,17 @@ const SearchableDropdown = ({
         className={cn(
           "flex w-full items-center justify-between rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors",
           "focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
-          isOpen && "ring-1 ring-ring"
+          isOpen && "ring-1 ring-ring",
         )}
       >
-        <span className={cn("truncate", !selectedOption && "text-muted-foreground")}>
-          {loading ? "Loading..." : (selectedOption ? selectedOption.label : placeholder)}
+        <span
+          className={cn("truncate", !selectedOption && "text-muted-foreground")}
+        >
+          {loading
+            ? "Loading..."
+            : selectedOption
+              ? selectedOption.label
+              : placeholder}
         </span>
         <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
       </button>
@@ -95,15 +114,17 @@ const SearchableDropdown = ({
                   onClick={() => {
                     onChange(opt.value);
                     setIsOpen(false);
-                    setSearchTerm('');
+                    setSearchTerm("");
                   }}
                   className={cn(
                     "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-                    value === opt.value && "bg-accent text-accent-foreground"
+                    value === opt.value && "bg-accent text-accent-foreground",
                   )}
                 >
                   <span className="flex-1 truncate">{opt.label}</span>
-                  {value === opt.value && <Check className="ml-2 h-4 w-4 shrink-0" />}
+                  {value === opt.value && (
+                    <Check className="ml-2 h-4 w-4 shrink-0" />
+                  )}
                 </div>
               ))
             )}
@@ -117,8 +138,8 @@ const SearchableDropdown = ({
 const TrackersPage = () => {
   const dispatch = useAppDispatch();
   const [clientsData, setClientsData] = useState<ClientDetails[]>([]);
-  const [selectedClient, setSelectedClient] = useState<string>('');
-  const [selectedTeamMember, setSelectedTeamMember] = useState<string>('');
+  const [selectedClient, setSelectedClient] = useState<string>("");
+  const [selectedTeamMember, setSelectedTeamMember] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   const [trackerFormats, setTrackerFormats] = useState<any[]>([]);
@@ -127,8 +148,8 @@ const TrackersPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingColumns, setEditingColumns] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [headerColor, setHeaderColor] = useState('#1e293b');
-  const [textColor, setTextColor] = useState('#ffffff');
+  const [headerColor, setHeaderColor] = useState("#1e293b");
+  const [textColor, setTextColor] = useState("#ffffff");
   const [isDownloading, setIsDownloading] = useState(false);
   const [xlsxFile, setXlsxFile] = useState<File | null>(null);
 
@@ -146,31 +167,34 @@ const TrackersPage = () => {
         }
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/clients/tracker-formats/${trackerId}/export-template/`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL || ""}/api/v1/clients/tracker-formats/${trackerId}/export-template/`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to download template');
+        throw new Error("Failed to download template");
       }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `Tracker_Template_${selectedMemberDetails?.name?.replace(/\s+/g, '_') || 'Export'}.xlsx`;
+      a.download = `Tracker_Template_${selectedMemberDetails?.name?.replace(/\s+/g, "_") || "Export"}.xlsx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
-      toast.success('Template downloaded successfully!');
+
+      toast.success("Template downloaded successfully!");
     } catch (error) {
       console.error(error);
-      toast.error('Failed to download template. Please try again.');
+      toast.error("Failed to download template. Please try again.");
     } finally {
       setIsDownloading(false);
     }
@@ -188,7 +212,8 @@ const TrackersPage = () => {
           setClientsData(data.clients_details);
         }
       },
-      getError: (err: any) => console.error('Error fetching clients dropdown:', err),
+      getError: (err: any) =>
+        console.error("Error fetching clients dropdown:", err),
     });
   }, [dispatch]);
 
@@ -205,17 +230,20 @@ const TrackersPage = () => {
             setTrackerFormats(data.results);
           }
         },
-        getError: (err: any) => console.error('Error fetching tracker formats:', err),
+        getError: (err: any) =>
+          console.error("Error fetching tracker formats:", err),
       });
     } else {
       setTrackerFormats([]);
     }
   }, [selectedClient, dispatch]);
 
-  const currentClientData = clientsData.find(c => c.client.client_id === selectedClient);
+  const currentClientData = clientsData.find(
+    (c) => c.client.client_id === selectedClient,
+  );
   const teamMembers = currentClientData?.team_members || [];
 
-  const clientOptions: Option[] = clientsData.map(c => ({
+  const clientOptions: Option[] = clientsData.map((c) => ({
     value: c.client.client_id,
     label: c.client.name,
   }));
@@ -225,14 +253,18 @@ const TrackersPage = () => {
     label: `${member.name} (${member.role})`,
   }));
 
-  const selectedMemberDetails = teamMembers.find((m: any) => (m.id || m.email) === selectedTeamMember);
-  const selectedFormat = trackerFormats.find(f => f.team_member_details?.id === selectedTeamMember);
+  const selectedMemberDetails = teamMembers.find(
+    (m: any) => (m.id || m.email) === selectedTeamMember,
+  );
+  const selectedFormat = trackerFormats.find(
+    (f) => f.team_member_details?.id === selectedTeamMember,
+  );
 
   const handleEditClick = () => {
     setIsEditing(true);
-    setEditingColumns(selectedFormat ? [...selectedFormat.columns] : ['']);
-    setHeaderColor(selectedFormat?.header_color || '#1e293b');
-    setTextColor(selectedFormat?.text_color || '#ffffff');
+    setEditingColumns(selectedFormat ? [...selectedFormat.columns] : [""]);
+    setHeaderColor(selectedFormat?.header_color || "#1e293b");
+    setTextColor(selectedFormat?.text_color || "#ffffff");
   };
 
   const handleCancelEdit = () => {
@@ -242,7 +274,7 @@ const TrackersPage = () => {
   };
 
   const handleAddColumn = () => {
-    setEditingColumns([...editingColumns, '']);
+    setEditingColumns([...editingColumns, ""]);
   };
 
   const handleRemoveColumn = (index: number) => {
@@ -256,36 +288,50 @@ const TrackersPage = () => {
   };
 
   const handleSave = () => {
-    const validColumns = editingColumns.filter(c => c.trim().length > 0).map(c => c.trim());
+    const validColumns = editingColumns
+      .filter((c) => c.trim().length > 0)
+      .map((c) => c.trim());
 
     const isUpdate = !!selectedFormat;
-    
+
     let payload: any;
-    
+
     if (xlsxFile) {
       const fd = new FormData();
       if (!isUpdate) {
-        fd.append('client', selectedClient);
-        fd.append('team_member_id', selectedTeamMember);
+        fd.append("client", selectedClient);
+        fd.append("team_members", JSON.stringify([selectedTeamMember]));
       }
       if (validColumns.length > 0) {
-        fd.append('columns', JSON.stringify(validColumns));
+        fd.append("columns", JSON.stringify(validColumns));
       }
-      fd.append('header_color', headerColor);
-      fd.append('text_color', textColor);
-      fd.append('xlsx_file', xlsxFile);
+      fd.append("header_color", headerColor);
+      fd.append("text_color", textColor);
+      fd.append("xlsx_file", xlsxFile);
       payload = fd;
     } else {
-      payload = isUpdate 
-        ? { columns: validColumns, header_color: headerColor, text_color: textColor } 
-        : { client: selectedClient, team_member_id: selectedTeamMember, columns: validColumns, header_color: headerColor, text_color: textColor };
+      payload = isUpdate
+        ? {
+            columns: validColumns,
+            header_color: headerColor,
+            text_color: textColor,
+          }
+        : {
+            client: selectedClient,
+            team_member_id: selectedTeamMember,
+            columns: validColumns,
+            header_color: headerColor,
+            text_color: textColor,
+          };
     }
 
     dispatch({
-      type: isUpdate ? clientActions.UPDATE_TRACKER_FORMAT : clientActions.CREATE_TRACKER_FORMAT,
+      type: isUpdate
+        ? clientActions.UPDATE_TRACKER_FORMAT
+        : clientActions.CREATE_TRACKER_FORMAT,
       method: isUpdate ? "PATCH" : "POST",
-      endPoint: isUpdate 
-        ? `/api/v1/clients/tracker-formats/${selectedFormat.id}/` 
+      endPoint: isUpdate
+        ? `/api/v1/clients/tracker-formats/${selectedFormat.id}/`
         : `/api/v1/clients/tracker-formats/`,
       body: payload,
       auth: true,
@@ -313,7 +359,7 @@ const TrackersPage = () => {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Trackers Data</h1>
-      
+
       <div className="flex flex-col lg:flex-row gap-6 mb-6">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="w-full sm:w-64 shrink-0">
@@ -323,7 +369,7 @@ const TrackersPage = () => {
               value={selectedClient}
               onChange={(val) => {
                 setSelectedClient(val);
-                setSelectedTeamMember('');
+                setSelectedTeamMember("");
                 setIsEditing(false);
               }}
               placeholder="Select Client"
@@ -332,7 +378,9 @@ const TrackersPage = () => {
           </div>
 
           <div className="w-full sm:w-64 shrink-0">
-            <label className="block text-sm font-medium mb-1">Tracker / Team Member</label>
+            <label className="block text-sm font-medium mb-1">
+              Tracker / Team Member
+            </label>
             <SearchableDropdown
               options={teamMemberOptions}
               value={selectedTeamMember}
@@ -353,9 +401,15 @@ const TrackersPage = () => {
               {selectedMemberDetails.name.charAt(0).toUpperCase()}
             </div>
             <div>
-              <h3 className="font-medium leading-none mb-1.5">{selectedMemberDetails.name}</h3>
-              <p className="text-sm text-muted-foreground mb-0.5">{selectedMemberDetails.role}</p>
-              <p className="text-xs text-muted-foreground">{selectedMemberDetails.email}</p>
+              <h3 className="font-medium leading-none mb-1.5">
+                {selectedMemberDetails.name}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-0.5">
+                {selectedMemberDetails.role}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {selectedMemberDetails.email}
+              </p>
             </div>
           </div>
         )}
@@ -366,77 +420,122 @@ const TrackersPage = () => {
           <div className="h-12 w-12 rounded-full bg-background border flex items-center justify-center mb-4 shadow-sm">
             <Search className="h-6 w-6 text-muted-foreground/70" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground">No Client Selected</h3>
-          <p className="text-muted-foreground mt-1 text-center max-w-sm">Please select a client to check details and view their tracker configuration.</p>
+          <h3 className="text-lg font-semibold text-foreground">
+            No Client Selected
+          </h3>
+          <p className="text-muted-foreground mt-1 text-center max-w-sm">
+            Please select a client to check details and view their tracker
+            configuration.
+          </p>
         </div>
       ) : !selectedTeamMember ? (
         <div className="mt-12 flex flex-col items-center justify-center p-12 bg-muted/30 border border-dashed rounded-xl animate-in fade-in duration-300">
           <div className="h-12 w-12 rounded-full bg-background border flex items-center justify-center mb-4 shadow-sm">
             <Search className="h-6 w-6 text-muted-foreground/70" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground">No Tracker Selected</h3>
-          <p className="text-muted-foreground mt-1 text-center max-w-sm">Please select a particular team member to view their tracker details.</p>
+          <h3 className="text-lg font-semibold text-foreground">
+            No Tracker Selected
+          </h3>
+          <p className="text-muted-foreground mt-1 text-center max-w-sm">
+            Please select a particular team member to view their tracker
+            details.
+          </p>
         </div>
       ) : selectedFormat || isEditing ? (
         <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
           <h2 className="text-xl font-bold mb-4">Tracker Configuration</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
             {/* Meta Info Card */}
             <div className="col-span-1 rounded-lg border bg-card shadow-sm p-5 space-y-4">
-              <h3 className="font-semibold text-lg border-b pb-2">Format Details</h3>
+              <h3 className="font-semibold text-lg border-b pb-2">
+                Format Details
+              </h3>
               <div className="space-y-4 text-sm mt-4">
                 <div>
-                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5">Created By</p>
+                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1.5">
+                    Created By
+                  </p>
                   <div className="flex items-center gap-2">
                     <div className="h-7 w-7 rounded-full bg-primary/15 flex items-center justify-center text-primary text-xs font-bold">
-                      {selectedFormat?.created_by?.name?.charAt(0)?.toUpperCase() || '?'}
+                      {selectedFormat?.created_by?.name
+                        ?.charAt(0)
+                        ?.toUpperCase() || "?"}
                     </div>
                     <div className="flex flex-col">
                       <span className="font-medium leading-none mb-1">
-                        {selectedFormat?.created_by?.name || 'Pending Creation'}
+                        {selectedFormat?.created_by?.name || "Pending Creation"}
                       </span>
                       <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                        {selectedFormat?.created_by?.role || 'N/A'}
+                        {selectedFormat?.created_by?.role || "N/A"}
                       </span>
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
-                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Created At</p>
+                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                    Created At
+                  </p>
                   <p className="font-medium">
-                    {selectedFormat?.created_at 
-                      ? new Date(selectedFormat.created_at).toLocaleDateString('en-US', {
-                          year: 'numeric', month: 'short', day: 'numeric'
-                        })
-                      : 'N/A'
-                    }
+                    {selectedFormat?.created_at
+                      ? new Date(selectedFormat.created_at).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          },
+                        )
+                      : "N/A"}
                   </p>
                 </div>
-                
+
                 <div>
-                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Last Updated</p>
+                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">
+                    Last Updated
+                  </p>
                   <p className="font-medium">
                     {selectedFormat?.updated_at
-                      ? new Date(selectedFormat.updated_at).toLocaleDateString('en-US', {
-                          year: 'numeric', month: 'short', day: 'numeric'
-                        })
-                      : 'N/A'
-                    }
+                      ? new Date(selectedFormat.updated_at).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          },
+                        )
+                      : "N/A"}
                   </p>
                 </div>
 
                 <div className="pt-2 border-t mt-2">
-                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Theme Colors</p>
+                  <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">
+                    Theme Colors
+                  </p>
                   <div className="flex gap-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded border shadow-sm" style={{ backgroundColor: selectedFormat?.header_color || '#1e293b' }}></div>
-                      <span className="text-xs font-medium uppercase">{selectedFormat?.header_color || '#1e293b'}</span>
+                      <div
+                        className="w-5 h-5 rounded border shadow-sm"
+                        style={{
+                          backgroundColor:
+                            selectedFormat?.header_color || "#1e293b",
+                        }}
+                      ></div>
+                      <span className="text-xs font-medium uppercase">
+                        {selectedFormat?.header_color || "#1e293b"}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded border shadow-sm" style={{ backgroundColor: selectedFormat?.text_color || '#ffffff' }}></div>
-                      <span className="text-xs font-medium uppercase">{selectedFormat?.text_color || '#ffffff'}</span>
+                      <div
+                        className="w-5 h-5 rounded border shadow-sm"
+                        style={{
+                          backgroundColor:
+                            selectedFormat?.text_color || "#ffffff",
+                        }}
+                      ></div>
+                      <span className="text-xs font-medium uppercase">
+                        {selectedFormat?.text_color || "#ffffff"}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -447,20 +546,28 @@ const TrackersPage = () => {
             <div className="col-span-1 md:col-span-2 rounded-lg border bg-card shadow-sm flex flex-col">
               <div className="border-b px-6 py-4 flex items-center justify-between bg-muted/20">
                 <div>
-                  <h3 className="font-semibold text-lg tracking-tight">Data Columns</h3>
-                  <p className="text-sm text-muted-foreground mt-0.5">Expected fields for this tracker format</p>
+                  <h3 className="font-semibold text-lg tracking-tight">
+                    Data Columns
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    Expected fields for this tracker format
+                  </p>
                 </div>
                 {!isEditing ? (
                   <div className="flex items-center gap-2">
-                    <button 
+                    <button
                       onClick={() => handleDownloadTemplate(selectedFormat.id)}
                       disabled={isDownloading}
                       className="flex items-center gap-1.5 text-sm bg-secondary text-secondary-foreground px-3 py-1.5 rounded-md font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50"
                     >
-                      {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                      {isDownloading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
                       Download
                     </button>
-                    <button 
+                    <button
                       onClick={handleEditClick}
                       className="flex items-center gap-1.5 text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md font-medium hover:bg-primary/90 transition-colors"
                     >
@@ -470,37 +577,44 @@ const TrackersPage = () => {
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <button 
+                    <button
                       onClick={handleCancelEdit}
                       disabled={isSaving}
                       className="text-sm bg-muted text-muted-foreground px-3 py-1.5 rounded-md font-medium hover:bg-muted/80 transition-colors disabled:opacity-50"
                     >
                       Cancel
                     </button>
-                    <button 
+                    <button
                       onClick={handleSave}
                       disabled={isSaving}
                       className="flex items-center gap-1.5 text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
                     >
-                      {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                      {isSaving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
                       Save
                     </button>
                   </div>
                 )}
               </div>
-              
+
               <div className="p-6">
                 {!isEditing ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {selectedFormat.columns?.map((col: string, idx: number) => (
-                      <div 
-                        key={idx} 
+                      <div
+                        key={idx}
                         className="flex items-center gap-3 bg-background border rounded-md p-3 shadow-sm hover:border-primary/40 transition-all hover:shadow-md"
                       >
                         <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary/10 text-primary text-xs font-semibold">
                           {idx + 1}
                         </div>
-                        <span className="text-sm font-medium text-foreground truncate" title={col}>
+                        <span
+                          className="text-sm font-medium text-foreground truncate"
+                          title={col}
+                        >
                           {col}
                         </span>
                       </div>
@@ -513,10 +627,12 @@ const TrackersPage = () => {
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-muted text-muted-foreground text-xs font-semibold">
                           {idx + 1}
                         </div>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           value={col}
-                          onChange={(e) => handleColumnChange(idx, e.target.value)}
+                          onChange={(e) =>
+                            handleColumnChange(idx, e.target.value)
+                          }
                           className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                           placeholder="Enter column name..."
                         />
@@ -536,10 +652,12 @@ const TrackersPage = () => {
                       <Plus className="h-4 w-4" />
                       Add Field
                     </button>
-                    
+
                     <div className="mt-6 pt-4 border-t flex flex-wrap gap-6">
                       <div className="flex flex-col gap-1.5 w-full">
-                        <label className="text-xs font-semibold uppercase text-muted-foreground">Upload Tracker Format File (Optional)</label>
+                        <label className="text-xs font-semibold uppercase text-muted-foreground">
+                          Upload Tracker Format File (Optional)
+                        </label>
                         <input
                           type="file"
                           accept=".xlsx,.xls"
@@ -554,18 +672,20 @@ const TrackersPage = () => {
                         />
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-semibold uppercase text-muted-foreground">Header Color</label>
+                        <label className="text-xs font-semibold uppercase text-muted-foreground">
+                          Header Color
+                        </label>
                         <div className="flex items-center gap-3">
-                          <input 
-                            type="color" 
-                            value={headerColor} 
-                            onChange={e => setHeaderColor(e.target.value)} 
-                            className="w-10 h-10 rounded cursor-pointer p-0 border-0 bg-transparent shrink-0" 
+                          <input
+                            type="color"
+                            value={headerColor}
+                            onChange={(e) => setHeaderColor(e.target.value)}
+                            className="w-10 h-10 rounded cursor-pointer p-0 border-0 bg-transparent shrink-0"
                           />
-                          <input 
+                          <input
                             type="text"
                             value={headerColor}
-                            onChange={e => setHeaderColor(e.target.value)}
+                            onChange={(e) => setHeaderColor(e.target.value)}
                             className="h-10 w-28 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring uppercase font-medium"
                             placeholder="#000000"
                             maxLength={7}
@@ -573,18 +693,20 @@ const TrackersPage = () => {
                         </div>
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-xs font-semibold uppercase text-muted-foreground">Text Color</label>
+                        <label className="text-xs font-semibold uppercase text-muted-foreground">
+                          Text Color
+                        </label>
                         <div className="flex items-center gap-3">
-                          <input 
-                            type="color" 
-                            value={textColor} 
-                            onChange={e => setTextColor(e.target.value)} 
-                            className="w-10 h-10 rounded cursor-pointer p-0 border-0 bg-transparent shrink-0" 
+                          <input
+                            type="color"
+                            value={textColor}
+                            onChange={(e) => setTextColor(e.target.value)}
+                            className="w-10 h-10 rounded cursor-pointer p-0 border-0 bg-transparent shrink-0"
                           />
-                          <input 
+                          <input
                             type="text"
                             value={textColor}
-                            onChange={e => setTextColor(e.target.value)}
+                            onChange={(e) => setTextColor(e.target.value)}
                             className="h-10 w-28 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring uppercase font-medium"
                             placeholder="#000000"
                             maxLength={7}
@@ -596,7 +718,6 @@ const TrackersPage = () => {
                 )}
               </div>
             </div>
-
           </div>
         </div>
       ) : (
@@ -604,9 +725,14 @@ const TrackersPage = () => {
           <div className="h-12 w-12 rounded-full bg-background border flex items-center justify-center mb-4 shadow-sm">
             <Search className="h-6 w-6 text-muted-foreground/70" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground">No Configuration Found</h3>
-          <p className="text-muted-foreground mt-1 text-center max-w-sm">There is no tracker format configured for this particular team member.</p>
-          <button 
+          <h3 className="text-lg font-semibold text-foreground">
+            No Configuration Found
+          </h3>
+          <p className="text-muted-foreground mt-1 text-center max-w-sm">
+            There is no tracker format configured for this particular team
+            member.
+          </p>
+          <button
             onClick={handleEditClick}
             className="mt-6 flex items-center gap-2 text-sm bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium hover:bg-primary/90 transition-colors shadow-sm"
           >
@@ -616,7 +742,7 @@ const TrackersPage = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
 export default TrackersPage;

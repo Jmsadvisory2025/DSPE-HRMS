@@ -41,29 +41,11 @@ const ClientDetailHeader = ({ client }: ClientDetailHeaderProps) => {
             </Badge>
           </div>
           <p className="text-sm mt-1" style={{ color: theme.textMuted }}>
-            {client.industry} · {[client.city, client.state, client.country].filter(Boolean).join(', ')} · <span className="font-medium" style={{ color: theme.textSecondary }}>Account: {client.client_name || 'N/A'}</span>
+            {[client.city, client.state, client.country].filter(Boolean).join(', ')}
           </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Badge
-            variant="outline"
-            className="text-xs px-2.5 py-1 font-medium"
-            style={{
-              borderColor:
-                client.status === 'active'
-                  ? theme.success + '50'
-                  : theme.textMuted + '50',
-              color:
-                client.status === 'active' ? theme.success : theme.textMuted,
-              background:
-                client.status === 'active'
-                  ? theme.successSoft
-                  : theme.surfaceMuted,
-            }}
-          >
-            {client.status}
-          </Badge>
           <Button
             variant="outline"
             size="sm"

@@ -65,28 +65,21 @@ const ClientCard = ({ client }: ClientCardProps) => {
               </span>
             </div>
             <p className="text-xs truncate mt-0.5" style={{ color: theme.textMuted }}>
-              {client.industry}
+              {client.industry || locationStr || "No Industry"}
             </p>
           </div>
         </div>
 
         <Badge
           variant="outline"
-          className="text-[10px] px-2 py-0.5 shrink-0 font-medium capitalize"
+          className="text-[10px] px-2 py-0.5 shrink-0 font-medium"
           style={{
-            borderColor:
-              client.status === 'active'
-                ? theme.success + '50'
-                : theme.textMuted + '50',
-            color:
-              client.status === 'active' ? theme.success : theme.textMuted,
-            background:
-              client.status === 'active'
-                ? theme.successSoft
-                : theme.surfaceMuted,
+            borderColor: theme.accent + '40',
+            color: theme.accent,
+            background: theme.accent + '15',
           }}
         >
-          {client.status}
+          {client.open_jobs_count || 0} Open Jobs
         </Badge>
       </div>
 
@@ -104,12 +97,7 @@ const ClientCard = ({ client }: ClientCardProps) => {
             <span>{client.contact}</span>
           </div>
         )}
-        {locationStr && (
-          <div className="flex items-center gap-2 text-xs" style={{ color: theme.textSecondary }}>
-            <MapPin className="size-3.5 shrink-0" style={{ color: theme.textMuted }} />
-            <span className="truncate">{locationStr}</span>
-          </div>
-        )}
+      
       </div>
 
       {/* Bottom — POC and Date */}

@@ -14,20 +14,13 @@ const STEPS = ['Company', 'Address', 'Commercials', 'Team Members', 'Review'];
 
 const initialFormData: AddClientPayload = {
   company_name: '',
-  client_name: '',
-  email: '',
-  alternative_email: '',
-  contact: '',
-  alternative_contact: '',
   street: '',
   city: '',
   state: '',
   country: '',
   postal_code: '',
   client_location: '',
-  industry: '',
   gst_number: '',
-  status: 'active',
   payment_period_days: 30,
   replacement_period_days: 90,
   agreement_date: '',
@@ -36,7 +29,7 @@ const initialFormData: AddClientPayload = {
   linkedin: '',
   notes: '',
   team_members: [
-    { name: '', email: '', role: '' }
+    { name: '', email: '', role: '', phone_number: '' }
   ]
 };
 
@@ -72,7 +65,7 @@ const NewClientPage = () => {
   const addTeamMember = () => {
     setFormData(prev => ({
       ...prev,
-      team_members: [...(prev.team_members || []), { name: '', email: '', role: '' }]
+      team_members: [...(prev.team_members || []), { name: '', email: '', role: '', phone_number: '' }]
     }));
   };
 
@@ -130,7 +123,7 @@ const NewClientPage = () => {
           toast.error("Validation failed. Please check the required fields.");
           
           // Determine which step has the first error
-          const step0 = ['company_name', 'client_name', 'industry', 'status', 'email', 'alternative_email', 'contact', 'alternative_contact', 'website', 'linkedin', 'gst_number'];
+          const step0 = ['company_name', 'gst_number'];
           const step1 = ['street', 'city', 'state', 'country', 'postal_code', 'client_location'];
           const step2 = ['commercial_decided', 'agreement_date', 'payment_period_days', 'replacement_period_days', 'notes'];
           
@@ -216,45 +209,13 @@ const NewClientPage = () => {
         }}
       >
         {currentStep === 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Company Name *</label>
               <Input name="company_name" value={formData.company_name} onChange={handleChange} placeholder="e.g. Acme Corporation" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
               <FieldError name="company_name" />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Client Account Name *</label>
-              <Input name="client_name" value={formData.client_name} onChange={handleChange} placeholder="e.g. JMS Advisory" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
-              <FieldError name="client_name" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Industry *</label>
-              <Input name="industry" value={formData.industry} onChange={handleChange} placeholder="e.g. Financial Services, IT, Healthcare" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
-              <FieldError name="industry" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Status</label>
-              <select 
-                name="status" value={formData.status} onChange={handleChange} 
-                className="w-full h-10 px-3 rounded-md border text-sm"
-                style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }}
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-              <FieldError name="status" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Primary Email *</label>
-              <Input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="e.g. contact@company.com" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
-              <FieldError name="email" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Phone *</label>
-              <Input name="contact" value={formData.contact} onChange={handleChange} placeholder="e.g. +91 9876543210" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
-              <FieldError name="contact" />
-            </div>
-            <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>GST No.</label>
               <Input name="gst_number" value={formData.gst_number} onChange={handleChange} placeholder="e.g. 22AAAAA0000A1Z5" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
               <FieldError name="gst_number" />
@@ -359,7 +320,7 @@ const NewClientPage = () => {
                 <Button type="button" variant="outline" size="sm" onClick={addTeamMember}>+ Add Member</Button>
               </div>
               {(formData.team_members || []).map((member, index) => (
-                <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-4 items-end pb-4 border-b" style={{ borderColor: theme.border }}>
+                <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 items-end pb-4 border-b" style={{ borderColor: theme.border }}>
                   <div className="space-y-2">
                     <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Name</label>
                     <Input placeholder='e.g. Jane Smith' value={member.name} onChange={(e) => handleTeamMemberChange(index, 'name', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
@@ -367,6 +328,10 @@ const NewClientPage = () => {
                   <div className="space-y-2">
                     <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Email</label>
                     <Input placeholder='e.g. jane.smith@company.com' type="email" value={member.email} onChange={(e) => handleTeamMemberChange(index, 'email', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Phone Number</label>
+                    <Input placeholder='e.g. +1 234 567 8900' value={member.phone_number || ''} onChange={(e) => handleTeamMemberChange(index, 'phone_number', e.target.value)} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Role</label>
@@ -394,11 +359,6 @@ const NewClientPage = () => {
               <div className="p-4 rounded-lg space-y-1" style={{ background: theme.background, border: `1px solid ${theme.border}` }}>
                 <h4 className="font-semibold mb-2" style={{ color: theme.textPrimary }}>Company</h4>
                 <p><strong>Company Name:</strong> {formData.company_name || '—'}</p>
-                <p><strong>Client Name:</strong> {formData.client_name || '—'}</p>
-                <p><strong>Industry:</strong> {formData.industry || '—'}</p>
-                <p><strong>Status:</strong> <span className="capitalize">{formData.status}</span></p>
-                <p><strong>Email:</strong> {formData.email || '—'}</p>
-                <p><strong>Phone:</strong> {formData.contact || '—'}</p>
                 <p><strong>GST:</strong> {formData.gst_number || '—'}</p>
               </div>
 
@@ -433,6 +393,7 @@ const NewClientPage = () => {
                       <div key={i} className="mb-2">
                         <p><strong>Name:</strong> {member.name || '—'}</p>
                         <p><strong>Email:</strong> {member.email || '—'}</p>
+                        <p><strong>Phone:</strong> {member.phone_number || '—'}</p>
                         <p><strong>Role:</strong> {member.role || '—'}</p>
                       </div>
                     ))}

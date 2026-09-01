@@ -26,6 +26,7 @@ export interface Job {
   hiring_manager_name: string | null;
   created_at: string;
   client: JobClient | null;
+  approval_stats?: { status: string; count: number }[];
 }
 
 export interface JobResponse {
@@ -33,6 +34,7 @@ export interface JobResponse {
   next: string | null;
   previous: string | null;
   results: Job[];
+  approval_stats?: { status: string; count: number }[];
 }
 
 export interface JobAssignedRecruiter {

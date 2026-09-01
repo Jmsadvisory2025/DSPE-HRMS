@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { theme } from '@/config/theme';
 import { SubmitCandidateModal } from './components/SubmitCandidateModal';
+import { MultiSubmitCandidateModal } from './components/MultiSubmitCandidateModal';
 import { MoreHorizontal, Edit, Send } from 'lucide-react';
 import {
   DropdownMenu,
@@ -69,6 +70,10 @@ const CandidatesPage = () => {
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
   const [targetCandidateId, setTargetCandidateId] = useState<string | null>(null);
 
+  // Multi Submit State
+  const [multiSubmitModalOpen, setMultiSubmitModalOpen] = useState(false);
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
+
   const fetchCandidates = (overrideClear = false) => {
     const params = new URLSearchParams();
     if (!overrideClear) {
@@ -101,7 +106,30 @@ const CandidatesPage = () => {
     setExperienceMin('');
     setExperienceMax('');
     setDuplicatesOnly(false);
+    setSelectedCandidateIds([]);
     fetchCandidates(true);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      fetchCandidates();
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedCandidateIds(candidates.map((c: any) => c.id));
+    } else {
+      setSelectedCandidateIds([]);
+    }
+  };
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedCandidateIds(prev => [...prev, id]);
+    } else {
+      setSelectedCandidateIds(prev => prev.filter(cId => cId !== id));
+    }
   };
 
   return (
@@ -121,14 +149,17 @@ const CandidatesPage = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* <Button variant="outline" size="sm" className="gap-1.5">
-            <Upload className="size-3.5" />
-            <span>Bulk Upload</span>
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <Download className="size-3.5" />
-            <span>Export</span>
-          </Button> */}
+          {selectedCandidateIds.length > 0 && (
+            <Button
+              size="sm"
+              className="gap-1.5 animate-in fade-in"
+              style={{ background: theme.accent, color: theme.accentForeground }}
+              onClick={() => setMultiSubmitModalOpen(true)}
+            >
+              <Send className="size-3.5" />
+              <span>Submit Selected ({selectedCandidateIds.length})</span>
+            </Button>
+          )}
           <Button size="sm" className="gap-1.5" onClick={() => navigate('/candidates/new')}>
             <Plus className="size-3.5" />
             <span>Add Candidate</span>
@@ -153,6 +184,7 @@ const CandidatesPage = () => {
             }}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
           />
         </div>
 
@@ -164,6 +196,7 @@ const CandidatesPage = () => {
             style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
             value={experienceMin}
             onChange={(e) => setExperienceMin(e.target.value)}
+            onKeyDown={handleKeyDown}
           />
           <span className="text-sm font-medium" style={{ color: theme.textMuted }}>-</span>
           <Input 
@@ -173,6 +206,7 @@ const CandidatesPage = () => {
             style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
             value={experienceMax}
             onChange={(e) => setExperienceMax(e.target.value)}
+            onKeyDown={handleKeyDown}
           />
         </div>
 
@@ -192,7 +226,7 @@ const CandidatesPage = () => {
           </button>
           
           <Button variant="outline" size="sm" onClick={handleClear} className="h-8 text-xs">
-            Clear
+            Clear Filters
           </Button>
           <Button size="sm" onClick={() => fetchCandidates()} className="h-8 text-xs px-4" style={{ background: theme.accent, color: theme.accentForeground }}>
             Apply
@@ -220,6 +254,14 @@ const CandidatesPage = () => {
               className="hover:bg-transparent"
               style={{ borderColor: theme.border }}
             >
+              <TableHead className="w-[40px] pl-4">
+                <input
+                  type="checkbox"
+                  className="rounded border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  checked={candidates.length > 0 && selectedCandidateIds.length === candidates.length}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                />
+              </TableHead>
               <TableHead
                 className="text-[11px] font-semibold uppercase tracking-wider w-[220px]"
                 style={{ color: theme.textMuted }}
@@ -254,13 +296,7 @@ const CandidatesPage = () => {
                 className="text-[11px] font-semibold uppercase tracking-wider w-[120px]"
                 style={{ color: theme.textMuted }}
               >
-                Uploaded By
-              </TableHead>
-              <TableHead
-                className="text-[11px] font-semibold uppercase tracking-wider w-[100px]"
-                style={{ color: theme.textMuted }}
-              >
-                Created At
+                Created
               </TableHead>
               <TableHead
                 className="text-[11px] font-semibold uppercase tracking-wider w-[80px] text-right pr-4"
@@ -306,6 +342,14 @@ const CandidatesPage = () => {
                     (e.currentTarget.style.background = 'transparent')
                   }
                 >
+                  <TableCell className="pl-4 w-[40px]" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 cursor-pointer"
+                      checked={selectedCandidateIds.includes(candidate.id)}
+                      onChange={(e) => handleSelectOne(candidate.id, e.target.checked)}
+                    />
+                  </TableCell>
                   {/* Candidate Name + Role */}
                   <TableCell className="py-3 max-w-[220px]">
                     <div className="flex items-center gap-2">
@@ -382,20 +426,18 @@ const CandidatesPage = () => {
                     {candidate.current_location || "N/A"}
                   </TableCell>
 
-                  {/* Uploaded By */}
-                  <TableCell
-                    className="text-sm max-w-[120px] truncate"
-                    style={{ color: theme.textSecondary }}
-                  >
-                    {candidate.uploaded_by_name || "N/A"}
-                  </TableCell>
-                  
-                  {/* Created At */}
-                  <TableCell
-                    className="text-sm"
-                    style={{ color: theme.textSecondary }}
-                  >
-                    {new Date(candidate.created_at).toLocaleDateString()}
+                  {/* Created */}
+                  <TableCell>
+                    <div className="font-medium text-[13px] truncate max-w-[120px]" style={{ color: theme.textPrimary }}>
+                      {candidate.uploaded_by_name || "N/A"}
+                    </div>
+                    <div className="text-[11px] mt-0.5" style={{ color: theme.textMuted }}>
+                      {candidate.created_at ? new Date(candidate.created_at).toLocaleDateString(undefined, {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                      }) : 'N/A'}
+                    </div>
                   </TableCell>
 
                   {/* Actions */}
@@ -415,13 +457,23 @@ const CandidatesPage = () => {
         </Table>
       </div>
       
-      <SubmitCandidateModal 
+          <SubmitCandidateModal 
          isOpen={submitModalOpen} 
          onClose={() => {
            setSubmitModalOpen(false);
            setTargetCandidateId(null);
          }} 
          candidateId={targetCandidateId} 
+      />
+
+      <MultiSubmitCandidateModal
+        isOpen={multiSubmitModalOpen}
+        onClose={() => setMultiSubmitModalOpen(false)}
+        candidateIds={selectedCandidateIds}
+        onSuccess={() => {
+           setSelectedCandidateIds([]);
+           fetchCandidates(true);
+        }}
       />
     </div>
   );

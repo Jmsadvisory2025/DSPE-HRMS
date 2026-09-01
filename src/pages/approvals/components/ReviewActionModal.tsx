@@ -14,7 +14,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (notes: string) => void;
-  actionType: 'accepted' | 'rejected' | 'resubmit' | null;
+  actionType: 'accepted' | 'rejected' | null;
   loading: boolean;
 }
 
@@ -25,8 +25,8 @@ export const ReviewActionModal = ({ isOpen, onClose, onConfirm, actionType, load
     if (isOpen) setNotes('');
   }, [isOpen]);
 
-  const actionTitle = actionType === 'accepted' ? 'Approve' : actionType === 'rejected' ? 'Reject' : 'Request Re-Submission';
-  const actionColor = actionType === 'accepted' ? theme.success : actionType === 'rejected' ? theme.destructive : theme.warning;
+  const actionTitle = actionType === 'accepted' ? 'Approve' : 'Reject';
+  const actionColor = actionType === 'accepted' ? theme.success : theme.destructive;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

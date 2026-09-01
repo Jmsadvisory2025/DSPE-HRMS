@@ -22,6 +22,8 @@ import {
   Zap,
   Settings,
   LogOut,
+  PanelLeftClose,
+  PanelLeft,
 } from "lucide-react";
 import { theme } from "@/config/theme";
 import { useAuth, type UserRole } from "@/context/AuthContext";
@@ -97,15 +99,19 @@ const bottomNavItems: NavItem[] = [
 /* ── Sidebar Props ────────────────────────────────────────────── */
 interface AppSidebarProps {
   expanded: boolean;
+  pinned: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
+  onTogglePin: () => void;
 }
 
 /* ── Sidebar Component ────────────────────────────────────────── */
 const AppSidebar = ({
   expanded,
+  pinned,
   onMouseEnter,
   onMouseLeave,
+  onTogglePin,
 }: AppSidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -124,8 +130,8 @@ const AppSidebar = ({
 
   return (
     <aside
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      onMouseEnter={pinned ? undefined : onMouseEnter}
+      onMouseLeave={pinned ? undefined : onMouseLeave}
       className="fixed top-0 left-0 z-50 flex h-screen flex-col overflow-hidden"
       style={{
         width: expanded ? SIDEBAR_EXPANDED_W : SIDEBAR_COLLAPSED_W,
@@ -142,7 +148,7 @@ const AppSidebar = ({
           className="size-9 shrink-0 rounded-lg object-contain"
         />
         <div
-          className="overflow-hidden whitespace-nowrap"
+          className="overflow-hidden whitespace-nowrap flex-1"
           style={{
             opacity: expanded ? 1 : 0,
             transition: "opacity 200ms ease",
@@ -158,12 +164,44 @@ const AppSidebar = ({
             Hiring Platform
           </p>
         </div>
+
+        {/* Pin / Unpin toggle */}
+        <button
+          onClick={onTogglePin}
+          className="shrink-0 flex items-center justify-center size-7 rounded-md outline-none"
+          style={{
+            opacity: expanded ? 1 : 0,
+            pointerEvents: expanded ? 'auto' : 'none',
+            background: pinned ? theme.accent + '18' : 'transparent',
+            color: pinned ? theme.accent : theme.textMuted,
+            transition: 'opacity 200ms ease, background 150ms ease, color 150ms ease',
+          }}
+          onMouseEnter={(e) => {
+            if (!pinned) {
+              e.currentTarget.style.background = theme.sidebarAccent;
+              e.currentTarget.style.color = theme.sidebarAccentForeground;
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!pinned) {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = theme.textMuted;
+            }
+          }}
+          title={pinned ? 'Unpin sidebar' : 'Pin sidebar'}
+        >
+          {pinned ? (
+            <PanelLeftClose className="size-4" />
+          ) : (
+            <PanelLeft className="size-4" />
+          )}
+        </button>
       </div>
 
       <Separator style={{ background: theme.sidebarBorder }} />
 
       {/* ── Main Navigation ───────────────────────────────────── */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 flex flex-col gap-1">
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 flex flex-col gap-1 scrollbar-hidden">
         {allowedMainItems.map((item) => (
           <SidebarNavItem
             key={item.path}

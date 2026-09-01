@@ -10,20 +10,13 @@ export interface AddPOCPayload {
 
 export interface AddClientPayload {
   company_name: string;
-  client_name: string;
-  email: string;
-  alternative_email?: string;
-  contact: string;
-  alternative_contact?: string;
   street?: string;
   city: string;
   state: string;
   country: string;
   postal_code?: string;
   client_location?: string;
-  industry: string;
   gst_number?: string;
-  status: string;
   payment_period_days: number;
   replacement_period_days: number;
   agreement_date?: string;
@@ -146,6 +139,7 @@ export interface TeamMember {
   name: string;
   email: string;
   role: string;
+  phone_number?: string;
 }
 
 export interface ClientState {

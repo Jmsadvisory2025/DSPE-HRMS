@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, ChevronDown, Loader2, MoreHorizontal } from 'lucide-react';
+import { Search, Plus, ChevronDown, Loader2, MoreHorizontal, Users, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuGroup } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -192,7 +192,8 @@ const JobsPage = () => {
                 <TableHead>Designation</TableHead>
                 <TableHead>Client</TableHead>
                 <TableHead>Location</TableHead>
-              
+                <TableHead>Created By</TableHead>
+                <TableHead>Approvals</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -200,7 +201,7 @@ const JobsPage = () => {
             <TableBody>
               {filteredPositions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8" style={{ color: theme.textMuted }}>
+                  <TableCell colSpan={8} className="text-center py-8" style={{ color: theme.textMuted }}>
                     No jobs found matching your criteria.
                   </TableCell>
                 </TableRow>
@@ -226,7 +227,59 @@ const JobsPage = () => {
                     <TableCell style={{ color: theme.textSecondary }} className="capitalize">
                       {job.location}
                     </TableCell>
+                    
+                    <TableCell>
+                      <div className="font-medium text-[13px]" style={{ color: theme.textPrimary }}>
+                        {job.created_by_name || 'Unknown'}
+                      </div>
+                      <div className="text-[11px] mt-0.5" style={{ color: theme.textMuted }}>
+                        {job.created_at ? new Date(job.created_at).toLocaleDateString(undefined, {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric'
+                        }) : 'N/A'}
+                      </div>
+                    </TableCell>
                    
+                    <TableCell onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/approvals/${job.id}`);
+                    }} className="cursor-pointer hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center gap-2">
+                        {job.approval_stats?.map((stat) => {
+                          let color: string = theme.textMuted;
+                          let bgClass = "bg-muted/50";
+                          let isPendingAction = false;
+                          
+                          if (stat.status === 'pending') {
+                            color = theme.warning;
+                            if (stat.count > 0) {
+                              isPendingAction = true;
+                              bgClass = "bg-orange-500/10 border border-orange-500/30 animate-pulse shadow-sm"; // Using ring for highlight instead of pulse to be less intrusive on jobs page, or pulse as user wants
+                              color = "#f97316"; 
+                            }
+                          } else if (stat.status === 'approved' || stat.status === 'accepted') {
+                            color = theme.success;
+                          } else if (stat.status === 'rejected') {
+                            color = theme.destructive;
+                          }
+                          
+                          return (
+                            <div 
+                              key={stat.status}
+                              className={`flex flex-col items-center justify-center rounded-md px-2 py-1 min-w-[40px] ${bgClass}`}
+                              title={`${stat.count} ${stat.status}`}
+                            >
+                              <span className={`text-xs ${isPendingAction ? 'font-extrabold' : 'font-bold'}`} style={{ color }}>{stat.count}</span>
+                              <span className="text-[9px] uppercase tracking-wider" style={{ color: isPendingAction ? color : theme.textMuted }}>
+                                {stat.status.slice(0, 3)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </TableCell>
+
                     <TableCell>
                       {(() => {
                         const statusStyle = getJobStatusStyle(job.status);
