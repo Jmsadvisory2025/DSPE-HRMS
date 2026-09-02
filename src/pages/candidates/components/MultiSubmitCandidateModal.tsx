@@ -12,10 +12,11 @@ import { SearchableDropdown } from '@/components/ui/searchable-dropdown';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Briefcase, MapPin, IndianRupee, Clock, Building2, GraduationCap, Download, Users, FileText, AlertCircle, FileSignature } from 'lucide-react';
+import { Loader2, Briefcase, MapPin, IndianRupee, Clock, Building2, GraduationCap, Download, Users, FileText, AlertCircle, FileSignature, CalendarDays, User, Video, CheckCircle2, XCircle, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { positionActions, candidateActions } from '@/redux/actions';
 import { setJobs, setLoading as setJobsLoading } from '@/redux/slices/positionSlice';
+import { setCandidateDetail } from '@/redux/slices/candidateSlice';
 import { theme } from '@/config/theme';
 import { getJobStatusStyle } from '@/lib/statusUtils';
 import { toast } from 'sonner';
@@ -31,12 +32,17 @@ export const MultiSubmitCandidateModal = ({ isOpen, onClose, candidateIds, onSuc
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { jobs, loading: jobsLoading } = useAppSelector((state) => state.positions);
+  const { candidates, candidateDetail } = useAppSelector((state) => state.candidates);
+  const selectedCandidates = candidates.filter((c: any) => candidateIds.includes(c.id));
   const [selectedJobId, setSelectedJobId] = useState<string>('');
   const [synopsis, setSynopsis] = useState<string>('');
   const [selectedJobDetail, setSelectedJobDetail] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submissionErrors, setSubmissionErrors] = useState<Record<string, string[]> | null>(null);
+  const [rightTab, setRightTab] = useState<'job' | 'candidates'>('candidates');
+  const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const errorBoxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -149,22 +155,24 @@ export const MultiSubmitCandidateModal = ({ isOpen, onClose, candidateIds, onSuc
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent showCloseButton={!submitting} className="sm:max-w-[1000px] w-full max-h-[90vh] flex flex-col p-0 overflow-hidden bg-background">
-        <div className="p-6 pb-4 border-b border-border/40 bg-muted/20 shrink-0">
+      <DialogContent showCloseButton={!submitting} className="sm:max-w-[1200px] w-full h-[85vh] max-h-[95vh] flex flex-col p-0 overflow-hidden bg-background shadow-2xl rounded-2xl">
+        <div className="px-8 py-6 border-b border-border/40 shrink-0" style={{ background: `linear-gradient(to right, ${theme.surfaceMuted}, ${theme.surface})` }}>
           <DialogHeader>
-            <DialogTitle className="text-xl flex items-center gap-2">
-              <FileSignature className="size-5" style={{ color: theme.accent }} />
-              Submit {candidateIds.length} Candidate{candidateIds.length !== 1 ? 's' : ''}
+            <DialogTitle className="text-2xl flex items-center gap-3">
+              <div className="p-2.5 rounded-xl shadow-sm border bg-background" style={{ borderColor: theme.border }}>
+                <FileSignature className="size-6" style={{ color: theme.accent }} />
+              </div>
+              <span className="font-bold tracking-tight">Submit {candidateIds.length} Candidate{candidateIds.length !== 1 ? 's' : ''}</span>
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm font-medium mt-1.5 opacity-80">
                Select a job position and provide a synopsis to submit these candidates in bulk.
             </DialogDescription>
           </DialogHeader>
         </div>
 
         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-          <div className="w-full md:w-[45%] flex flex-col border-r border-border/40 overflow-y-auto bg-background">
-            <div className="p-6 space-y-6 flex-1">
+          <div className="w-full md:w-[40%] flex flex-col border-r border-border/40 overflow-y-auto bg-background">
+            <div className="p-8 space-y-8 flex-1">
               <div className="space-y-2">
                  <label className="text-sm font-semibold flex items-center justify-between" style={{ color: theme.textSecondary }}>
                    Job Position
@@ -230,24 +238,183 @@ export const MultiSubmitCandidateModal = ({ isOpen, onClose, candidateIds, onSuc
             </div>
           </div>
 
-          <div className="w-full md:w-[55%] bg-muted/10 overflow-y-auto relative p-6">
-            {!selectedJobId && !detailLoading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-muted-foreground animate-in fade-in">
-                <div className="size-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                  <Briefcase className="size-8 opacity-50" />
-                </div>
-                <h3 className="font-semibold text-foreground mb-1">No Job Selected</h3>
-                <p className="text-sm max-w-[250px]">Select a job position from the left to view its details here.</p>
+          <div className="w-full md:w-[60%] bg-muted/10 overflow-y-auto relative p-8 flex flex-col">
+            <div className="flex items-center bg-muted/30 p-1 rounded-xl mb-6 w-full sm:w-fit border shadow-sm shrink-0">
+               <button 
+                 className={`flex-1 sm:flex-none px-5 py-2 rounded-lg text-sm font-semibold transition-all ${rightTab === 'job' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                 onClick={() => setRightTab('job')}
+               >
+                 Job Details
+               </button>
+               <button 
+                 className={`flex-1 sm:flex-none px-5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${rightTab === 'candidates' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                 onClick={() => setRightTab('candidates')}
+               >
+                 Selected Candidates
+                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: theme.accent + '20', color: theme.accent }}>
+                   {candidateIds.length}
+                 </span>
+               </button>
+            </div>
+
+            {rightTab === 'candidates' && (
+              <div className="animate-in fade-in zoom-in-95 fill-mode-both flex flex-col gap-4">
+                 {selectedCandidates.map((c: any) => {
+                   const isExpanded = expandedCandidateId === c.id;
+                   return (
+                   <div key={c.id} className="rounded-xl border bg-background shadow-sm transition-all overflow-hidden" style={{ borderColor: theme.border }}>
+                     <div 
+                       className="p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-muted/30 transition-colors"
+                       onClick={() => {
+                         if (isExpanded) {
+                           setExpandedCandidateId(null);
+                         } else {
+                           setExpandedCandidateId(c.id);
+                           if (candidateDetail?.id !== c.id) {
+                             dispatch({
+                               type: candidateActions.FETCH_CANDIDATE_DETAIL,
+                               method: 'GET',
+                               endPoint: `/api/v1/candidates/${c.id}/`,
+                               auth: true,
+                               setLoading: setHistoryLoading,
+                               getResponse: (data: any) => dispatch(setCandidateDetail(data)),
+                               getError: (err: any) => console.error(err),
+                             });
+                           }
+                         }
+                       }}
+                     >
+                       <div className="flex items-center gap-4 min-w-0">
+                         <div className="size-10 rounded-full flex items-center justify-center text-sm font-bold bg-primary/10 shrink-0" style={{ color: theme.accent }}>
+                           {c.candidate_name?.substring(0, 2).toUpperCase() || 'C'}
+                         </div>
+                         <div className="min-w-0">
+                           <p className="font-semibold text-sm truncate" style={{ color: theme.textPrimary }}>{c.candidate_name}</p>
+                           <p className="text-xs truncate mt-0.5" style={{ color: theme.textMuted }}>{c.current_profile || 'No profile specified'}</p>
+                           <div className="flex items-center gap-3 mt-1.5">
+                             <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md" style={{ background: theme.surfaceMuted, color: theme.textSecondary }}>{c.experience || '0'} Yrs Exp</span>
+                             <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground flex items-center gap-1"><MapPin className="size-3" /> {c.current_location?.split(',')[0] || 'N/A'}</span>
+                           </div>
+                         </div>
+                       </div>
+                       <div className="shrink-0 p-2 text-muted-foreground">
+                         {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                       </div>
+                     </div>
+
+                     {isExpanded && (
+                       <div className="px-4 pb-4 animate-in slide-in-from-top-2 fade-in duration-200">
+                         <div className="p-4 rounded-lg bg-muted/20 border" style={{ borderColor: theme.border + '50' }}>
+                           <h4 className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: theme.textSecondary }}>
+                             <Briefcase className="size-3.5" />
+                             Application History
+                             {candidateDetail?.id === c.id && candidateDetail?.applications?.length > 0 && (
+                               <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: theme.accent + '15', color: theme.accent }}>
+                                 {candidateDetail.applications.length} records
+                               </span>
+                             )}
+                           </h4>
+
+                           {historyLoading || candidateDetail?.id !== c.id ? (
+                              <div className="flex flex-col items-center justify-center py-6 space-y-3">
+                                <Loader2 className="size-5 animate-spin" style={{ color: theme.accent }} />
+                                <p className="text-xs font-medium" style={{ color: theme.textMuted }}>Loading history...</p>
+                              </div>
+                           ) : candidateDetail?.applications && candidateDetail.applications.length > 0 ? (
+                              <div className="space-y-3">
+                                {candidateDetail.applications.map((app: any) => {
+                                  const statusColor = app.status === 'offered' || app.status === 'hired' ? theme.success 
+                                    : app.status === 'rejected' ? theme.destructive 
+                                    : app.status === 'screening' ? '#f59e0b'
+                                    : theme.textSecondary;
+                                  const reviewColor = app.manager_review_status === 'accepted' ? theme.success 
+                                    : app.manager_review_status === 'rejected' ? theme.destructive 
+                                    : theme.textMuted;
+                                  
+                                  return (
+                                    <div key={app.id} className="rounded-lg border text-sm shadow-sm bg-background" style={{ borderColor: theme.border }}>
+                                      <div className="flex justify-between items-center gap-3 px-3 py-2" style={{ background: theme.surfaceMuted, borderBottom: `1px solid ${theme.border}` }}>
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <div className="size-1.5 rounded-full shrink-0" style={{ background: statusColor }} />
+                                          <span className="font-semibold text-xs truncate" style={{ color: theme.textPrimary }}>{app.job_title}</span>
+                                        </div>
+                                        <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-wider shrink-0 px-1.5 py-0" style={{ color: statusColor, borderColor: statusColor + '50', background: statusColor + '10' }}>
+                                          {app.status}
+                                        </Badge>
+                                      </div>
+
+                                      <div className="p-3 space-y-3">
+                                        <div className="grid grid-cols-2 gap-3">
+                                          <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+                                            <CalendarDays className="size-3.5" />
+                                            <div>
+                                              <p className="font-medium" style={{ color: theme.textSecondary }}>{app.share_date ? new Date(app.share_date).toLocaleDateString() : 'N/A'}</p>
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+                                            <User className="size-3.5" />
+                                            <div>
+                                              <p className="font-medium truncate max-w-[80px]" style={{ color: theme.textSecondary }} title={app.submitted_by?.name}>{app.submitted_by?.name || 'N/A'}</p>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {app.interview_schedule && (
+                                          <div className="text-xs rounded p-2 border" style={{ background: theme.accent + '06', borderColor: theme.accent + '25' }}>
+                                            <div className="flex items-center gap-1.5 mb-1.5">
+                                              <Video className="size-3" style={{ color: theme.accent }} />
+                                              <span className="font-bold uppercase tracking-wider text-[9px]" style={{ color: theme.accent }}>Interview</span>
+                                            </div>
+                                            <p className="text-xs" style={{ color: theme.textSecondary }}>
+                                              {new Date(app.interview_schedule.date).toLocaleDateString()} at {app.interview_schedule.time?.slice(0, 5)}
+                                            </p>
+                                          </div>
+                                        )}
+
+                                        <div className="flex items-center gap-2 text-xs pt-1">
+                                          <span className="font-medium" style={{ color: theme.textMuted }}>Manager Review:</span>
+                                          <span className="font-bold capitalize px-1.5 py-0.5 rounded text-[10px]" style={{ 
+                                            color: reviewColor, 
+                                            background: reviewColor + '12'
+                                          }}>
+                                            {app.manager_review_status}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                           ) : (
+                              <div className="py-4 text-center">
+                                <p className="text-xs" style={{ color: theme.textMuted }}>No past candidate application data found.</p>
+                              </div>
+                           )}
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                 )})}
               </div>
             )}
 
-            {detailLoading && (
-              <div className="absolute inset-0 flex items-center justify-center">
+            {rightTab === 'job' && !selectedJobId && !detailLoading && (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-muted-foreground animate-in fade-in">
+                <div className="size-16 rounded-full bg-muted/50 flex items-center justify-center mb-4 border border-border/50">
+                  <Briefcase className="size-8 opacity-50" />
+                </div>
+                <h3 className="font-semibold text-foreground mb-1 text-lg">No Job Selected</h3>
+                <p className="text-sm max-w-[280px]">Select a job position from the left to view its detailed requirements here.</p>
+              </div>
+            )}
+
+            {rightTab === 'job' && detailLoading && (
+              <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="size-8 animate-spin" style={{ color: theme.accent }} />
               </div>
             )}
 
-            {!detailLoading && selectedJobDetail && (
+            {rightTab === 'job' && !detailLoading && selectedJobDetail && (
               <div className="rounded-xl p-6 space-y-6 shadow-sm bg-background border transition-all duration-300 animate-in fade-in slide-in-from-bottom-2" style={{ borderColor: theme.border }}>
                 <div className="flex justify-between items-start gap-4">
                   <div>

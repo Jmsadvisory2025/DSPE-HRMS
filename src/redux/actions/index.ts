@@ -14,6 +14,7 @@ export const clientActions = {
   FETCH_TRACKER_FORMATS: "FETCH_TRACKER_FORMATS",
   UPDATE_TRACKER_FORMAT: "UPDATE_TRACKER_FORMAT",
   CREATE_TRACKER_FORMAT: "CREATE_TRACKER_FORMAT",
+  DELETE_CLIENTS: "DELETE_CLIENTS",
 } as const;
 
 /* ── Candidates ───────────────────────────────────────────────── */
@@ -75,4 +76,6 @@ export const notificationActions = {
 } as const;
 
 /* ── Dashboard ────────────────────────────────────────────────── */
-export const dashboardActions = {} as const;
+export const dashboardActions = {
+  FETCH_DASHBOARD: "FETCH_DASHBOARD",
+} as const;

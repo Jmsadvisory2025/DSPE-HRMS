@@ -216,8 +216,13 @@ const ApprovalsPage = () => {
                           return (
                             <div 
                               key={stat.status}
-                              className={`flex flex-col items-center justify-center rounded-md px-2 py-1 min-w-[40px] ${bgClass}`}
-                              title={`${stat.count} ${stat.status}`}
+                              className={`flex flex-col items-center justify-center rounded-md px-2 py-1 min-w-[40px] cursor-pointer hover:opacity-80 transition-opacity ${bgClass}`}
+                              title={`View ${stat.status} applications`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const tabStatus = stat.status === 'approved' ? 'accepted' : stat.status;
+                                navigate(`/approvals/${job.id}?tab=${tabStatus}`);
+                              }}
                             >
                               <span className={`text-xs ${isPendingAction ? 'font-extrabold' : 'font-bold'}`} style={{ color }}>{stat.count}</span>
                               <span className="text-[9px] uppercase tracking-wider" style={{ color: isPendingAction ? color : theme.textMuted }}>

@@ -320,7 +320,7 @@ const JobDetailPage = () => {
       </div>
 
       {/* Pipeline Table */}
-      <div className="rounded-xl overflow-hidden" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
+      {/* <div className="rounded-xl overflow-hidden" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
         <div className="p-5 border-b" style={{ borderColor: theme.border }}>
           <h3 className="font-semibold" style={{ color: theme.textPrimary }}>Pipeline ({job.candidate_count})</h3>
         </div>
@@ -365,7 +365,7 @@ const JobDetailPage = () => {
             </tbody>
           </table>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

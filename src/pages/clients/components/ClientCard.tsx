@@ -18,9 +18,11 @@ const INDUSTRY_COLORS: Record<string, string> = {
 
 interface ClientCardProps {
   client: Client;
+  selected?: boolean;
+  onSelectChange?: (selected: boolean) => void;
 }
 
-const ClientCard = ({ client }: ClientCardProps) => {
+const ClientCard = ({ client, selected = false, onSelectChange }: ClientCardProps) => {
   const navigate = useNavigate();
   const iconColor = INDUSTRY_COLORS[client.industry] || theme.accent;
 
@@ -46,6 +48,16 @@ const ClientCard = ({ client }: ClientCardProps) => {
       {/* Top row — Name + Status */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0 flex-1">
+          {onSelectChange && (
+            <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center h-full">
+              <input
+                type="checkbox"
+                checked={selected}
+                onChange={(e) => onSelectChange(e.target.checked)}
+                className="size-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+            </div>
+          )}
           <div
             className="size-9 rounded-lg flex items-center justify-center shrink-0"
             style={{ background: iconColor + '18' }}

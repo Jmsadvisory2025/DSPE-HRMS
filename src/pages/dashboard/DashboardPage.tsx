@@ -1,127 +1,169 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { theme } from '@/config/theme';
-import { 
-  Users, 
-  Briefcase, 
-  CheckCircle2, 
-  Clock, 
-  TrendingUp, 
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { dashboardActions } from '@/redux/actions';
+import {
+  setDashboardData,
+  setLoading,
+  setError,
+  type DashboardData,
+} from '@/redux/slices/dashboardSlice';
+import {
+  Users,
+  Briefcase,
   CalendarDays,
-  ArrowUpRight,
+  TrendingUp,
   Activity,
+  Clock,
   Video,
-  Target,
-  Award,
   Zap,
-  Info
+  Building2,
+  Loader2,
 } from 'lucide-react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as RechartsTooltip, 
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   BarChart,
   Bar,
   Cell,
-  PieChart,
-  Pie
 } from 'recharts';
 
-// --- DUMMY DATA (Indian Context) ---
-const statCards = [
-  { title: 'Total Candidates', value: '14,250', trend: '+12.5%', trendUp: true, icon: Users, color: '#3b82f6' },
-  { title: 'Active Positions', value: '184', trend: '+8.2%', trendUp: true, icon: Briefcase, color: '#8b5cf6' },
-  { title: 'Interviews Today', value: '32', trend: '+15.4%', trendUp: true, icon: Video, color: '#f59e0b' },
-  { title: 'Placements (YTD)', value: '412', trend: '+28.1%', trendUp: true, icon: CheckCircle2, color: '#10b981' },
-];
+/* ── Animation variants ──────────────────────────────────────── */
+const containerVariants: any = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
+};
 
-const pipelineData = [
-  { name: 'Jan', Sourced: 1200, Screened: 840, Interviewed: 450, Hired: 120 },
-  { name: 'Feb', Sourced: 1400, Screened: 939, Interviewed: 580, Hired: 150 },
-  { name: 'Mar', Sourced: 1100, Screened: 780, Interviewed: 400, Hired: 90 },
-  { name: 'Apr', Sourced: 1578, Screened: 1190, Interviewed: 700, Hired: 210 },
-  { name: 'May', Sourced: 1889, Screened: 1480, Interviewed: 918, Hired: 280 },
-  { name: 'Jun', Sourced: 1639, Screened: 1280, Interviewed: 850, Hired: 240 },
-  { name: 'Jul', Sourced: 2149, Screened: 1630, Interviewed: 1110, Hired: 310 },
-];
+const itemVariants: any = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 90, damping: 14 } },
+};
 
-const sourceData = [
-  { name: 'Naukri.com', value: 850, color: '#0a66c2' },
-  { name: 'LinkedIn', value: 720, color: '#8b5cf6' },
-  { name: 'Employee Referrals', value: 430, color: '#10b981' },
-  { name: 'Instahyre', value: 290, color: '#f43f5e' },
-  { name: 'Campus Drives', value: 180, color: '#f59e0b' },
-];
+/* ── Hires chart color palette ───────────────────────────────── */
+const HIRE_COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#818cf8', '#3b82f6', '#60a5fa', '#38bdf8', '#22d3ee', '#10b981'];
 
-const departmentData = [
-  { name: 'Engineering', value: 45 },
-  { name: 'Sales', value: 25 },
-  { name: 'Marketing', value: 15 },
-  { name: 'HR & Admin', value: 10 },
-  { name: 'Finance', value: 5 },
-];
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#f43f5e'];
-
-const recentActivity = [
-  { user: 'Rahul Sharma', action: 'scheduled an interview for', candidate: 'Priya Patel', role: 'Senior React Developer', time: '10 mins ago', avatar: 'RS' },
-  { user: 'Neha Gupta', action: 'approved a new requisition:', candidate: 'Product Manager (B2B)', role: 'Product Team', time: '1 hour ago', avatar: 'NG' },
-  { user: 'System', action: 'received', candidate: '42 new applications', role: 'Data Analyst Role', time: '3 hours ago', avatar: 'S' },
-  { user: 'Amit Kumar', action: 'extended an offer to', candidate: 'Rohan Desai', role: 'DevOps Lead', time: '5 hours ago', avatar: 'AK' },
-  { user: 'Sneha Reddy', action: 'rejected', candidate: 'Vikram Singh', role: 'Backend Engineer', time: 'Yesterday', avatar: 'SR' },
-];
-
-const upcomingInterviews = [
-  { candidate: 'Anjali Verma', role: 'UI/UX Designer', time: '10:30 AM', interviewer: 'Karthik N.', type: 'Technical Round' },
-  { candidate: 'Siddharth Rao', role: 'Full Stack Engineer', time: '11:45 AM', interviewer: 'Rahul S.', type: 'System Design' },
-  { candidate: 'Meera Iyer', role: 'Marketing Head', time: '02:00 PM', interviewer: 'Neha G.', type: 'Culture Fit' },
-  { candidate: 'Arjun Nair', role: 'Cloud Architect', time: '04:15 PM', interviewer: 'Amit K.', type: 'Final Round' },
-];
-
-const keyMetrics = [
-  { label: 'Time to Hire', value: '18 Days', target: '< 21 Days', status: 'good', icon: Zap },
-  { label: 'Offer Acceptance', value: '82%', target: '> 80%', status: 'good', icon: Award },
-  { label: 'Cost per Hire', value: '₹24,500', target: '< ₹30,000', status: 'good', icon: Target },
-  { label: 'Diversity Ratio', value: '34%', target: '> 40%', status: 'warning', icon: Users },
-];
-
+/* ── Component ───────────────────────────────────────────────── */
 const DashboardPage = () => {
-  const containerVariants: any = {
-    hidden: { opacity: 0 },
-    visible: { 
-      opacity: 1, 
-      transition: { staggerChildren: 0.08 } 
-    }
+  const dispatch = useAppDispatch();
+  const { data, loading } = useAppSelector((state) => state.dashboard);
+
+  useEffect(() => {
+    dispatch({
+      type: dashboardActions.FETCH_DASHBOARD,
+      method: 'GET',
+      endPoint: '/api/v1/dashboard/',
+      auth: true,
+      setLoading: (val: boolean) => dispatch(setLoading(val)),
+      getResponse: (res: DashboardData) => dispatch(setDashboardData(res)),
+      getError: (err: any) => dispatch(setError(err?.message || 'Failed to load dashboard')),
+    });
+  }, [dispatch]);
+
+  /* ── Loading state ─────────────────────────────────────────── */
+  if (loading || !data) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <Loader2 className="size-10 animate-spin" style={{ color: theme.accent }} />
+        <p className="text-sm font-medium" style={{ color: theme.textMuted }}>Loading your dashboard…</p>
+      </div>
+    );
+  }
+
+  /* ── Derived data ──────────────────────────────────────────── */
+  const topStats = data.top_stats || {
+    total_candidates: 0,
+    active_jobs_by_status: [],
+    interviews_upcoming_count: 0,
+    active_clients: 0
   };
 
-  const itemVariants: any = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 90, damping: 14 } }
+  const totalActiveJobs = (topStats.active_jobs_by_status || []).reduce((sum, j) => sum + j.count, 0);
+
+  const statCards = [
+    { title: 'Total Candidates', value: topStats.total_candidates?.toLocaleString('en-IN') || '0', icon: Users, color: '#3b82f6' },
+    { title: 'Active Positions', value: totalActiveJobs.toLocaleString('en-IN'), icon: Briefcase, color: '#8b5cf6' },
+    { title: 'Upcoming Interviews', value: topStats.interviews_upcoming_count.toString(), icon: Video, color: '#f59e0b' },
+    { title: 'Active Clients', value: topStats.active_clients?.toLocaleString('en-IN') || '0', icon: Building2, color: '#10b981' },
+  ];
+
+  const funnelChartData = (data.funnel_trend || []).map((d) => ({
+    name: d.month,
+    Sourced: d.sourced,
+    Interviewed: d.interviewed,
+  }));
+
+  const hiresChartData = (data.hires_by_client || [])
+    .sort((a, b) => b.hires_count - a.hires_count)
+    .slice(0, 10);
+
+  const pipelineData = (data.pipeline_overview || []).map(p => ({
+    name: p.status.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+    count: p.count,
+  }));
+  // Filter out zero-count stages for cleaner chart, or keep all to show funnel width.
+  // We'll keep them to show the full pipeline stage, but maybe limit to those with some activity if it's too wide.
+  const activePipelineData = pipelineData.filter(p => p.count > 0);
+
+  const topJobs = (data.top_performing_jobs || []);
+
+  const formatTime = (time: string) => {
+    if (!time) return '—';
+    const [h, m] = time.split(':');
+    const hour = parseInt(h);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    return `${hour > 12 ? hour - 12 : hour || 12}:${m} ${ampm}`;
+  };
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    const today = new Date();
+    if (d.toDateString() === today.toDateString()) return 'Today';
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    if (d.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  };
+
+  const timeAgo = (iso: string) => {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+  };
+
+  /* ── Activity type colors ──────────────────────────────────── */
+  const activityColors: Record<string, string> = {
+    APPLICATION: '#3b82f6',
+    INTERVIEW: '#f59e0b',
+    APPROVAL: '#10b981',
+    REJECTION: '#ef4444',
+    OFFER: '#8b5cf6',
   };
 
   return (
-    <motion.div 
-      className="space-y-8  "
+    <motion.div
+      className="space-y-8"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
     >
-      {/* Header Area */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-4 border-b" style={{ borderColor: theme.border }}>
+      {/* ── Header ──────────────────────────────────────────────── */}
+      <div
+        className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-4 border-b"
+        style={{ borderColor: theme.border }}
+      >
         <div>
-          <div
-  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg mb-4 text-xs font-medium"
-  style={{
-    background: "#f59e0b20",
-    color: "#b45309",
-    border: "1px solid #f59e0b40",
-  }}
->
-  <Info className="size-3.5" />
-  We're improving the dashboard. Until maintenance is complete, you'll see demo data instead of live information.
-</div>
           <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: theme.textPrimary }}>
             Dashboard Overview
           </h1>
@@ -129,131 +171,223 @@ const DashboardPage = () => {
             Welcome back! Here's a comprehensive look at your recruitment performance.
           </p>
         </div>
-        <div className="flex items-center gap-3 text-sm px-5 py-2.5 rounded-xl border shadow-sm backdrop-blur-md" 
-             style={{ background: theme.surfaceHover, borderColor: theme.border, color: theme.textSecondary }}>
+        <div
+          className="flex items-center gap-3 text-sm px-5 py-2.5 rounded-xl border shadow-sm backdrop-blur-md"
+          style={{ background: theme.surfaceHover, borderColor: theme.border, color: theme.textSecondary }}
+        >
           <CalendarDays className="size-5" style={{ color: theme.accent }} />
-          <span className="font-medium">{new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+          <span className="font-medium">
+            {new Date().toLocaleDateString('en-IN', {
+              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+            })}
+          </span>
         </div>
       </div>
 
-      {/* Row 1: KPI Stat Cards */}
+      {/* ── Row 1: KPI Stat Cards ───────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((stat, i) => (
-          <motion.div 
-            key={i} 
+          <motion.div
+            key={i}
             variants={itemVariants}
-            className="relative overflow-hidden rounded-2xl border p-7 shadow-sm group hover:shadow-lg transition-all duration-300 hover:-translate-y-1.5 cursor-pointer"
+            className="relative overflow-hidden rounded-2xl border p-7 shadow-sm group hover:shadow-lg transition-all duration-300 hover:-translate-y-1.5 cursor-default"
             style={{ background: theme.surface, borderColor: theme.border }}
           >
             {/* Background Glow */}
-            <div className="absolute -top-12 -right-12 w-40 h-40 opacity-10 blur-3xl pointer-events-none rounded-full transition-all duration-700 group-hover:scale-150 group-hover:opacity-20" 
-                 style={{ background: stat.color }} />
-            
+            <div
+              className="absolute -top-12 -right-12 w-40 h-40 opacity-10 blur-3xl pointer-events-none rounded-full transition-all duration-700 group-hover:scale-150 group-hover:opacity-20"
+              style={{ background: stat.color }}
+            />
+
             <div className="flex justify-between items-start mb-6 relative z-10">
-              <div className="p-3.5 rounded-2xl shadow-sm" style={{ background: `${stat.color}15`, color: stat.color, border: `1px solid ${stat.color}30` }}>
+              <div
+                className="p-3.5 rounded-2xl shadow-sm"
+                style={{ background: `${stat.color}15`, color: stat.color, border: `1px solid ${stat.color}30` }}
+              >
                 <stat.icon className="size-6" strokeWidth={2.5} />
               </div>
-              <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm" 
-                    style={{ 
-                      background: stat.trendUp ? '#10b98115' : '#ef444415', 
-                      color: stat.trendUp ? '#10b981' : '#ef4444',
-                      border: `1px solid ${stat.trendUp ? '#10b98130' : '#ef444430'}`
-                    }}>
-                {stat.trendUp ? <TrendingUp className="size-3.5" /> : <TrendingUp className="size-3.5 rotate-180" />}
-                {stat.trend}
-              </span>
             </div>
             <div className="space-y-1.5 relative z-10">
-              <h3 className="text-4xl font-black tracking-tight" style={{ color: theme.textPrimary }}>{stat.value}</h3>
-              <p className="text-sm font-semibold tracking-wide uppercase" style={{ color: theme.textMuted }}>{stat.title}</p>
+              <h3 className="text-4xl font-black tracking-tight" style={{ color: theme.textPrimary }}>
+                {stat.value}
+              </h3>
+              <p className="text-sm font-semibold tracking-wide uppercase" style={{ color: theme.textMuted }}>
+                {stat.title}
+              </p>
             </div>
           </motion.div>
         ))}
       </div>
 
-      {/* Row 2: Charts and Metrics */}
+      {/* ── Row 2: Active Jobs Breakdown + Efficiency ────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Pipeline Chart (Spans 2 columns) */}
-        <motion.div 
-          variants={itemVariants} 
+        {/* Jobs by Status */}
+        <motion.div
+          variants={itemVariants}
+          className="rounded-3xl border shadow-sm p-7"
+          style={{ background: theme.surface, borderColor: theme.border }}
+        >
+          <div className="mb-6">
+            <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Active Jobs</h3>
+            <p className="text-sm mt-1" style={{ color: theme.textMuted }}>Breakdown by status</p>
+          </div>
+          <div className="space-y-3">
+            {(topStats.active_jobs_by_status || []).map((job, idx) => {
+              const statusColors: Record<string, string> = {
+                OPEN: '#10b981', 'ON-HOLD': '#f59e0b', CLOSED: '#ef4444',
+                open: '#10b981', 'on-hold': '#f59e0b', closed: '#ef4444',
+              };
+              const color = statusColors[job.status] || theme.accent;
+              const pct = totalActiveJobs > 0 ? Math.round((job.count / totalActiveJobs) * 100) : 0;
+              return (
+                <div key={idx} className="rounded-xl p-4 border transition-all hover:shadow-sm" style={{ background: theme.surfaceHover, borderColor: theme.border }}>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="size-2.5 rounded-full" style={{ background: color }} />
+                      <span className="text-sm font-semibold capitalize" style={{ color: theme.textPrimary }}>{job.status.toLowerCase().replace('-', ' ')}</span>
+                    </div>
+                    <span className="text-lg font-black" style={{ color: theme.textPrimary }}>{job.count}</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: theme.surfaceMuted }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${pct}%`, background: color }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        {/* Funnel Trend Chart (Spans 2 columns) */}
+        {funnelChartData.length > 0 && (
+          <motion.div
+            variants={itemVariants}
+            className="lg:col-span-2 rounded-3xl border shadow-sm p-7 flex flex-col"
+            style={{ background: theme.surface, borderColor: theme.border }}
+          >
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Recruitment Funnel Trend</h3>
+                <p className="text-sm mt-1" style={{ color: theme.textMuted }}>Candidates sourced vs interviewed</p>
+              </div>
+            </div>
+            <div className="flex-1 min-h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={funnelChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorSourced" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={theme.accent} stopOpacity={0.4} />
+                      <stop offset="95%" stopColor={theme.accent} stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="colorInterviewed" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="4 4" vertical={false} stroke={theme.border} opacity={0.4} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.textMuted, fontSize: 13, fontWeight: 500 }} dy={15} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.textMuted, fontSize: 13, fontWeight: 500 }} />
+                  <RechartsTooltip
+                    contentStyle={{ backgroundColor: theme.surface, borderRadius: '12px', border: `1px solid ${theme.border}`, boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ color: theme.textPrimary, fontWeight: 600 }}
+                    labelStyle={{ color: theme.textMuted, marginBottom: '8px', fontWeight: 700 }}
+                  />
+                  <Area type="monotone" dataKey="Sourced" stroke={theme.accent} strokeWidth={4} fillOpacity={1} fill="url(#colorSourced)" />
+                  <Area type="monotone" dataKey="Interviewed" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorInterviewed)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+        )}
+      </div>
+
+      {/* ── Row 3: Pipeline Overview & Top Jobs ─────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Pipeline Overview Chart */}
+        <motion.div
+          variants={itemVariants}
           className="lg:col-span-2 rounded-3xl border shadow-sm p-7 flex flex-col"
           style={{ background: theme.surface, borderColor: theme.border }}
         >
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Recruitment Funnel Trend</h3>
-              <p className="text-sm mt-1" style={{ color: theme.textMuted }}>Volume of candidates sourced vs interviewed</p>
+              <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Pipeline Overview</h3>
+              <p className="text-sm mt-1" style={{ color: theme.textMuted }}>Current candidates by stage</p>
             </div>
-            <select className="px-3 py-1.5 text-sm rounded-lg border outline-none font-medium" 
-                    style={{ background: theme.surfaceHover, borderColor: theme.border, color: theme.textPrimary }}>
-              <option>Last 7 Months</option>
-              <option>This Year</option>
-            </select>
           </div>
-          <div className="flex-1 min-h-[320px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={pipelineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorSourced" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={theme.accent} stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor={theme.accent} stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorInterviewed" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="4 4" vertical={false} stroke={theme.border} opacity={0.4} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.textMuted, fontSize: 13, fontWeight: 500 }} dy={15} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.textMuted, fontSize: 13, fontWeight: 500 }} />
-                <RechartsTooltip 
-                  contentStyle={{ backgroundColor: theme.surface, borderRadius: '12px', border: `1px solid ${theme.border}`, boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  itemStyle={{ color: theme.textPrimary, fontWeight: 600 }}
-                  labelStyle={{ color: theme.textMuted, marginBottom: '8px', fontWeight: 700 }}
-                />
-                <Area type="monotone" dataKey="Sourced" stroke={theme.accent} strokeWidth={4} fillOpacity={1} fill="url(#colorSourced)" />
-                <Area type="monotone" dataKey="Interviewed" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorInterviewed)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          {activePipelineData.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center py-12 gap-3">
+              <Users className="size-10" style={{ color: theme.textMuted + '60' }} />
+              <p className="text-sm font-medium" style={{ color: theme.textMuted }}>No active candidates in pipeline</p>
+            </div>
+          ) : (
+            <div className="flex-1 min-h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={activePipelineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="4 4" vertical={false} stroke={theme.border} opacity={0.4} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.textMuted, fontSize: 12, fontWeight: 500 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.textMuted, fontSize: 12, fontWeight: 500 }} />
+                  <RechartsTooltip
+                    cursor={{ fill: theme.surfaceHover }}
+                    contentStyle={{ backgroundColor: theme.surface, borderRadius: '12px', border: `1px solid ${theme.border}`, boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ color: theme.textPrimary, fontWeight: 600 }}
+                    labelStyle={{ color: theme.textMuted, marginBottom: '8px', fontWeight: 700 }}
+                  />
+                  <Bar dataKey="count" name="Candidates" radius={[6, 6, 0, 0]} barSize={32}>
+                    {activePipelineData.map((_entry, index) => (
+                      <Cell key={`cell-${index}`} fill={HIRE_COLORS[index % HIRE_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </motion.div>
 
-        {/* Key Metrics Panel */}
-        <motion.div 
-          variants={itemVariants} 
+        {/* Top Performing Jobs */}
+        <motion.div
+          variants={itemVariants}
           className="rounded-3xl border shadow-sm p-7 flex flex-col"
           style={{ background: theme.surface, borderColor: theme.border }}
         >
           <div className="mb-6">
-            <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Efficiency Metrics</h3>
-            <p className="text-sm mt-1" style={{ color: theme.textMuted }}>Current vs Target KPIs</p>
+            <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Top Performing Jobs</h3>
+            <p className="text-sm mt-1" style={{ color: theme.textMuted }}>By active candidates</p>
           </div>
-          <div className="flex-1 flex flex-col justify-between gap-4">
-            {keyMetrics.map((metric, idx) => (
-              <div key={idx} className="flex items-center justify-between p-4 rounded-xl border group hover:border-transparent transition-all"
-                   style={{ background: theme.surfaceHover, borderColor: theme.border }}>
-                <div className="flex items-center gap-4">
-                  <div className="p-2.5 rounded-lg" style={{ background: metric.status === 'good' ? '#10b98120' : '#f59e0b20', color: metric.status === 'good' ? '#10b981' : '#f59e0b' }}>
-                    <metric.icon className="size-5" />
+          {topJobs.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3">
+              <Briefcase className="size-10" style={{ color: theme.textMuted + '60' }} />
+              <p className="text-sm font-medium" style={{ color: theme.textMuted }}>No active jobs</p>
+            </div>
+          ) : (
+            <div className="space-y-4 overflow-y-auto pr-2 max-h-[300px]">
+              {topJobs.slice(0, 5).map((job, idx) => (
+                <div key={job.job_id} className="p-4 rounded-xl border flex items-center justify-between group hover:shadow-sm transition-all" style={{ background: theme.surfaceHover, borderColor: theme.border }}>
+                  <div className="min-w-0 flex-1 mr-4">
+                    <p className="text-sm font-bold truncate" style={{ color: theme.textPrimary }}>{job.title}</p>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: theme.surfaceMuted }}>
+                        <div className="h-full rounded-full" style={{ background: HIRE_COLORS[idx % HIRE_COLORS.length], width: `${Math.min(100, (job.active_candidates / Math.max(1, topJobs[0].active_candidates)) * 100)}%` }} />
+                      </div>
+                      <span className="text-xs font-semibold" style={{ color: theme.textMuted }}>{job.active_candidates} active</span>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold" style={{ color: theme.textPrimary }}>{metric.label}</p>
-                    <p className="text-xs" style={{ color: theme.textMuted }}>Target: {metric.target}</p>
+                  <div className="size-8 rounded-full flex items-center justify-center font-bold text-xs" style={{ background: `${HIRE_COLORS[idx % HIRE_COLORS.length]}20`, color: HIRE_COLORS[idx % HIRE_COLORS.length] }}>
+                    #{idx + 1}
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-lg font-black" style={{ color: theme.textPrimary }}>{metric.value}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </motion.div>
       </div>
 
-      {/* Row 3: Upcoming Interviews & Sourcing */}
+      {/* ── Row 3: Upcoming Interviews + Hires by Client ──────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Upcoming Interviews List */}
-        <motion.div 
+        {/* Upcoming Interviews */}
+        <motion.div
           variants={itemVariants}
           className="lg:col-span-2 rounded-3xl border shadow-sm p-7"
           style={{ background: theme.surface, borderColor: theme.border }}
@@ -261,91 +395,145 @@ const DashboardPage = () => {
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Upcoming Interviews</h3>
-              <p className="text-sm mt-1" style={{ color: theme.textMuted }}>Scheduled for today</p>
+              <p className="text-sm mt-1" style={{ color: theme.textMuted }}>
+                {(data.upcoming_interviews || []).length} scheduled
+              </p>
             </div>
-            <button className="text-sm font-bold hover:underline" style={{ color: theme.accent }}>View Calendar</button>
           </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b" style={{ borderColor: theme.border }}>
-                  <th className="py-3 px-2 text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Candidate</th>
-                  <th className="py-3 px-2 text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Role</th>
-                  <th className="py-3 px-2 text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Time</th>
-                  <th className="py-3 px-2 text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Round</th>
-                  <th className="py-3 px-2 text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y" style={{ borderColor: theme.border }}>
-                {upcomingInterviews.map((interview, idx) => (
-                  <tr key={idx} className="hover:bg-black/5 transition-colors group">
-                    <td className="py-4 px-2">
-                      <div className="flex items-center gap-3">
-                        <div className="size-8 rounded-full flex items-center justify-center font-bold text-xs" 
-                             style={{ background: theme.accent + '20', color: theme.accent }}>
-                          {interview.candidate.charAt(0)}
-                        </div>
-                        <span className="font-bold text-sm" style={{ color: theme.textPrimary }}>{interview.candidate}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-2 text-sm font-medium" style={{ color: theme.textSecondary }}>{interview.role}</td>
-                    <td className="py-4 px-2">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold"
-                            style={{ background: theme.surfaceMuted, color: theme.textPrimary }}>
-                        <Clock className="size-3" style={{ color: theme.accent }} />
-                        {interview.time}
-                      </span>
-                    </td>
-                    <td className="py-4 px-2 text-sm" style={{ color: theme.textMuted }}>{interview.type}</td>
-                    <td className="py-4 px-2">
-                      <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md text-white font-medium text-xs px-3"
-                              style={{ background: theme.accent }}>
-                        Join Call
-                      </button>
-                    </td>
+
+          {(data.upcoming_interviews || []).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <Video className="size-10" style={{ color: theme.textMuted + '60' }} />
+              <p className="text-sm font-medium" style={{ color: theme.textMuted }}>No upcoming interviews</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b" style={{ borderColor: theme.border }}>
+                    <th className="py-3 px-2 text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Candidate</th>
+                    <th className="py-3 px-2 text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Position</th>
+                    <th className="py-3 px-2 text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Schedule</th>
+                    <th className="py-3 px-2 text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Round</th>
+                    <th className="py-3 px-2 text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Interviewer</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y" style={{ borderColor: theme.border }}>
+                  {(data.upcoming_interviews || []).map((interview, idx) => (
+                    <tr key={idx} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
+                      <td className="py-4 px-2">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="size-8 rounded-full flex items-center justify-center font-bold text-xs"
+                            style={{ background: theme.accent + '20', color: theme.accent }}
+                          >
+                            {interview.candidate_name?.charAt(0) || '?'}
+                          </div>
+                          <span className="font-bold text-sm" style={{ color: theme.textPrimary }}>
+                            {interview.candidate_name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-2 text-sm font-medium max-w-[200px] truncate" style={{ color: theme.textSecondary }}>
+                        {interview.job_title}
+                      </td>
+                      <td className="py-4 px-2">
+                        <div className="flex flex-col gap-0.5">
+                          <span
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold w-fit"
+                            style={{ background: theme.surfaceMuted, color: theme.textPrimary }}
+                          >
+                            <Clock className="size-3" style={{ color: theme.accent }} />
+                            {formatTime(interview.time)}
+                          </span>
+                          <span className="text-[11px] font-medium" style={{ color: theme.textMuted }}>
+                            {formatDate(interview.date)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-2">
+                        <span
+                          className="text-xs font-semibold px-2 py-1 rounded-md"
+                          style={{ background: '#f59e0b18', color: '#d97706' }}
+                        >
+                          {interview.round}
+                        </span>
+                      </td>
+                      <td className="py-4 px-2 text-sm font-medium" style={{ color: theme.textSecondary }}>
+                        {interview.interviewer_name || '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </motion.div>
 
-        {/* Source Distribution */}
-        <motion.div 
-          variants={itemVariants} 
+        {/* Hires by Client */}
+        <motion.div
+          variants={itemVariants}
           className="rounded-3xl border shadow-sm p-7 flex flex-col"
           style={{ background: theme.surface, borderColor: theme.border }}
         >
-          <div className="mb-2">
-            <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Top Sourcing Channels</h3>
+          <div className="mb-4">
+            <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Hires by Client</h3>
+            <p className="text-sm mt-1" style={{ color: theme.textMuted }}>Placement distribution</p>
           </div>
-          <div className="flex-1 min-h-[300px] w-full mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={sourceData} layout="vertical" margin={{ top: 0, right: 20, left: -10, bottom: 0 }}>
-                <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: theme.textPrimary, fontSize: 13, fontWeight: 600 }} width={120} />
-                <RechartsTooltip 
-                  cursor={{ fill: theme.surfaceHover }}
-                  contentStyle={{ backgroundColor: theme.surface, borderRadius: '8px', border: `1px solid ${theme.border}` }}
-                />
-                <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={20}>
-                  {sourceData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {hiresChartData.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center py-8 gap-3">
+              <Building2 className="size-10" style={{ color: theme.textMuted + '60' }} />
+              <p className="text-sm font-medium" style={{ color: theme.textMuted }}>No hire data yet</p>
+            </div>
+          ) : (
+            <>
+              <div className="flex-1 min-h-[220px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={hiresChartData} layout="vertical" margin={{ top: 0, right: 20, left: -10, bottom: 0 }}>
+                    <XAxis type="number" hide />
+                    <YAxis
+                      dataKey="client_name"
+                      type="category"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: theme.textPrimary, fontSize: 12, fontWeight: 600 }}
+                      width={110}
+                    />
+                    <RechartsTooltip
+                      cursor={{ fill: theme.surfaceHover }}
+                      contentStyle={{
+                        backgroundColor: theme.surface,
+                        borderRadius: '8px',
+                        border: `1px solid ${theme.border}`,
+                      }}
+                    />
+                    <Bar dataKey="hires_count" name="Hires" radius={[0, 6, 6, 0]} barSize={18}>
+                      {hiresChartData.map((_entry, index) => (
+                        <Cell key={`cell-${index}`} fill={HIRE_COLORS[index % HIRE_COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-4 pt-4 flex items-center justify-between" style={{ borderTop: `1px solid ${theme.border}` }}>
+                <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: theme.textMuted }}>
+                  Total Hires
+                </span>
+                <span className="text-lg font-black" style={{ color: theme.textPrimary }}>
+                  {hiresChartData.reduce((s, d) => s + d.hires_count, 0)}
+                </span>
+              </div>
+            </>
+          )}
         </motion.div>
       </div>
 
-      {/* Row 4: Recent Activity & Departments */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Activity Feed */}
-        <motion.div 
+      {/* ── Row 4: Activity Feed + Efficiency ────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Activity Feed */}
+        <motion.div
           variants={itemVariants}
-          className="rounded-3xl border shadow-sm p-7"
+          className="lg:col-span-2 rounded-3xl border shadow-sm p-7"
           style={{ background: theme.surface, borderColor: theme.border }}
         >
           <div className="flex items-center justify-between mb-8">
@@ -353,85 +541,121 @@ const DashboardPage = () => {
               <div className="p-2 rounded-lg" style={{ background: theme.accent + '20' }}>
                 <Activity className="size-5" style={{ color: theme.accent }} />
               </div>
-              <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Team Activity Log</h3>
+              <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Recent Activity</h3>
             </div>
-            <button className="text-sm font-bold hover:underline" style={{ color: theme.textMuted }}>View All</button>
           </div>
-          
-          <div className="space-y-7 pl-2">
-            {recentActivity.map((activity, idx) => (
-              <div key={idx} className="flex gap-5 group">
-                <div className="relative flex flex-col items-center">
-                  <div className="size-11 rounded-full flex items-center justify-center font-bold text-sm z-10 shadow-sm border-2"
-                       style={{ background: theme.surface, color: theme.textPrimary, borderColor: theme.border }}>
-                    {activity.avatar}
+
+          {(data.unread_activity || []).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <Activity className="size-10" style={{ color: theme.textMuted + '60' }} />
+              <p className="text-sm font-medium" style={{ color: theme.textMuted }}>No recent activity</p>
+            </div>
+          ) : (
+            <div className="space-y-6 pl-2">
+              {(data.unread_activity || []).slice(0, 8).map((item, idx, arr) => {
+                const dotColor = activityColors[item.type] || theme.accent;
+                return (
+                  <div key={idx} className="flex gap-5 group">
+                    <div className="relative flex flex-col items-center">
+                      <div
+                        className="size-10 rounded-full flex items-center justify-center font-bold text-xs z-10 shadow-sm border-2"
+                        style={{ background: dotColor + '18', color: dotColor, borderColor: dotColor + '40' }}
+                      >
+                        {item.type?.charAt(0) || 'A'}
+                      </div>
+                      {idx !== arr.length - 1 && (
+                        <div className="absolute top-10 bottom-[-24px] w-[2px]" style={{ background: theme.border }} />
+                      )}
+                    </div>
+                    <div className="pt-1 flex-1 min-w-0">
+                      <p className="text-[15px] font-semibold leading-relaxed truncate" style={{ color: theme.textPrimary }}>
+                        {item.title}
+                      </p>
+                      <p className="text-sm mt-0.5 truncate" style={{ color: theme.textSecondary }}>
+                        {item.message}
+                      </p>
+                      <p className="text-xs font-semibold mt-1.5 uppercase tracking-wider" style={{ color: theme.textMuted }}>
+                        {timeAgo(item.created_at)}
+                      </p>
+                    </div>
                   </div>
-                  {idx !== recentActivity.length - 1 && (
-                    <div className="absolute top-11 bottom-[-28px] w-[2px]" style={{ background: theme.border }} />
-                  )}
-                </div>
-                <div className="pt-1.5 flex-1">
-                  <p className="text-[15px] leading-relaxed" style={{ color: theme.textPrimary }}>
-                    <span className="font-bold">{activity.user}</span>{' '}
-                    <span style={{ color: theme.textSecondary }}>{activity.action}</span>{' '}
-                    <span className="font-bold" style={{ color: theme.accent }}>{activity.candidate}</span>{' '}
-                    <span style={{ color: theme.textSecondary }}>for</span>{' '}
-                    <span className="font-bold">{activity.role}</span>
-                  </p>
-                  <p className="text-xs font-semibold mt-1.5 uppercase tracking-wider" style={{ color: theme.textMuted }}>{activity.time}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </motion.div>
 
-        {/* Department Breakdown */}
-        <motion.div 
+        {/* Efficiency + Quick Stats */}
+        <motion.div
           variants={itemVariants}
-          className="rounded-3xl border shadow-sm p-7 flex flex-col items-center justify-center relative overflow-hidden"
+          className="rounded-3xl border shadow-sm p-7 flex flex-col"
           style={{ background: theme.surface, borderColor: theme.border }}
         >
-          <div className="absolute top-7 left-7">
-             <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Hires by Department</h3>
-             <p className="text-sm mt-1" style={{ color: theme.textMuted }}>Distribution across teams</p>
+          <div className="mb-6">
+            <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Efficiency Metrics</h3>
+            <p className="text-sm mt-1" style={{ color: theme.textMuted }}>Key performance indicators</p>
           </div>
-          
-          <div className="w-full h-[350px] mt-10">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={departmentData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={80}
-                  outerRadius={120}
-                  paddingAngle={5}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {departmentData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <RechartsTooltip 
-                  contentStyle={{ backgroundColor: theme.surface, borderRadius: '8px', border: `1px solid ${theme.border}` }}
-                  itemStyle={{ color: theme.textPrimary, fontWeight: 600 }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          
-          <div className="flex flex-wrap justify-center gap-4 mt-2">
-            {departmentData.map((dept, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <div className="size-3 rounded-full" style={{ background: COLORS[idx % COLORS.length] }} />
-                <span className="text-sm font-medium" style={{ color: theme.textSecondary }}>{dept.name} ({dept.value}%)</span>
+          <div className="flex-1 flex flex-col gap-4">
+            {/* Time to Hire */}
+            <div
+              className="flex items-center justify-between p-5 rounded-xl border group hover:shadow-sm transition-all"
+              style={{ background: theme.surfaceHover, borderColor: theme.border }}
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 rounded-lg" style={{ background: '#10b98120', color: '#10b981' }}>
+                  <Clock className="size-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: theme.textPrimary }}>Time to Hire</p>
+                  <p className="text-xs" style={{ color: theme.textMuted }}>Average duration</p>
+                </div>
               </div>
-            ))}
+              <p className="text-2xl font-black" style={{ color: theme.textPrimary }}>
+                {data.average_time_to_hire_days} <span className="text-base font-semibold" style={{ color: theme.textMuted }}>days</span>
+              </p>
+            </div>
+
+            {/* Offer Acceptance */}
+            <div
+              className="flex items-center justify-between p-5 rounded-xl border group hover:shadow-sm transition-all"
+              style={{ background: theme.surfaceHover, borderColor: theme.border }}
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 rounded-lg" style={{ background: '#3b82f620', color: '#3b82f6' }}>
+                  <TrendingUp className="size-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: theme.textPrimary }}>Offer Acceptance</p>
+                  <p className="text-xs" style={{ color: theme.textMuted }}>Conversion rate</p>
+                </div>
+              </div>
+              <p className="text-2xl font-black" style={{ color: theme.textPrimary }}>
+                {data.offer_acceptance_rate}%
+              </p>
+            </div>
+
+            {/* Rejection Rate */}
+            <div
+              className="flex items-center justify-between p-5 rounded-xl border group hover:shadow-sm transition-all"
+              style={{ background: theme.surfaceHover, borderColor: theme.border }}
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 rounded-lg" style={{ background: '#ef444420', color: '#ef4444' }}>
+                  <Activity className="size-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: theme.textPrimary }}>Rejection Rate</p>
+                  <p className="text-xs" style={{ color: theme.textMuted }}>Overall rejections</p>
+                </div>
+              </div>
+              <p className="text-2xl font-black" style={{ color: theme.textPrimary }}>
+                {data.rejection_rate}%
+              </p>
+            </div>
+
           </div>
         </motion.div>
       </div>
-
     </motion.div>
   );
 };

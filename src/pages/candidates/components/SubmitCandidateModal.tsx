@@ -39,6 +39,7 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
   const [modalCandidateLoading, setModalCandidateLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submissionErrors, setSubmissionErrors] = useState<Record<string, string[]> | null>(null);
+  const [rightTab, setRightTab] = useState<'job' | 'history'>('history');
   const errorBoxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -108,10 +109,7 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
   }, [selectedJobId, dispatch]);
 
   const handleSubmit = () => {
-    if (!candidateId || !selectedJobId || !synopsis.trim()) {
-      if (!synopsis.trim() && selectedJobId) {
-        toast.error("Please provide a synopsis");
-      }
+    if (!candidateId || !selectedJobId) {
       return;
     }
     
@@ -165,14 +163,16 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent showCloseButton={!submitting} className="sm:max-w-[1000px] w-full max-h-[90vh] flex flex-col p-0 overflow-hidden bg-background">
-        <div className="p-6 pb-4 border-b border-border/40 bg-muted/20 shrink-0">
+      <DialogContent showCloseButton={!submitting} className="sm:max-w-[1200px] w-full h-[85vh] max-h-[95vh] flex flex-col p-0 overflow-hidden bg-background shadow-2xl rounded-2xl">
+        <div className="px-8 py-6 border-b border-border/40 shrink-0" style={{ background: `linear-gradient(to right, ${theme.surfaceMuted}, ${theme.surface})` }}>
           <DialogHeader>
-            <DialogTitle className="text-xl flex items-center gap-2">
-              <FileSignature className="size-5" style={{ color: theme.accent }} />
-              Submit Candidate
+            <DialogTitle className="text-2xl flex items-center gap-3">
+              <div className="p-2.5 rounded-xl shadow-sm border bg-background" style={{ borderColor: theme.border }}>
+                <FileSignature className="size-6" style={{ color: theme.accent }} />
+              </div>
+              <span className="font-bold tracking-tight"> Submit Candidate</span>
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm font-medium mt-1.5 opacity-80">
                Select a job position and provide a synopsis to submit this candidate.
             </DialogDescription>
           </DialogHeader>
@@ -180,8 +180,8 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
 
         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
           {/* LEFT COLUMN: Form */}
-          <div className="w-full md:w-[45%] flex flex-col border-r border-border/40 overflow-y-auto bg-background">
-            <div className="p-6 space-y-6 flex-1">
+          <div className="w-full md:w-[40%] flex flex-col border-r border-border/40 overflow-y-auto bg-background">
+            <div className="p-8 space-y-8 flex-1">
               <div className="space-y-2">
                  <label className="text-sm font-semibold flex items-center justify-between" style={{ color: theme.textSecondary }}>
                    Job Position
@@ -203,8 +203,7 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
               {/* Synopsis Field */}
               <div className="space-y-2 animate-in fade-in fill-mode-both">
                  <label className="text-sm font-semibold flex items-center justify-between" style={{ color: theme.textSecondary }}>
-                   <span>Synopsis <span className="text-destructive">*</span></span>
-                   {(!synopsis.trim() && selectedJobId) && <span className="text-xs text-destructive font-medium">Required</span>}
+                   <span>Synopsis <span className="text-muted-foreground font-normal text-xs ml-2">(Optional)</span></span>
                  </label>
                  <Textarea 
                    placeholder="e.g. This candidate brings 8 years of Python experience, highly recommended for backend leadership roles." 
@@ -253,185 +252,204 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
                 </div>
               )}
 
-              {/* Past Applications */}
-              {candidateId && (
-                <div className="space-y-4 pt-6 mt-6 border-t border-border/40 animate-in fade-in zoom-in-95">
-                  <h4 className="text-sm font-semibold flex items-center gap-2" style={{ color: theme.textSecondary }}>
-                    <Briefcase className="size-4" />
-                    Application History
-                    {candidateDetail?.applications && candidateDetail.applications.length > 0 && !modalCandidateLoading && (
-                      <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: theme.accent + '15', color: theme.accent }}>
-                        {candidateDetail.applications.length} records
-                      </span>
-                    )}
-                  </h4>
-                  
-                  {modalCandidateLoading ? (
-                    <div className="flex flex-col items-center justify-center py-8 space-y-3">
-                      <Loader2 className="size-6 animate-spin" style={{ color: theme.accent }} />
-                      <p className="text-xs" style={{ color: theme.textMuted }}>Loading past applications...</p>
-                    </div>
-                  ) : candidateDetail?.applications && candidateDetail.applications.length > 0 ? (
-                    <div className="space-y-3">
-                      {candidateDetail.applications.map((app: any) => {
-                      const statusColor = app.status === 'offered' || app.status === 'hired' ? theme.success 
-                        : app.status === 'rejected' ? theme.destructive 
-                        : app.status === 'screening' ? '#f59e0b'
-                        : theme.textSecondary;
-                      const reviewColor = app.manager_review_status === 'accepted' ? theme.success 
-                        : app.manager_review_status === 'rejected' ? theme.destructive 
-                        : theme.textMuted;
-                      
-                      return (
-                        <div key={app.id} className="rounded-xl border text-sm shadow-sm transition-all hover:shadow-md overflow-hidden" style={{ background: theme.surface, borderColor: theme.border }}>
-                          {/* Header */}
-                          <div className="flex justify-between items-center gap-3 px-4 py-2.5" style={{ background: theme.surfaceMuted, borderBottom: `1px solid ${theme.border}` }}>
-                            <div className="flex items-center gap-2 min-w-0">
-                              <div className="size-2 rounded-full shrink-0" style={{ background: statusColor }} />
-                              <span className="font-semibold truncate" style={{ color: theme.textPrimary }}>{app.job_title}</span>
-                            </div>
-                            <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider shrink-0 px-2 py-0.5" style={{ color: statusColor, borderColor: statusColor + '50', background: statusColor + '10' }}>
-                              {app.status}
-                            </Badge>
-                          </div>
 
-                          <div className="px-4 py-3 space-y-3">
-                            {/* Info Grid */}
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
-                                <div className="size-6 rounded-md flex items-center justify-center shrink-0" style={{ background: theme.surfaceMuted }}>
-                                  <CalendarDays className="size-3" />
-                                </div>
-                                <div>
-                                  <p className="text-[10px] uppercase tracking-wider font-medium leading-none mb-0.5">Shared</p>
-                                  <p className="font-medium" style={{ color: theme.textSecondary }}>{app.share_date ? new Date(app.share_date).toLocaleDateString() : 'N/A'}</p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
-                                <div className="size-6 rounded-md flex items-center justify-center shrink-0" style={{ background: theme.surfaceMuted }}>
-                                  <User className="size-3" />
-                                </div>
-                                <div>
-                                  <p className="text-[10px] uppercase tracking-wider font-medium leading-none mb-0.5">Submitted By</p>
-                                  <p className="font-medium" style={{ color: theme.textSecondary }}>{app.submitted_by?.name || 'N/A'}</p>
-                                </div>
-                              </div>
-                              {app.stage_name && (
-                                <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
-                                  <div className="size-6 rounded-md flex items-center justify-center shrink-0" style={{ background: theme.surfaceMuted }}>
-                                    <Briefcase className="size-3" />
-                                  </div>
-                                  <div>
-                                    <p className="text-[10px] uppercase tracking-wider font-medium leading-none mb-0.5">Stage</p>
-                                    <p className="font-medium" style={{ color: theme.textSecondary }}>{app.stage_name}</p>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Synopsis */}
-                            {app.synopsis && (
-                              <div className="text-xs rounded-lg p-3 border" style={{ background: theme.surfaceMuted, borderColor: theme.border }}>
-                                <div className="flex items-center gap-1.5 mb-1.5">
-                                  <FileText className="size-3" style={{ color: theme.textMuted }} />
-                                  <span className="font-semibold uppercase tracking-wider text-[10px]" style={{ color: theme.textMuted }}>Synopsis</span>
-                                </div>
-                                <p className="leading-relaxed" style={{ color: theme.textSecondary }}>{app.synopsis}</p>
-                              </div>
-                            )}
-
-                            {/* Interview Schedule */}
-                            {app.interview_schedule && (
-                              <div className="text-xs rounded-lg p-3 border" style={{ background: theme.accent + '06', borderColor: theme.accent + '25' }}>
-                                <div className="flex items-center gap-1.5 mb-2">
-                                  <Video className="size-3" style={{ color: theme.accent }} />
-                                  <span className="font-semibold uppercase tracking-wider text-[10px]" style={{ color: theme.accent }}>Interview Schedule</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2.5">
-                                  <div className="flex items-center gap-1.5" style={{ color: theme.textSecondary }}>
-                                    <CalendarDays className="size-3 shrink-0" style={{ color: theme.textMuted }} />
-                                    <span>{new Date(app.interview_schedule.date).toLocaleDateString()} at {app.interview_schedule.time?.slice(0, 5)}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1.5" style={{ color: theme.textSecondary }}>
-                                    <MapPin className="size-3 shrink-0" style={{ color: theme.textMuted }} />
-                                    <span className="capitalize">{app.interview_schedule.mode}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1.5" style={{ color: theme.textSecondary }}>
-                                    <User className="size-3 shrink-0" style={{ color: theme.textMuted }} />
-                                    <span>{app.interview_schedule.interviewer_name}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1.5" style={{ color: theme.textSecondary }}>
-                                    <CheckCircle2 className="size-3 shrink-0" style={{ color: app.interview_schedule.attendance_status === 'attended' ? theme.success : theme.textMuted }} />
-                                    <span className="capitalize">{app.interview_schedule.attendance_status || 'N/A'}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Manager Review Footer */}
-                            <div className="flex items-center justify-between gap-3 pt-2 border-t" style={{ borderColor: theme.border + '50' }}>
-                              <div className="flex items-center gap-1.5 text-xs">
-                                {app.manager_review_status === 'accepted' ? (
-                                  <CheckCircle2 className="size-3.5" style={{ color: theme.success }} />
-                                ) : app.manager_review_status === 'rejected' ? (
-                                  <XCircle className="size-3.5" style={{ color: theme.destructive }} />
-                                ) : (
-                                  <Clock className="size-3.5" style={{ color: theme.textMuted }} />
-                                )}
-                                <span className="font-medium" style={{ color: theme.textMuted }}>Manager Review:</span>
-                                <span className="font-semibold capitalize px-1.5 py-0.5 rounded text-[10px]" style={{ 
-                                  color: reviewColor, 
-                                  background: reviewColor + '12'
-                                }}>
-                                  {app.manager_review_status}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Manager Notes */}
-                            {app.manager_review_notes && (
-                              <div className="text-xs rounded-lg p-3 border-l-2" style={{ background: theme.surfaceMuted, borderColor: reviewColor }}>
-                                <div className="flex items-center gap-1.5 mb-1">
-                                  <MessageSquare className="size-3" style={{ color: theme.textMuted }} />
-                                  <span className="font-semibold uppercase tracking-wider text-[10px]" style={{ color: theme.textMuted }}>Manager Notes</span>
-                                </div>
-                                <p className="leading-relaxed italic" style={{ color: theme.textSecondary }}>"{app.manager_review_notes}"</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                    </div>
-                  ) : (
-                    <div className="p-6 text-center rounded-lg border border-dashed" style={{ borderColor: theme.border, background: theme.surfaceMuted }}>
-                      <p className="text-sm" style={{ color: theme.textMuted }}>No past candidate application data found.</p>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Job Details */}
-          <div className="w-full md:w-[55%] bg-muted/10 overflow-y-auto relative p-6">
-            {!selectedJobId && !detailLoading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-muted-foreground animate-in fade-in">
-                <div className="size-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                  <Briefcase className="size-8 opacity-50" />
-                </div>
-                <h3 className="font-semibold text-foreground mb-1">No Job Selected</h3>
-                <p className="text-sm max-w-[250px]">Select a job position from the left to view its details here.</p>
+          {/* RIGHT COLUMN: Job Details & History Tabs */}
+          <div className="w-full md:w-[60%] bg-muted/10 overflow-y-auto relative p-8 flex flex-col">
+            <div className="flex items-center bg-muted/30 p-1 rounded-xl mb-6 w-full sm:w-fit border shadow-sm">
+               <button 
+                 className={`flex-1 sm:flex-none px-5 py-2 rounded-lg text-sm font-semibold transition-all ${rightTab === 'job' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                 onClick={() => setRightTab('job')}
+               >
+                 Job Details
+               </button>
+               <button 
+                 className={`flex-1 sm:flex-none px-5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${rightTab === 'history' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                 onClick={() => setRightTab('history')}
+               >
+                 Application History
+                 {candidateDetail?.applications && candidateDetail.applications.length > 0 && (
+                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: theme.accent + '20', color: theme.accent }}>
+                     {candidateDetail.applications.length}
+                   </span>
+                 )}
+               </button>
+            </div>
+
+            {rightTab === 'history' && (
+              <div className="animate-in fade-in zoom-in-95 fill-mode-both">
+                {candidateId && (
+                  <div>
+                    {modalCandidateLoading ? (
+                      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                        <Loader2 className="size-8 animate-spin" style={{ color: theme.accent }} />
+                        <p className="text-sm font-medium" style={{ color: theme.textMuted }}>Loading past applications...</p>
+                      </div>
+                    ) : candidateDetail?.applications && candidateDetail.applications.length > 0 ? (
+                      <div className="space-y-4">
+                        {candidateDetail.applications.map((app: any) => {
+                        const statusColor = app.status === 'offered' || app.status === 'hired' ? theme.success 
+                          : app.status === 'rejected' ? theme.destructive 
+                          : app.status === 'screening' ? '#f59e0b'
+                          : theme.textSecondary;
+                        const reviewColor = app.manager_review_status === 'accepted' ? theme.success 
+                          : app.manager_review_status === 'rejected' ? theme.destructive 
+                          : theme.textMuted;
+                        
+                        return (
+                          <div key={app.id} className="rounded-xl border text-sm shadow-sm transition-all hover:shadow-md overflow-hidden bg-background" style={{ borderColor: theme.border }}>
+                            {/* Header */}
+                            <div className="flex justify-between items-center gap-3 px-5 py-3.5" style={{ background: theme.surfaceMuted, borderBottom: `1px solid ${theme.border}` }}>
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="size-2 rounded-full shrink-0" style={{ background: statusColor }} />
+                                <span className="font-bold text-base truncate" style={{ color: theme.textPrimary }}>{app.job_title}</span>
+                              </div>
+                              <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider shrink-0 px-2 py-0.5" style={{ color: statusColor, borderColor: statusColor + '50', background: statusColor + '10' }}>
+                                {app.status}
+                              </Badge>
+                            </div>
+
+                            <div className="px-5 py-4 space-y-4">
+                              {/* Info Grid */}
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="flex items-center gap-2.5 text-xs" style={{ color: theme.textMuted }}>
+                                  <div className="size-7 rounded-md flex items-center justify-center shrink-0" style={{ background: theme.surfaceMuted }}>
+                                    <CalendarDays className="size-3.5" />
+                                  </div>
+                                  <div>
+                                    <p className="text-[10px] uppercase tracking-wider font-semibold leading-none mb-0.5">Shared</p>
+                                    <p className="font-semibold" style={{ color: theme.textSecondary }}>{app.share_date ? new Date(app.share_date).toLocaleDateString() : 'N/A'}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2.5 text-xs" style={{ color: theme.textMuted }}>
+                                  <div className="size-7 rounded-md flex items-center justify-center shrink-0" style={{ background: theme.surfaceMuted }}>
+                                    <User className="size-3.5" />
+                                  </div>
+                                  <div>
+                                    <p className="text-[10px] uppercase tracking-wider font-semibold leading-none mb-0.5">Submitted By</p>
+                                    <p className="font-semibold" style={{ color: theme.textSecondary }}>{app.submitted_by?.name || 'N/A'}</p>
+                                  </div>
+                                </div>
+                                {app.stage_name && (
+                                  <div className="flex items-center gap-2.5 text-xs" style={{ color: theme.textMuted }}>
+                                    <div className="size-7 rounded-md flex items-center justify-center shrink-0" style={{ background: theme.surfaceMuted }}>
+                                      <Briefcase className="size-3.5" />
+                                    </div>
+                                    <div>
+                                      <p className="text-[10px] uppercase tracking-wider font-semibold leading-none mb-0.5">Stage</p>
+                                      <p className="font-semibold" style={{ color: theme.textSecondary }}>{app.stage_name}</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Synopsis */}
+                              {app.synopsis && (
+                                <div className="text-sm rounded-lg p-3.5 border bg-muted/10" style={{ borderColor: theme.border }}>
+                                  <div className="flex items-center gap-1.5 mb-2">
+                                    <FileText className="size-3.5" style={{ color: theme.textMuted }} />
+                                    <span className="font-bold uppercase tracking-wider text-[11px]" style={{ color: theme.textMuted }}>Synopsis</span>
+                                  </div>
+                                  <p className="leading-relaxed" style={{ color: theme.textSecondary }}>{app.synopsis}</p>
+                                </div>
+                              )}
+
+                              {/* Interview Schedule */}
+                              {app.interview_schedule && (
+                                <div className="text-sm rounded-lg p-4 border" style={{ background: theme.accent + '06', borderColor: theme.accent + '25' }}>
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <Video className="size-4" style={{ color: theme.accent }} />
+                                    <span className="font-bold uppercase tracking-wider text-xs" style={{ color: theme.accent }}>Interview Schedule</span>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div className="flex items-center gap-2" style={{ color: theme.textSecondary }}>
+                                      <CalendarDays className="size-4 shrink-0" style={{ color: theme.textMuted }} />
+                                      <span className="font-medium">{new Date(app.interview_schedule.date).toLocaleDateString()} at {app.interview_schedule.time?.slice(0, 5)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2" style={{ color: theme.textSecondary }}>
+                                      <MapPin className="size-4 shrink-0" style={{ color: theme.textMuted }} />
+                                      <span className="capitalize font-medium">{app.interview_schedule.mode}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2" style={{ color: theme.textSecondary }}>
+                                      <User className="size-4 shrink-0" style={{ color: theme.textMuted }} />
+                                      <span className="font-medium">{app.interview_schedule.interviewer_name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2" style={{ color: theme.textSecondary }}>
+                                      <CheckCircle2 className="size-4 shrink-0" style={{ color: app.interview_schedule.attendance_status === 'attended' ? theme.success : theme.textMuted }} />
+                                      <span className="capitalize font-medium">{app.interview_schedule.attendance_status || 'N/A'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Manager Review Footer */}
+                              <div className="flex items-center justify-between gap-3 pt-3 border-t" style={{ borderColor: theme.border + '50' }}>
+                                <div className="flex items-center gap-2 text-sm">
+                                  {app.manager_review_status === 'accepted' ? (
+                                    <CheckCircle2 className="size-4" style={{ color: theme.success }} />
+                                  ) : app.manager_review_status === 'rejected' ? (
+                                    <XCircle className="size-4" style={{ color: theme.destructive }} />
+                                  ) : (
+                                    <Clock className="size-4" style={{ color: theme.textMuted }} />
+                                  )}
+                                  <span className="font-semibold" style={{ color: theme.textMuted }}>Manager Review:</span>
+                                  <span className="font-bold capitalize px-2 py-0.5 rounded text-xs" style={{ 
+                                    color: reviewColor, 
+                                    background: reviewColor + '12'
+                                  }}>
+                                    {app.manager_review_status}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Manager Notes */}
+                              {app.manager_review_notes && (
+                                <div className="text-sm rounded-lg p-3.5 border-l-2 bg-muted/20" style={{ borderColor: reviewColor }}>
+                                  <div className="flex items-center gap-1.5 mb-1.5">
+                                    <MessageSquare className="size-3.5" style={{ color: theme.textMuted }} />
+                                    <span className="font-bold uppercase tracking-wider text-[11px]" style={{ color: theme.textMuted }}>Manager Notes</span>
+                                  </div>
+                                  <p className="leading-relaxed italic font-medium" style={{ color: theme.textSecondary }}>"{app.manager_review_notes}"</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      </div>
+                    ) : (
+                      <div className="p-10 text-center rounded-xl border border-dashed flex flex-col items-center gap-3 bg-background" style={{ borderColor: theme.border }}>
+                         <Briefcase className="size-10 text-muted-foreground/30" />
+                         <div>
+                           <p className="text-base font-semibold" style={{ color: theme.textPrimary }}>No History Found</p>
+                           <p className="text-sm mt-1" style={{ color: theme.textMuted }}>This candidate hasn't applied for any jobs yet.</p>
+                         </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
-            {detailLoading && (
-              <div className="absolute inset-0 flex items-center justify-center">
+            {rightTab === 'job' && !selectedJobId && !detailLoading && (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-muted-foreground animate-in fade-in">
+                <div className="size-16 rounded-full bg-muted/50 flex items-center justify-center mb-4 border border-border/50">
+                  <Briefcase className="size-8 opacity-50" />
+                </div>
+                <h3 className="font-semibold text-foreground mb-1 text-lg">No Job Selected</h3>
+                <p className="text-sm max-w-[280px]">Select a job position from the left to view its detailed requirements here.</p>
+              </div>
+            )}
+
+            {rightTab === 'job' && detailLoading && (
+              <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="size-8 animate-spin" style={{ color: theme.accent }} />
               </div>
             )}
 
-            {!detailLoading && selectedJobDetail && (
+            {rightTab === 'job' && !detailLoading && selectedJobDetail && (
               <div className="rounded-xl p-6 space-y-6 shadow-sm bg-background border transition-all duration-300 animate-in fade-in slide-in-from-bottom-2" style={{ borderColor: theme.border }}>
                 {/* Header / Title */}
                 <div className="flex justify-between items-start gap-4">
@@ -561,14 +579,14 @@ export const SubmitCandidateModal = ({ isOpen, onClose, candidateId }: Props) =>
           <Button 
              style={{ background: theme.accent, color: theme.accentForeground }} 
              onClick={handleSubmit}
-             disabled={submitting || !selectedJobId || !synopsis.trim()}
+             disabled={submitting || !selectedJobId}
           >
              {submitting ? (
                <>
                  <Loader2 className="mr-2 size-4 animate-spin" />
                  Submitting...
                </>
-             ) : 'Submit Candidate'}
+             ) : 'Confirm & Submit Candidate'}
           </Button>
         </DialogFooter>
       </DialogContent>

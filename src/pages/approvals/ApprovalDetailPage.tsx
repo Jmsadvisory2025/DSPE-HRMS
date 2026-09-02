@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAppDispatch } from "@/store/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,8 +105,15 @@ const ApprovalDetailPage = () => {
   const dispatch = useAppDispatch();
   const { isRecruiter } = useAuth();
 
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") as "pending" | "accepted" | "rejected" | null;
+
   const [data, setData] = useState<GroupedResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"pending" | "accepted" | "rejected">(
+    initialTab && ["pending", "accepted", "rejected"].includes(initialTab) ? initialTab : "pending"
+  );
+  const [jobTitle, setJobTitle] = useState<string>("");
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -194,12 +201,13 @@ const ApprovalDetailPage = () => {
       dispatch({
         type: approvalActions.FETCH_GROUPED_APPROVALS,
         method: "GET",
-        endPoint: `/api/v1/candidates/applications/grouped-approval-queue/?job=${jobId}`,
+        endPoint: `/api/v1/candidates/applications/grouped-approval-queue/?job=${jobId}&manager_review_status=${activeTab}`,
         auth: true,
         setLoading: (val: boolean) => setLoading(val),
         getResponse: (res: GroupedResponse[]) => {
           if (res && res.length > 0) {
             const group = res[0];
+            setJobTitle(group.job_title);
             // Sort applications so pending ones are first
             if (group.applications && Array.isArray(group.applications)) {
               group.applications.sort((a, b) => {
@@ -365,6 +373,25 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
             res?.message || "Trackers successfully sent to the client!",
           );
         }
+
+        // Automatically mark them as accepted
+        const appsToAccept = Array.from(selectedApps);
+        dispatch({
+          type: approvalActions.REVIEW_APPLICATION,
+          method: "POST",
+          endPoint: "/api/v1/candidates/applications/bulk-review/",
+          auth: true,
+          body: { application_ids: appsToAccept, status: "accepted" },
+          setLoading: () => {}, // silent
+          getResponse: () => {
+            fetchDetail();
+          },
+          getError: (err: any) => {
+            console.error("Failed to auto-accept after sending to client:", err);
+            fetchDetail();
+          }
+        });
+
         setSelectedApps(new Set());
         setCcEmails("");
         setSendClientModalOpen(false);
@@ -400,7 +427,9 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
 
   useEffect(() => {
     fetchDetail();
-  }, [dispatch, jobId]);
+    setSelectedApps(new Set());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, jobId, activeTab]);
 
   const handleActionClick = (
     appId: string,
@@ -623,40 +652,6 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
   };
 
   // ── Render ───────────────────────────────────────────────────
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <div
-          className="size-8 border-2 border-t-transparent rounded-full animate-spin mb-4"
-          style={{
-            borderColor: `${theme.border} transparent ${theme.border} ${theme.border}`,
-            borderTopColor: theme.accent,
-          }}
-        ></div>
-        <div className="text-sm font-medium" style={{ color: theme.textMuted }}>
-          Loading approvals...
-        </div>
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <div className="text-sm font-medium" style={{ color: theme.textMuted }}>
-          No pending approvals found for this job.
-        </div>
-        <Button
-          variant="outline"
-          className="mt-4"
-          onClick={() => navigate("/approvals")}
-        >
-          Go Back
-        </Button>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -675,11 +670,11 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
               className="text-2xl font-bold tracking-tight"
               style={{ color: theme.textPrimary }}
             >
-              Pending Approvals
+              All Approvals
             </h1>
             <p className="text-sm mt-1" style={{ color: theme.textMuted }}>
-              {data.job_title} • {data.applications.length} application
-              {data.applications.length !== 1 ? "s" : ""}
+              {jobTitle || "Loading..."} • {data?.applications?.length || 0} application
+              {data?.applications?.length !== 1 ? "s" : ""}
             </p>
           </div>
         </div>
@@ -725,7 +720,7 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
                 Client Reminder
               </Button>
 
-              {!isRecruiter && (
+              {/* {!isRecruiter && (
                 <>
                   <Button
                     onClick={() => handleBulkReview("accepted")}
@@ -742,7 +737,7 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
                     Bulk Reject
                   </Button>
                 </>
-              )}
+              )} */}
 
               <Button
                 onClick={() => setSendClientModalOpen(true)}
@@ -762,6 +757,47 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex border-b" style={{ borderColor: theme.border }}>
+        {["pending", "accepted", "rejected"].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab as any)}
+            className={`px-6 py-2.5 font-semibold text-sm capitalize border-b-2 transition-colors ${
+              activeTab === tab
+                ? ""
+                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+            }`}
+            style={{
+              borderColor: activeTab === tab ? theme.accent : 'transparent',
+              color: activeTab === tab ? theme.accent : undefined,
+            }}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div
+            className="size-8 border-2 border-t-transparent rounded-full animate-spin mb-4"
+            style={{
+              borderColor: `${theme.border} transparent ${theme.border} ${theme.border}`,
+              borderTopColor: theme.accent,
+            }}
+          ></div>
+          <div className="text-sm font-medium" style={{ color: theme.textMuted }}>
+            Loading {activeTab} approvals...
+          </div>
+        </div>
+      ) : !data || !data.applications || data.applications.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="text-sm font-medium" style={{ color: theme.textMuted }}>
+            No {activeTab} approvals found for this job.
+          </div>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 gap-6">
         {data.applications.map((app) => (
           <Card
@@ -1485,6 +1521,7 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
           </Card>
         ))}
       </div>
+      )}
 
       <ReviewActionModal
         isOpen={modalOpen}

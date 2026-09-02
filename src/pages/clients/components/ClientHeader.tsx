@@ -1,18 +1,35 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Plus, Download, Loader2 } from 'lucide-react';
+import { Plus, Download, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { theme } from '@/config/theme';
 import axios from 'axios';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface ClientHeaderProps {
   totalClients: number;
+  selectedCount?: number;
+  deleting?: boolean;
+  onDeleteSelected?: () => void;
 }
 
-const ClientHeader = ({ totalClients }: ClientHeaderProps) => {
+const ClientHeader = ({ totalClients, selectedCount = 0, deleting = false, onDeleteSelected }: ClientHeaderProps) => {
   const navigate = useNavigate();
   const [exporting, setExporting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const handleConfirmDelete = () => {
+    setConfirmOpen(false);
+    if (onDeleteSelected) onDeleteSelected();
+  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -71,6 +88,48 @@ const ClientHeader = ({ totalClients }: ClientHeaderProps) => {
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
+        {selectedCount > 0 && (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 animate-in fade-in"
+              style={{ color: theme.destructive, borderColor: theme.destructive + '50', background: theme.destructive + '10' }}
+              disabled={deleting}
+              onClick={() => setConfirmOpen(true)}
+            >
+              {deleting ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="size-3.5" />
+              )}
+              <span>Delete Selected ({selectedCount})</span>
+            </Button>
+            
+            <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Confirm Deletion</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete {selectedCount} selected {selectedCount === 1 ? 'client' : 'clients'}? This action cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="mt-4 gap-2 sm:gap-0">
+                  <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleConfirmDelete}
+                    style={{ background: theme.destructive, color: '#fff' }}
+                  >
+                    Confirm Delete
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
+        )}
         <Button
           variant="outline"
           size="sm"

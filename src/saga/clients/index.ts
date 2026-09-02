@@ -10,4 +10,5 @@ export function* watchClientsSaga() {
   yield takeLatest(clientActions.FETCH_TRACKER_FORMATS, genericSaga);
   yield takeLatest(clientActions.UPDATE_TRACKER_FORMAT, genericSaga);
   yield takeLatest(clientActions.CREATE_TRACKER_FORMAT, genericSaga);
+  yield takeLatest(clientActions.DELETE_CLIENTS, genericSaga);
 }
