@@ -21,6 +21,7 @@ const AddCandidatePage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -38,6 +39,34 @@ const AddCandidatePage = () => {
     // reset input so the same file can be selected again if removed
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    if (e.dataTransfer.files) {
+      const newFiles = Array.from(e.dataTransfer.files);
+      const validFiles = newFiles.filter(
+        (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.docx') || f.name.toLowerCase().endsWith('.doc')
+      );
+      
+      if (validFiles.length < newFiles.length) {
+        toast.error('Only PDF, DOCX, and DOC files are allowed.');
+      }
+      
+      setSelectedFiles((prev) => [...prev, ...validFiles]);
     }
   };
 
@@ -126,12 +155,17 @@ const AddCandidatePage = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <div 
-            className="border-2 border-dashed rounded-lg p-10 text-center transition-colors cursor-pointer"
+            className={`border-2 border-dashed rounded-lg p-10 text-center transition-all duration-200 cursor-pointer ${
+              isDragging ? "scale-[1.02]" : ""
+            }`}
             style={{ 
-              borderColor: theme.border,
-              background: theme.surfaceHover 
+              borderColor: isDragging ? theme.accent : theme.border,
+              background: isDragging ? theme.accentSoft : theme.surfaceHover 
             }}
             onClick={() => fileInputRef.current?.click()}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
           >
             <UploadCloud className="size-10 mx-auto mb-4" style={{ color: theme.accent }} />
             <h3 className="text-sm font-semibold mb-1" style={{ color: theme.textPrimary }}>
