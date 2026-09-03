@@ -296,7 +296,7 @@ const CandidatesPage = () => {
                 className="text-[11px] font-semibold uppercase tracking-wider w-[120px]"
                 style={{ color: theme.textMuted }}
               >
-                Created
+                Uploaded By
               </TableHead>
               <TableHead
                 className="text-[11px] font-semibold uppercase tracking-wider w-[80px] text-right pr-4"

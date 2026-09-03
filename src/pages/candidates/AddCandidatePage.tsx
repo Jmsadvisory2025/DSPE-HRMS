@@ -26,11 +26,11 @@ const AddCandidatePage = () => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
       const validFiles = newFiles.filter(
-        (f) => f.type === 'application/pdf' || f.name.endsWith('.docx')
+        (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.docx') || f.name.toLowerCase().endsWith('.doc')
       );
       
       if (validFiles.length < newFiles.length) {
-        toast.error('Only PDF and DOCX files are allowed.');
+        toast.error('Only PDF, DOCX, and DOC files are allowed.');
       }
       
       setSelectedFiles((prev) => [...prev, ...validFiles]);
@@ -121,7 +121,7 @@ const AddCandidatePage = () => {
         <CardHeader>
           <CardTitle style={{ color: theme.textPrimary }}>Upload Resumes</CardTitle>
           <CardDescription style={{ color: theme.textMuted }}>
-            You can upload multiple resumes at once. Supported formats: PDF, DOCX.
+            You can upload multiple resumes at once. Supported formats: PDF, DOCX, DOC.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -138,13 +138,13 @@ const AddCandidatePage = () => {
               Click or drag files to upload
             </h3>
             <p className="text-xs" style={{ color: theme.textMuted }}>
-              PDF, DOCX (Max size: 10MB per file)
+              PDF, DOCX, DOC (Max size: 10MB per file)
             </p>
             <input
               type="file"
               ref={fileInputRef}
               className="hidden"
-              accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              accept=".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
               multiple
               onChange={handleFileChange}
             />

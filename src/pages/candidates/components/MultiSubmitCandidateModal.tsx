@@ -343,41 +343,61 @@ export const MultiSubmitCandidateModal = ({ isOpen, onClose, candidateIds, onSuc
                                         </Badge>
                                       </div>
 
-                                      <div className="p-3 space-y-3">
+                                      <div className="p-3 space-y-3.5">
                                         <div className="grid grid-cols-2 gap-3">
-                                          <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
-                                            <CalendarDays className="size-3.5" />
-                                            <div>
-                                              <p className="font-medium" style={{ color: theme.textSecondary }}>{app.share_date ? new Date(app.share_date).toLocaleDateString() : 'N/A'}</p>
+                                          <div className="flex items-start gap-2 text-xs" style={{ color: theme.textMuted }}>
+                                            <CalendarDays className="size-3.5 mt-0.5 shrink-0" />
+                                            <div className="min-w-0">
+                                              <p className="text-[9px] font-bold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>Shared</p>
+                                              <p className="font-medium truncate" style={{ color: theme.textSecondary }}>{app.share_date ? new Date(app.share_date).toLocaleDateString() : 'N/A'}</p>
                                             </div>
                                           </div>
-                                          <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
-                                            <User className="size-3.5" />
-                                            <div>
-                                              <p className="font-medium truncate max-w-[80px]" style={{ color: theme.textSecondary }} title={app.submitted_by?.name}>{app.submitted_by?.name || 'N/A'}</p>
+                                          <div className="flex items-start gap-2 text-xs" style={{ color: theme.textMuted }}>
+                                            <User className="size-3.5 mt-0.5 shrink-0" />
+                                            <div className="min-w-0">
+                                              <p className="text-[9px] font-bold uppercase tracking-wider mb-0.5" style={{ color: theme.textMuted }}>Submitted By</p>
+                                              <p className="font-medium truncate" style={{ color: theme.textSecondary }} title={app.submitted_by?.name}>{app.submitted_by?.name || 'N/A'}</p>
                                             </div>
                                           </div>
                                         </div>
 
-                                        {app.interview_schedule && (
-                                          <div className="text-xs rounded p-2 border" style={{ background: theme.accent + '06', borderColor: theme.accent + '25' }}>
-                                            <div className="flex items-center gap-1.5 mb-1.5">
-                                              <Video className="size-3" style={{ color: theme.accent }} />
-                                              <span className="font-bold uppercase tracking-wider text-[9px]" style={{ color: theme.accent }}>Interview</span>
-                                            </div>
-                                            <p className="text-xs" style={{ color: theme.textSecondary }}>
-                                              {new Date(app.interview_schedule.date).toLocaleDateString()} at {app.interview_schedule.time?.slice(0, 5)}
-                                            </p>
+                                        {app.synopsis && (
+                                          <div className="text-xs">
+                                            <p className="text-[9px] font-bold uppercase tracking-wider mb-0.5 flex items-center gap-1.5" style={{ color: theme.textMuted }}><MessageSquare className="size-3" /> Synopsis</p>
+                                            <p className="text-xs leading-relaxed" style={{ color: theme.textSecondary }}>{app.synopsis}</p>
                                           </div>
                                         )}
 
-                                        <div className="flex items-center gap-2 text-xs pt-1">
+                                        {app.interview_schedule && (
+                                          <div className="text-xs rounded p-2.5 border space-y-1.5" style={{ background: theme.accent + '06', borderColor: theme.accent + '25' }}>
+                                            <div className="flex items-center gap-1.5 mb-2">
+                                              <Video className="size-3" style={{ color: theme.accent }} />
+                                              <span className="font-bold uppercase tracking-wider text-[9px]" style={{ color: theme.accent }}>Interview Schedule</span>
+                                            </div>
+                                            <p className="text-xs font-semibold" style={{ color: theme.textSecondary }}>
+                                              {new Date(app.interview_schedule.date).toLocaleDateString()} at {app.interview_schedule.time?.slice(0, 5)}
+                                            </p>
+                                            <div className="flex flex-col gap-0.5 text-xs">
+                                              {app.interview_schedule.mode && (
+                                                <p className="capitalize text-muted-foreground">{app.interview_schedule.mode}</p>
+                                              )}
+                                              {app.interview_schedule.interviewer_name && (
+                                                <p className="text-muted-foreground">{app.interview_schedule.interviewer_name}</p>
+                                              )}
+                                              {app.interview_schedule.status && (
+                                                <p className="font-medium capitalize mt-0.5" style={{ color: theme.accent }}>{app.interview_schedule.status}</p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        <div className="flex items-center gap-2 text-xs pt-2.5 border-t" style={{ borderColor: theme.border + '50' }}>
                                           <span className="font-medium" style={{ color: theme.textMuted }}>Manager Review:</span>
                                           <span className="font-bold capitalize px-1.5 py-0.5 rounded text-[10px]" style={{ 
                                             color: reviewColor, 
                                             background: reviewColor + '12'
                                           }}>
-                                            {app.manager_review_status}
+                                            {app.manager_review_status || 'Pending'}
                                           </span>
                                         </div>
                                       </div>
