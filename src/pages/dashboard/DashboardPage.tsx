@@ -103,7 +103,7 @@ const DashboardPage = () => {
     .slice(0, 10);
 
   const pipelineData = (data.pipeline_overview || []).map(p => ({
-    name: p.status.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+    name: (p.status || 'unknown').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
     count: p.count,
   }));
   // Filter out zero-count stages for cleaner chart, or keep all to show funnel width.
@@ -244,7 +244,7 @@ const DashboardPage = () => {
                   <div className="flex items-center justify-between mb-2.5">
                     <div className="flex items-center gap-2.5">
                       <div className="size-2.5 rounded-full" style={{ background: color }} />
-                      <span className="text-sm font-semibold capitalize" style={{ color: theme.textPrimary }}>{job.status.toLowerCase().replace('-', ' ')}</span>
+                      <span className="text-sm font-semibold capitalize" style={{ color: theme.textPrimary }}>{(job.status || 'unknown').toLowerCase().replace('-', ' ')}</span>
                     </div>
                     <span className="text-lg font-black" style={{ color: theme.textPrimary }}>{job.count}</span>
                   </div>
