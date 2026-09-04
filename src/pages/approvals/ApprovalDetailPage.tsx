@@ -798,6 +798,46 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
           </div>
         </div>
       ) : (
+      <>
+        {/* Select All */}
+        <div
+          className="flex items-center gap-3 px-4 py-2.5 rounded-lg border"
+          style={{ background: theme.surfaceHover, borderColor: theme.border }}
+        >
+          <input
+            type="checkbox"
+            className="size-4 rounded border-gray-300 cursor-pointer shrink-0"
+            checked={
+              data.applications.length > 0 &&
+              data.applications.every((app) => selectedApps.has(app.id))
+            }
+            onChange={() => {
+              const allIds = data!.applications.map((app) => app.id);
+              const allSelected = allIds.every((id) => selectedApps.has(id));
+              if (allSelected) {
+                setSelectedApps(new Set());
+              } else {
+                setSelectedApps(new Set(allIds));
+              }
+            }}
+            style={{ accentColor: theme.accent }}
+          />
+          <span className="text-sm font-medium" style={{ color: theme.textSecondary }}>
+            {data.applications.length > 0 &&
+            data.applications.every((app) => selectedApps.has(app.id))
+              ? `Deselect All (${data.applications.length})`
+              : `Select All (${data.applications.length})`}
+          </span>
+          {selectedApps.size > 0 && (
+            <Badge
+              className="ml-auto text-xs"
+              style={{ background: theme.accentSoft, color: theme.accent, border: 0 }}
+            >
+              {selectedApps.size} selected
+            </Badge>
+          )}
+        </div>
+
       <div className="grid grid-cols-1 gap-6">
         {data.applications.map((app) => (
           <Card
@@ -1521,6 +1561,7 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
           </Card>
         ))}
       </div>
+      </>
       )}
 
       <ReviewActionModal
