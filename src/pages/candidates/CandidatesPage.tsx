@@ -65,6 +65,7 @@ const CandidatesPage = () => {
   const [duplicatesOnly, setDuplicatesOnly] = useState(false);
   const [experienceMin, setExperienceMin] = useState('');
   const [experienceMax, setExperienceMax] = useState('');
+  const [uploadedBy, setUploadedBy] = useState('');
 
   // Submit Candidate Modal State
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
@@ -81,6 +82,7 @@ const CandidatesPage = () => {
       if (experienceMin) params.append('experience_min', experienceMin);
       if (experienceMax) params.append('experience_max', experienceMax);
       if (duplicatesOnly) params.append('is_duplicate', 'true');
+      if (uploadedBy) params.append('uploaded_by', uploadedBy);
     }
 
     const queryString = params.toString();
@@ -105,6 +107,7 @@ const CandidatesPage = () => {
     setSearchQuery('');
     setExperienceMin('');
     setExperienceMax('');
+    setUploadedBy('');
     setDuplicatesOnly(false);
     setSelectedCandidateIds([]);
     fetchCandidates(true);
@@ -206,6 +209,17 @@ const CandidatesPage = () => {
             style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
             value={experienceMax}
             onChange={(e) => setExperienceMax(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Input 
+            placeholder="Uploaded By (e.g. Zeel)"
+            className="w-[180px] text-sm h-9"
+            style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
+            value={uploadedBy}
+            onChange={(e) => setUploadedBy(e.target.value)}
             onKeyDown={handleKeyDown}
           />
         </div>
