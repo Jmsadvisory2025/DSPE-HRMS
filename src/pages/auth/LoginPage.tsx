@@ -83,8 +83,12 @@ const LoginPage = () => {
 
   useEffect(() => {
     // Fetch Google Client ID from backend
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/google-config/`)
-      .then(res => res.json())
+    const baseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+    fetch(`${baseUrl}/api/v1/auth/google-config/`)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP status ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         if (data.client_id) {
           setGoogleClientId(data.client_id);
