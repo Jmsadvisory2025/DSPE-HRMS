@@ -26,6 +26,8 @@ export interface Job {
   hiring_manager_name: string | null;
   created_at: string;
   client: JobClient | null;
+  priority?: string;
+  assigned_recruiters?: JobAssignedRecruiter[];
   approval_stats?: { status: string; count: number }[];
 }
 
@@ -81,6 +83,7 @@ export interface JobDetail {
   hiring_for: string;
   client: JobClient | null;
   status: string;
+  priority?: string;
   assigned_recruiters: JobAssignedRecruiter[];
   created_by: JobCreator;
   hiring_manager: any | null;
@@ -116,4 +119,5 @@ export interface AddJobPayload {
   openings?: number;
   budget?: number | string;
   status?: "open" | "ongoing" | "close" | "hold";
+  priority?: "high" | "medium" | "low";
 }

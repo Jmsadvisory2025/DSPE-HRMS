@@ -1,7 +1,7 @@
 import React from 'react';
 import { theme } from '@/config/theme';
 
-const TABS = ['Overview', 'Positions', 'Submissions', 'Documents', 'Trackers'] as const;
+const TABS = ['Overview'] as const;
 export type ClientTabKey = (typeof TABS)[number];
 
 interface ClientTabsProps {

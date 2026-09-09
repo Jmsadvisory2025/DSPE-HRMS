@@ -68,7 +68,7 @@ export const MultiSubmitCandidateModal = ({ isOpen, onClose, candidateIds, onSuc
       dispatch({
         type: positionActions.FETCH_JOBS,
         method: 'GET',
-        endPoint: '/api/v1/jobs/',
+        endPoint: '/api/v1/jobs/?status=open',
         auth: true,
         setLoading: (val: boolean) => dispatch(setJobsLoading(val)),
         getResponse: (data: any) => dispatch(setJobs(data.results || [])),
@@ -148,10 +148,18 @@ export const MultiSubmitCandidateModal = ({ isOpen, onClose, candidateIds, onSuc
     });
   };
 
-  const jobOptions = jobs.map((job: any) => ({
-    value: job.id,
-    label: `${job.title} ${job.client?.name ? `(${job.client.name})` : ''}`
-  }));
+  const jobOptions = jobs.map((job: any) => {
+    const parts = [
+      job.location && `📍 ${job.location}`,
+      job.priority && `Priority: ${job.priority.charAt(0).toUpperCase() + job.priority.slice(1)}`,
+      job.client_name && `Client: ${job.client_name}`,
+    ].filter(Boolean).join('  •  ');
+    return {
+      value: job.id,
+      label: `${job.title} ${job.client_name ? `(${job.client_name})` : (job.client?.name ? `(${job.client.name})` : '')}`,
+      description: parts || undefined,
+    };
+  });
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, ChevronDown, Loader2, MoreHorizontal, Users, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Plus, Loader2, MoreHorizontal } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuGroup } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,19 +17,214 @@ import { getJobStatusStyle } from '@/lib/statusUtils';
 import { SearchableDropdown } from '@/components/ui/searchable-dropdown';
 import { toast } from 'sonner';
 
+const PRIORITY_COLORS: Record<string, { color: string; bg: string }> = {
+  high:   { color: '#ef4444', bg: '#ef444418' },
+  medium: { color: '#f59e0b', bg: '#f59e0b18' },
+  low:    { color: '#22c55e', bg: '#22c55e18' },
+};
+
+/* ── Hover Card for Assigned Recruiters (Portal-based) ──────── */
+const AssignedRecruitersCell = ({ recruiters }: { recruiters: any[] }) => {
+  const [hovered, setHovered] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseEnter = useCallback(() => {
+    if (triggerRef.current && recruiters.length > 1) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      // Position below the trigger, but flip up if too close to the bottom
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const cardHeight = recruiters.length * 52 + 60; // estimate
+      const top = spaceBelow < cardHeight ? rect.top - cardHeight : rect.bottom + 4;
+      setPos({ top, left: rect.left });
+      setHovered(true);
+    }
+  }, [recruiters.length]);
+
+  return (
+    <div
+      ref={triggerRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div className="flex flex-col gap-0.5 cursor-default">
+        <span className="text-[13px] font-medium truncate" style={{ color: theme.textPrimary }}>
+          {recruiters[0].name}
+        </span>
+        {recruiters.length > 1 && (
+          <span className="text-[11px] underline decoration-dotted underline-offset-2" style={{ color: theme.accent }}>
+            +{recruiters.length - 1} more
+          </span>
+        )}
+      </div>
+
+      {hovered && recruiters.length > 1 && createPortal(
+        <div
+          className="animate-in fade-in-0 zoom-in-95 duration-150"
+          style={{
+            position: 'fixed',
+            top: pos.top,
+            left: pos.left,
+            zIndex: 9999,
+            pointerEvents: 'none',
+          }}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
+          <div
+            className="rounded-xl p-3 shadow-xl min-w-[280px] max-w-[340px]"
+            style={{
+              background: theme.surface,
+              border: `1px solid ${theme.border}`,
+              boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
+              pointerEvents: 'auto',
+            }}
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-wider mb-2 px-1" style={{ color: theme.textMuted }}>
+              Assigned Recruiters ({recruiters.length})
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {recruiters.map((rec: any) => (
+                <div
+                  key={rec.id}
+                  className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors"
+                  style={{ background: theme.surfaceMuted }}
+                >
+                  {rec.avatar ? (
+                    <img
+                      src={rec.avatar}
+                      alt={rec.name}
+                      className="size-8 rounded-full object-cover shrink-0"
+                      style={{ border: `2px solid ${theme.accent}30` }}
+                    />
+                  ) : (
+                    <div
+                      className="size-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
+                      style={{ background: theme.accent + '20', color: theme.accent }}
+                    >
+                      {rec.name?.charAt(0)?.toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold truncate" style={{ color: theme.textPrimary }}>
+                      {rec.name}
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] capitalize px-1.5 py-0.5 rounded-sm" style={{ background: theme.accent + '15', color: theme.accent }}>
+                        {rec.role}
+                      </span>
+                      {rec.email && (
+                        <span className="text-[10px] truncate" style={{ color: theme.textMuted }}>
+                          {rec.email}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+};
+
 const JobsPage = () => {
   const navigate = useNavigate();
   const { isRecruiter } = useAuth();
   const dispatch = useAppDispatch();
   const { jobs, loading } = useAppSelector((state) => state.positions);
 
-  
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  // Filter input states (what user types)
+  const [searchCode, setSearchCode] = useState('');
+  const [searchDesignation, setSearchDesignation] = useState('');
+  const [searchLocation, setSearchLocation] = useState('');
+  const [searchCreatedBy, setSearchCreatedBy] = useState('');
+  const [searchAssignedTo, setSearchAssignedTo] = useState('');
+
+  // Applied filter states (sent to API on Enter)
+  const [appliedCode, setAppliedCode] = useState('');
+  const [appliedDesignation, setAppliedDesignation] = useState('');
+  const [appliedLocation, setAppliedLocation] = useState('');
+  const [appliedCreatedBy, setAppliedCreatedBy] = useState('');
+  const [appliedAssignedTo, setAppliedAssignedTo] = useState('');
+
+  // Dropdown states (apply immediately)
   const [selectedClient, setSelectedClient] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('open');
+  const [selectedStatus, setSelectedStatus] = useState('open'); // default is open
+  const [selectedPriority, setSelectedPriority] = useState('');
+
   const [clientsData, setClientsData] = useState<{client: {client_id: string, name: string}}[]>([]);
   const [clientsLoading, setClientsLoading] = useState(false);
+
+  // Focus tracking
+  const activeFieldRef = useRef<string | null>(null);
+  const codeRef = useRef<HTMLInputElement>(null);
+  const designationRef = useRef<HTMLInputElement>(null);
+  const locationRef = useRef<HTMLInputElement>(null);
+  const createdByRef = useRef<HTMLInputElement>(null);
+  const assignedToRef = useRef<HTMLInputElement>(null);
+
+  const fieldRefs: Record<string, React.RefObject<HTMLInputElement | null>> = {
+    code: codeRef,
+    designation: designationRef,
+    location: locationRef,
+    createdBy: createdByRef,
+    assignedTo: assignedToRef,
+  };
+
+  // Restore focus after loading finishes
+  useEffect(() => {
+    if (!loading && activeFieldRef.current) {
+      const ref = fieldRefs[activeFieldRef.current];
+      if (ref?.current) {
+        ref.current.focus();
+      }
+    }
+  }, [loading]);
+
+  const applySearch = () => {
+    setAppliedCode(searchCode);
+    setAppliedDesignation(searchDesignation);
+    setAppliedLocation(searchLocation);
+    setAppliedCreatedBy(searchCreatedBy);
+    setAppliedAssignedTo(searchAssignedTo);
+  };
+
+  const handleKeyDown = (field: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      activeFieldRef.current = field;
+      applySearch();
+    }
+  };
+
+  // 5-second debounce fallback
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAppliedCode(searchCode);
+      setAppliedDesignation(searchDesignation);
+      setAppliedLocation(searchLocation);
+      setAppliedCreatedBy(searchCreatedBy);
+      setAppliedAssignedTo(searchAssignedTo);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [searchCode, searchDesignation, searchLocation, searchCreatedBy, searchAssignedTo]);
+
+  const buildEndpoint = () => {
+    const params = new URLSearchParams();
+    if (appliedCode) params.append('code', appliedCode);
+    if (appliedDesignation) params.append('title', appliedDesignation);
+    if (selectedClient) params.append('client_name', selectedClient);
+    if (appliedLocation) params.append('location', appliedLocation);
+    if (appliedCreatedBy) params.append('created_by_name', appliedCreatedBy);
+    if (appliedAssignedTo) params.append('assigned_to_name', appliedAssignedTo);
+    if (selectedStatus) params.append('status', selectedStatus);
+    if (selectedPriority) params.append('priority', selectedPriority);
+    const qs = params.toString();
+    return `/api/v1/jobs/${qs ? `?${qs}` : ''}`;
+  };
 
   const handleStatusChange = (jobId: string, jobTitle: string, newStatus: string) => {
     dispatch({
@@ -40,16 +236,10 @@ const JobsPage = () => {
       getResponse: () => {
         toast.success(`${jobTitle} status updated to ${newStatus}`);
         
-        // Refresh the jobs list
-        let endpoint = '/api/v1/jobs/?';
-        if (debouncedSearch) endpoint += `search=${encodeURIComponent(debouncedSearch)}&`;
-        if (selectedClient) endpoint += `client=${encodeURIComponent(selectedClient)}&`;
-        if (selectedStatus) endpoint += `status=${encodeURIComponent(selectedStatus)}&`;
-        
         dispatch({
           type: positionActions.FETCH_JOBS,
           method: 'GET',
-          endPoint: endpoint,
+          endPoint: buildEndpoint(),
           auth: true,
           getResponse: (data: JobResponse) => dispatch(setJobs(data.results || [])),
           getError: (err: any) => console.error(err),
@@ -57,11 +247,6 @@ const JobsPage = () => {
       }
     });
   };
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
   useEffect(() => {
     dispatch({
@@ -80,26 +265,21 @@ const JobsPage = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    let endpoint = '/api/v1/jobs/?';
-    if (debouncedSearch) endpoint += `search=${encodeURIComponent(debouncedSearch)}&`;
-    if (selectedClient) endpoint += `client=${encodeURIComponent(selectedClient)}&`;
-    if (selectedStatus) endpoint += `status=${encodeURIComponent(selectedStatus)}&`;
-
     dispatch({
       type: positionActions.FETCH_JOBS,
       method: 'GET',
-      endPoint: endpoint,
+      endPoint: buildEndpoint(),
       auth: true,
       setLoading: (val: boolean) => dispatch(setLoading(val)),
       getResponse: (data: JobResponse) => dispatch(setJobs(data.results || [])),
       getError: (err: any) => dispatch(setError(err.message)),
     });
-  }, [dispatch, debouncedSearch, selectedClient, selectedStatus]);
+  }, [dispatch, appliedCode, appliedDesignation, appliedLocation, appliedCreatedBy, appliedAssignedTo, selectedClient, selectedStatus, selectedPriority]);
 
   const clientOptions = [
     { value: '', label: 'All Clients' },
     ...clientsData.map(c => ({
-      value: c.client.client_id,
+      value: c.client.name,
       label: c.client.name,
     }))
   ];
@@ -112,7 +292,12 @@ const JobsPage = () => {
     { value: 'hold', label: 'On Hold' },
   ];
 
-  const filteredPositions = jobs;
+  const priorityOptions = [
+    { value: '', label: 'All Priority' },
+    { value: 'high', label: 'High' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'low', label: 'Low' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -138,205 +323,293 @@ const JobsPage = () => {
         )}
       </div>
 
-      {/* Filters & Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-end gap-4">
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="w-full sm:w-48 shrink-0">
-            <SearchableDropdown
-              options={clientOptions}
-              value={selectedClient}
-              onChange={setSelectedClient}
-              placeholder="All Clients"
-              loading={clientsLoading}
-            />
-          </div>
-          <div className="w-full sm:w-40 shrink-0">
-            <SearchableDropdown
-              options={statusOptions}
-              value={selectedStatus}
-              onChange={setSelectedStatus}
-              placeholder="Status"
-            />
-          </div>
-          <div className="relative w-full sm:w-64">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 size-4"
-              style={{ color: theme.textMuted }}
-            />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search title, location, or status..."
-              className="pl-9 text-sm"
-              style={{
-                background: theme.surface,
-                borderColor: theme.border,
-                color: theme.textPrimary,
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
       {/* Table */}
-      {loading ? (
-        <div className="flex items-center justify-center p-12">
-          <Loader2 className="size-8 animate-spin" style={{ color: theme.accent }} />
-        </div>
-      ) : (
-        <div className="rounded-xl overflow-hidden" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
-          <Table>
-            <TableHeader style={{ background: theme.surfaceMuted }}>
+      <div className="rounded-xl overflow-x-auto" style={{ background: theme.surface, border: `1px solid ${theme.border}`, minHeight: '500px' }}>
+        <Table style={{ tableLayout: 'fixed', width: '100%', minWidth: '1600px' }}>
+          <colgroup>
+            <col style={{ width: '110px' }} />
+            <col style={{ width: '18%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '11%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '120px' }} />
+            <col style={{ width: '130px' }} />
+            <col style={{ width: '120px' }} />
+            <col style={{ width: '60px' }} />
+          </colgroup>
+          <TableHeader style={{ background: theme.surfaceMuted }}>
+            <TableRow>
+              <TableHead>Code</TableHead>
+              <TableHead>Designation</TableHead>
+              <TableHead>Client</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Created By</TableHead>
+              <TableHead>Assigned To</TableHead>
+              <TableHead className="text-center">Priority</TableHead>
+              <TableHead className="text-center">Approvals</TableHead>
+              <TableHead className="text-center">Status</TableHead>
+              <TableHead className="text-center pr-4">Actions</TableHead>
+            </TableRow>
+            
+            {/* Filter Row */}
+            <TableRow className="hover:bg-transparent" style={{ borderColor: theme.border }}>
+              <TableHead className="py-1.5 px-2">
+                <Input 
+                  ref={codeRef}
+                  placeholder="Code..." 
+                  value={searchCode}
+                  onChange={(e) => setSearchCode(e.target.value)}
+                  onKeyDown={handleKeyDown('code')}
+                  className="h-7 text-xs font-normal"
+                />
+              </TableHead>
+              <TableHead className="py-1.5 px-2">
+                <Input 
+                  ref={designationRef}
+                  placeholder="Designation..." 
+                  value={searchDesignation}
+                  onChange={(e) => setSearchDesignation(e.target.value)}
+                  onKeyDown={handleKeyDown('designation')}
+                  className="h-7 text-xs font-normal"
+                />
+              </TableHead>
+              <TableHead className="py-1.5 px-2">
+                <SearchableDropdown
+                  options={clientOptions}
+                  value={selectedClient}
+                  onChange={setSelectedClient}
+                  placeholder="All Clients"
+                  loading={clientsLoading}
+                />
+              </TableHead>
+              <TableHead className="py-1.5 px-2">
+                <Input 
+                  ref={locationRef}
+                  placeholder="Location..." 
+                  value={searchLocation}
+                  onChange={(e) => setSearchLocation(e.target.value)}
+                  onKeyDown={handleKeyDown('location')}
+                  className="h-7 text-xs font-normal"
+                />
+              </TableHead>
+              <TableHead className="py-1.5 px-2">
+                <Input 
+                  ref={createdByRef}
+                  placeholder="Name..." 
+                  value={searchCreatedBy}
+                  onChange={(e) => setSearchCreatedBy(e.target.value)}
+                  onKeyDown={handleKeyDown('createdBy')}
+                  className="h-7 text-xs font-normal"
+                />
+              </TableHead>
+              <TableHead className="py-1.5 px-2">
+                <Input 
+                  ref={assignedToRef}
+                  placeholder="Name..." 
+                  value={searchAssignedTo}
+                  onChange={(e) => setSearchAssignedTo(e.target.value)}
+                  onKeyDown={handleKeyDown('assignedTo')}
+                  className="h-7 text-xs font-normal"
+                />
+              </TableHead>
+              <TableHead className="py-1.5 px-2">
+                <SearchableDropdown
+                  options={priorityOptions}
+                  value={selectedPriority}
+                  onChange={setSelectedPriority}
+                  placeholder="All"
+                />
+              </TableHead>
+              <TableHead className="py-1.5 px-2">
+                {/* Approvals (No Filter) */}
+              </TableHead>
+              <TableHead className="py-1.5 px-2">
+                <SearchableDropdown
+                  options={statusOptions}
+                  value={selectedStatus}
+                  onChange={setSelectedStatus}
+                  placeholder="Status"
+                />
+              </TableHead>
+              <TableHead className="py-1.5 px-2">
+                {/* Actions (No Filter) */}
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          
+          <TableBody>
+            {loading ? (
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Designation</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Created By</TableHead>
-                <TableHead>Approvals</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableCell colSpan={10} className="h-32 text-center">
+                  <Loader2 className="size-8 animate-spin mx-auto" style={{ color: theme.accent }} />
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredPositions.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8" style={{ color: theme.textMuted }}>
-                    No jobs found matching your criteria.
+            ) : jobs.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={10} className="text-center py-8" style={{ color: theme.textMuted }}>
+                  No jobs found matching your criteria.
+                </TableCell>
+              </TableRow>
+            ) : (
+              jobs.map((job) => {
+                const priority = job.priority?.toLowerCase() || 'medium';
+                const priorityStyle = PRIORITY_COLORS[priority] || PRIORITY_COLORS.medium;
+                return (
+                <TableRow
+                  key={job.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => navigate(`/positions/${job.id}`)}
+                >
+                  <TableCell className="font-medium" style={{ color: theme.accent }}>
+                    {job.code}
                   </TableCell>
-                </TableRow>
-              ) : (
-                filteredPositions.map((job) => (
-                  <TableRow
-                    key={job.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => navigate(`/positions/${job.id}`)}
-                  >
-                    <TableCell className="font-medium" style={{ color: theme.accent }}>
-                      {job.code}
-                    </TableCell>
-                    <TableCell style={{ color: theme.textPrimary }}>
-                      <div className="font-semibold">{job.title}</div>
-                      <div className="text-xs" style={{ color: theme.textMuted }}>
-                        Exp: {job.min_experience}-{job.max_experience} yrs
-                      </div>
-                    </TableCell>
-                    <TableCell style={{ color: theme.textSecondary }}>
-                      {job.client?.name || 'Self'}
-                    </TableCell>
-                    <TableCell style={{ color: theme.textSecondary }} className="capitalize">
-                      {job.location}
-                    </TableCell>
-                    
-                    <TableCell>
-                      <div className="font-medium text-[13px]" style={{ color: theme.textPrimary }}>
-                        {job.created_by_name || 'Unknown'}
-                      </div>
-                      <div className="text-[11px] mt-0.5" style={{ color: theme.textMuted }}>
-                        {job.created_at ? new Date(job.created_at).toLocaleDateString(undefined, {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric'
-                        }) : 'N/A'}
-                      </div>
-                    </TableCell>
-                   
-                    <TableCell onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/approvals/${job.id}`);
-                    }} className="cursor-pointer hover:bg-muted/30 transition-colors">
-                      <div className="flex items-center gap-2">
-                        {job.approval_stats?.map((stat) => {
-                          let color: string = theme.textMuted;
-                          let bgClass = "bg-muted/50";
-                          let isPendingAction = false;
-                          
-                          if (stat.status === 'pending') {
-                            color = theme.warning;
-                            if (stat.count > 0) {
-                              isPendingAction = true;
-                              bgClass = "bg-orange-500/10 border border-orange-500/30 animate-pulse shadow-sm"; // Using ring for highlight instead of pulse to be less intrusive on jobs page, or pulse as user wants
-                              color = "#f97316"; 
-                            }
-                          } else if (stat.status === 'approved' || stat.status === 'accepted') {
-                            color = theme.success;
-                          } else if (stat.status === 'rejected') {
-                            color = theme.destructive;
-                          }
-                          
-                          return (
-                            <div 
-                              key={stat.status}
-                              className={`flex flex-col items-center justify-center rounded-md px-2 py-1 min-w-[40px] cursor-pointer hover:opacity-80 transition-opacity ${bgClass}`}
-                              title={`View ${stat.status} applications`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const tabStatus = stat.status === 'approved' ? 'accepted' : stat.status;
-                                navigate(`/approvals/${job.id}?tab=${tabStatus}`);
-                              }}
-                            >
-                              <span className={`text-xs ${isPendingAction ? 'font-extrabold' : 'font-bold'}`} style={{ color }}>{stat.count}</span>
-                              <span className="text-[9px] uppercase tracking-wider" style={{ color: isPendingAction ? color : theme.textMuted }}>
-                                {stat.status.slice(0, 3)}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </TableCell>
+                  <TableCell style={{ color: theme.textPrimary }}>
+                    <div className="font-semibold truncate">{job.title}</div>
+                    <div className="text-xs" style={{ color: theme.textMuted }}>
+                      Exp: {job.min_experience}-{job.max_experience} yrs
+                    </div>
+                  </TableCell>
+                  <TableCell style={{ color: theme.textSecondary }} className="truncate">
+                    {job.client?.name || 'Self'}
+                  </TableCell>
+                  <TableCell style={{ color: theme.textSecondary }} className="capitalize truncate">
+                    {job.location}
+                  </TableCell>
+                  
+                  <TableCell>
+                    <div className="font-medium text-[13px] truncate" style={{ color: theme.textPrimary }}>
+                      {job.created_by_name || 'Unknown'}
+                    </div>
+                    <div className="text-[11px] mt-0.5 truncate" style={{ color: theme.textMuted }}>
+                      {job.created_at ? new Date(job.created_at).toLocaleDateString(undefined, {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                      }) : 'N/A'}
+                    </div>
+                  </TableCell>
 
-                    <TableCell>
-                      {(() => {
-                        const statusStyle = getJobStatusStyle(job.status);
+                  {/* Assigned Recruiters */}
+                  <TableCell>
+                    {job.assigned_recruiters && job.assigned_recruiters.length > 0 ? (
+                      <AssignedRecruitersCell recruiters={job.assigned_recruiters} />
+                    ) : (
+                      <span className="text-xs" style={{ color: theme.textMuted }}>Unassigned</span>
+                    )}
+                  </TableCell>
+
+                  {/* Priority */}  
+                  <TableCell className="text-center">
+                    <Badge
+                      variant="outline"
+                      className="capitalize text-[10px] px-2 py-0.5"
+                      style={{
+                        color: priorityStyle.color,
+                        background: priorityStyle.bg,
+                        borderColor: priorityStyle.color + '40',
+                      }}
+                    >
+                      {job.priority || 'N/A'}
+                    </Badge>
+                  </TableCell>
+                 
+                  <TableCell onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/approvals/${job.id}`);
+                  }} className="cursor-pointer hover:bg-muted/30 transition-colors">
+                    <div className="flex justify-center gap-1">
+                      {job.approval_stats?.map((stat) => {
+                        let color: string = theme.textMuted;
+                        let bgClass = "bg-muted/50";
+                        let isPendingAction = false;
+                        
+                        if (stat.status === 'pending') {
+                          color = theme.warning;
+                          if (stat.count > 0) {
+                            isPendingAction = true;
+                            bgClass = "bg-orange-500/10 border border-orange-500/30 animate-pulse shadow-sm"; 
+                            color = "#f97316"; 
+                          }
+                        } else if (stat.status === 'approved' || stat.status === 'accepted') {
+                          color = theme.success;
+                        } else if (stat.status === 'rejected') {
+                          color = theme.destructive;
+                        }
+                        
                         return (
-                          <Badge
-                            variant="outline"
-                            className="capitalize"
-                            style={{
-                              color: statusStyle.color,
-                              background: statusStyle.background,
-                              border: 0,
+                          <div 
+                            key={stat.status}
+                            className={`flex flex-col items-center justify-center rounded-md px-1.5 py-0.5 min-w-[36px] cursor-pointer hover:opacity-80 transition-opacity ${bgClass}`}
+                            title={`View ${stat.status} applications`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const tabStatus = stat.status === 'approved' ? 'accepted' : stat.status;
+                              navigate(`/approvals/${job.id}?tab=${tabStatus}`);
                             }}
                           >
-                            {statusStyle.label}
-                          </Badge>
+                            <span className={`text-xs ${isPendingAction ? 'font-extrabold' : 'font-bold'}`} style={{ color }}>{stat.count}</span>
+                            <span className="text-[9px] uppercase tracking-wider" style={{ color: isPendingAction ? color : theme.textMuted }}>
+                              {stat.status.slice(0, 3)}
+                            </span>
+                          </div>
                         );
-                      })()}
-                    </TableCell>
-                    
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" style={{ color: theme.textSecondary }} />}>
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuGroup>
-                            <DropdownMenuLabel>Update Status</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleStatusChange(job.id, job.title, 'open')}>
-                              Open
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusChange(job.id, job.title, 'ongoing')}>
-                              Ongoing
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusChange(job.id, job.title, 'close')}>
-                              Closed
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusChange(job.id, job.title, 'hold')}>
-                              On Hold
-                            </DropdownMenuItem>
-                          </DropdownMenuGroup>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+                      })}
+                    </div>
+                  </TableCell>
+
+                  <TableCell className="text-center">
+                    {(() => {
+                      const statusStyle = getJobStatusStyle(job.status);
+                      return (
+                        <Badge
+                          variant="outline"
+                          className="capitalize"
+                          style={{
+                            color: statusStyle.color,
+                            background: statusStyle.background,
+                            border: 0,
+                          }}
+                        >
+                          {statusStyle.label}
+                        </Badge>
+                      );
+                    })()}
+                  </TableCell>
+                  
+                  <TableCell onClick={(e) => e.stopPropagation()} className="text-center pr-4">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" style={{ color: theme.textSecondary }} />}>
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuGroup>
+                          <DropdownMenuLabel>Update Status</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleStatusChange(job.id, job.title, 'open')}>
+                            Open
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(job.id, job.title, 'ongoing')}>
+                            Ongoing
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(job.id, job.title, 'close')}>
+                            Closed
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(job.id, job.title, 'hold')}>
+                            On Hold
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };

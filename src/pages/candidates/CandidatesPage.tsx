@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { candidateActions } from '@/redux/actions';
@@ -21,6 +21,7 @@ import {
   Plus,
   TriangleAlert,
   Filter,
+  Loader2,
 } from 'lucide-react';
 import { theme } from '@/config/theme';
 import { SubmitCandidateModal } from './components/SubmitCandidateModal';
@@ -61,11 +62,24 @@ const CandidatesPage = () => {
   const dispatch = useAppDispatch();
   const { candidates, loading } = useAppSelector((state) => state.candidates);
   
-  const [searchQuery, setSearchQuery] = useState('');
-  const [duplicatesOnly, setDuplicatesOnly] = useState(false);
+  // Filter input states (what user types)
+  const [searchName, setSearchName] = useState('');
+  const [searchContact, setSearchContact] = useState('');
+  const [searchCompany, setSearchCompany] = useState('');
   const [experienceMin, setExperienceMin] = useState('');
   const [experienceMax, setExperienceMax] = useState('');
+  const [searchLocation, setSearchLocation] = useState('');
   const [uploadedBy, setUploadedBy] = useState('');
+  const [duplicatesOnly, setDuplicatesOnly] = useState(false);
+
+  // Applied filter states (sent to API on Enter)
+  const [appliedName, setAppliedName] = useState('');
+  const [appliedContact, setAppliedContact] = useState('');
+  const [appliedCompany, setAppliedCompany] = useState('');
+  const [appliedExpMin, setAppliedExpMin] = useState('');
+  const [appliedExpMax, setAppliedExpMax] = useState('');
+  const [appliedLocation, setAppliedLocation] = useState('');
+  const [appliedUploadedBy, setAppliedUploadedBy] = useState('');
 
   // Submit Candidate Modal State
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
@@ -75,15 +89,76 @@ const CandidatesPage = () => {
   const [multiSubmitModalOpen, setMultiSubmitModalOpen] = useState(false);
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
 
-  const fetchCandidates = (overrideClear = false) => {
-    const params = new URLSearchParams();
-    if (!overrideClear) {
-      if (searchQuery) params.append('search', searchQuery);
-      if (experienceMin) params.append('experience_min', experienceMin);
-      if (experienceMax) params.append('experience_max', experienceMax);
-      if (duplicatesOnly) params.append('is_duplicate', 'true');
-      if (uploadedBy) params.append('uploaded_by', uploadedBy);
+  // Focus tracking
+  const activeFieldRef = useRef<string | null>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const contactRef = useRef<HTMLInputElement>(null);
+  const companyRef = useRef<HTMLInputElement>(null);
+  const expMinRef = useRef<HTMLInputElement>(null);
+  const expMaxRef = useRef<HTMLInputElement>(null);
+  const locationRef = useRef<HTMLInputElement>(null);
+  const uploadedByRef = useRef<HTMLInputElement>(null);
+
+  const fieldRefs: Record<string, React.RefObject<HTMLInputElement | null>> = {
+    name: nameRef,
+    contact: contactRef,
+    company: companyRef,
+    expMin: expMinRef,
+    expMax: expMaxRef,
+    location: locationRef,
+    uploadedBy: uploadedByRef,
+  };
+
+  // Restore focus after loading finishes
+  useEffect(() => {
+    if (!loading && activeFieldRef.current) {
+      const ref = fieldRefs[activeFieldRef.current];
+      if (ref?.current) {
+        ref.current.focus();
+      }
     }
+  }, [loading]);
+
+  const applySearch = () => {
+    setAppliedName(searchName);
+    setAppliedContact(searchContact);
+    setAppliedCompany(searchCompany);
+    setAppliedExpMin(experienceMin);
+    setAppliedExpMax(experienceMax);
+    setAppliedLocation(searchLocation);
+    setAppliedUploadedBy(uploadedBy);
+  };
+
+  const handleKeyDown = (field: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      activeFieldRef.current = field;
+      applySearch();
+    }
+  };
+
+  // 5-second debounce fallback
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAppliedName(searchName);
+      setAppliedContact(searchContact);
+      setAppliedCompany(searchCompany);
+      setAppliedExpMin(experienceMin);
+      setAppliedExpMax(experienceMax);
+      setAppliedLocation(searchLocation);
+      setAppliedUploadedBy(uploadedBy);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [searchName, searchContact, searchCompany, experienceMin, experienceMax, searchLocation, uploadedBy]);
+
+  // Fetch candidates with applied filters
+  useEffect(() => {
+    const params = new URLSearchParams();
+    const search = [appliedName, appliedContact, appliedCompany, appliedLocation].filter(Boolean).join(' ');
+    if (search) params.append('search', search);
+    if (appliedExpMin) params.append('experience_min', appliedExpMin);
+    if (appliedExpMax) params.append('experience_max', appliedExpMax);
+    if (duplicatesOnly) params.append('is_duplicate', 'true');
+    if (appliedUploadedBy) params.append('uploaded_by', appliedUploadedBy);
 
     const queryString = params.toString();
     const endPoint = `/api/v1/candidates/${queryString ? `?${queryString}` : ''}`;
@@ -97,26 +172,25 @@ const CandidatesPage = () => {
       getResponse: (data: any) => dispatch(setCandidates(data.results || [])),
       getError: (err: any) => dispatch(setError(err.message)),
     });
-  };
-
-  useEffect(() => {
-    fetchCandidates();
-  }, [dispatch]);
+  }, [dispatch, appliedName, appliedContact, appliedCompany, appliedExpMin, appliedExpMax, appliedLocation, appliedUploadedBy, duplicatesOnly]);
 
   const handleClear = () => {
-    setSearchQuery('');
+    setSearchName('');
+    setSearchContact('');
+    setSearchCompany('');
     setExperienceMin('');
     setExperienceMax('');
+    setSearchLocation('');
     setUploadedBy('');
     setDuplicatesOnly(false);
     setSelectedCandidateIds([]);
-    fetchCandidates(true);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      fetchCandidates();
-    }
+    setAppliedName('');
+    setAppliedContact('');
+    setAppliedCompany('');
+    setAppliedExpMin('');
+    setAppliedExpMax('');
+    setAppliedLocation('');
+    setAppliedUploadedBy('');
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -163,6 +237,27 @@ const CandidatesPage = () => {
               <span>Submit Selected ({selectedCandidateIds.length})</span>
             </Button>
           )}
+
+          <div className="flex items-center gap-2">
+            {/* Duplicates toggle */}
+            <button
+              onClick={() => setDuplicatesOnly(!duplicatesOnly)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+              style={{
+                background: duplicatesOnly ? theme.warningSoft : 'transparent',
+                color: duplicatesOnly ? theme.warning : theme.textMuted,
+                border: `1px solid ${duplicatesOnly ? theme.warning + '40' : theme.border}`,
+              }}
+            >
+              <TriangleAlert className="size-3.5" />
+              <span>Duplicates</span>
+            </button>
+
+            <Button variant="outline" size="sm" onClick={handleClear} className="h-8 text-xs">
+              Clear Filters
+            </Button>
+          </div>
+
           <Button size="sm" className="gap-1.5" onClick={() => navigate('/candidates/new')}>
             <Plus className="size-3.5" />
             <span>Add Candidate</span>
@@ -170,105 +265,32 @@ const CandidatesPage = () => {
         </div>
       </div>
 
-      {/* ── Search & Filters ────────────────────────────────────── */}
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="relative flex-1 min-w-[240px] max-w-[360px]">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 size-4"
-            style={{ color: theme.textMuted }}
-          />
-          <Input
-            placeholder="Search by name, email, phone, location, company, role, skills..."
-            className="pl-9 text-sm"
-            style={{
-              background: theme.surface,
-              borderColor: theme.border,
-              color: theme.textPrimary,
-            }}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Input 
-            placeholder="Min Exp"
-            type="number"
-            className="w-[85px] text-sm h-9"
-            style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
-            value={experienceMin}
-            onChange={(e) => setExperienceMin(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-          <span className="text-sm font-medium" style={{ color: theme.textMuted }}>-</span>
-          <Input 
-            placeholder="Max Exp"
-            type="number"
-            className="w-[85px] text-sm h-9"
-            style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
-            value={experienceMax}
-            onChange={(e) => setExperienceMax(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Input 
-            placeholder="Uploaded By (e.g. Zeel)"
-            className="w-[180px] text-sm h-9"
-            style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }}
-            value={uploadedBy}
-            onChange={(e) => setUploadedBy(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-        </div>
-
-        <div className="flex items-center gap-2 ml-auto">
-          {/* Duplicates toggle */}
-          <button
-            onClick={() => setDuplicatesOnly(!duplicatesOnly)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all"
-            style={{
-              background: duplicatesOnly ? theme.warningSoft : 'transparent',
-              color: duplicatesOnly ? theme.warning : theme.textMuted,
-              border: `1px solid ${duplicatesOnly ? theme.warning + '40' : theme.border}`,
-            }}
-          >
-            <TriangleAlert className="size-3.5" />
-            <span>Duplicates</span>
-          </button>
-          
-          <Button variant="outline" size="sm" onClick={handleClear} className="h-8 text-xs">
-            Clear Filters
-          </Button>
-          <Button size="sm" onClick={() => fetchCandidates()} className="h-8 text-xs px-4" style={{ background: theme.accent, color: theme.accentForeground }}>
-            Apply
-          </Button>
-        </div>
-
-        {/* Result count */}
-        <div className="flex items-center gap-1.5 text-xs" style={{ color: theme.textMuted }}>
-          <Filter className="size-3.5" />
-          <span>{candidates.length} results</span>
-        </div>
-      </div>
-
       {/* ── Table ───────────────────────────────────────────────── */}
       <div
-        className="rounded-lg border overflow-hidden"
+        className="rounded-lg border overflow-x-auto"
         style={{
           borderColor: theme.border,
           background: theme.surface,
+          minHeight: '500px',
         }}
       >
-        <Table>
+        <Table style={{ tableLayout: 'fixed', width: '100%', minWidth: '1100px' }}>
+          <colgroup>
+            <col style={{ width: '40px' }} />
+            <col style={{ width: '20%' }} />
+            <col style={{ width: '18%' }} />
+            <col style={{ width: '15%' }} />
+            <col style={{ width: '120px' }} />
+            <col style={{ width: '13%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '70px' }} />
+          </colgroup>
           <TableHeader>
             <TableRow
               className="hover:bg-transparent"
               style={{ borderColor: theme.border }}
             >
-              <TableHead className="w-[40px] pl-4">
+              <TableHead className="pl-4">
                 <input
                   type="checkbox"
                   className="rounded border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
@@ -277,46 +299,127 @@ const CandidatesPage = () => {
                 />
               </TableHead>
               <TableHead
-                className="text-[11px] font-semibold uppercase tracking-wider w-[220px]"
+                className="text-[11px] font-semibold uppercase tracking-wider"
                 style={{ color: theme.textMuted }}
               >
                 Candidate
               </TableHead>
               <TableHead
-                className="text-[11px] font-semibold uppercase tracking-wider w-[180px]"
+                className="text-[11px] font-semibold uppercase tracking-wider"
                 style={{ color: theme.textMuted }}
               >
                 Contact
               </TableHead>
               <TableHead
-                className="text-[11px] font-semibold uppercase tracking-wider w-[150px]"
+                className="text-[11px] font-semibold uppercase tracking-wider"
                 style={{ color: theme.textMuted }}
               >
                 Current Company
               </TableHead>
               <TableHead
-                className="text-[11px] font-semibold uppercase tracking-wider w-[100px]"
+                className="text-[11px] font-semibold uppercase tracking-wider"
                 style={{ color: theme.textMuted }}
               >
                 Experience
               </TableHead>
               <TableHead
-                className="text-[11px] font-semibold uppercase tracking-wider w-[150px]"
+                className="text-[11px] font-semibold uppercase tracking-wider"
                 style={{ color: theme.textMuted }}
               >
                 Location
               </TableHead>
               <TableHead
-                className="text-[11px] font-semibold uppercase tracking-wider w-[120px]"
+                className="text-[11px] font-semibold uppercase tracking-wider"
                 style={{ color: theme.textMuted }}
               >
                 Uploaded By
               </TableHead>
               <TableHead
-                className="text-[11px] font-semibold uppercase tracking-wider w-[80px] text-right pr-4"
+                className="text-[11px] font-semibold uppercase tracking-wider text-right pr-4"
                 style={{ color: theme.textMuted }}
               >
                 Actions
+              </TableHead>
+            </TableRow>
+            {/* Filter Row */}
+            <TableRow className="hover:bg-transparent" style={{ borderColor: theme.border }}>
+              <TableHead className="py-1.5 px-1">
+                {/* No filter for checkbox */}
+              </TableHead>
+              <TableHead className="py-1.5 px-2">
+                <Input
+                  ref={nameRef}
+                  placeholder="Name / Role..."
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                  onKeyDown={handleKeyDown('name')}
+                  className="h-7 text-xs font-normal"
+                />
+              </TableHead>
+              <TableHead className="py-1.5 px-2">
+                <Input
+                  ref={contactRef}
+                  placeholder="Email / Phone..."
+                  value={searchContact}
+                  onChange={(e) => setSearchContact(e.target.value)}
+                  onKeyDown={handleKeyDown('contact')}
+                  className="h-7 text-xs font-normal"
+                />
+              </TableHead>
+              <TableHead className="py-1.5 px-2">
+                <Input
+                  ref={companyRef}
+                  placeholder="Company..."
+                  value={searchCompany}
+                  onChange={(e) => setSearchCompany(e.target.value)}
+                  onKeyDown={handleKeyDown('company')}
+                  className="h-7 text-xs font-normal"
+                />
+              </TableHead>
+              <TableHead className="py-1.5 px-1">
+                <div className="flex items-center gap-1">
+                  <Input
+                    ref={expMinRef}
+                    placeholder="Min"
+                    type="number"
+                    value={experienceMin}
+                    onChange={(e) => setExperienceMin(e.target.value)}
+                    onKeyDown={handleKeyDown('expMin')}
+                    className="h-7 text-xs font-normal w-1/2"
+                  />
+                  <Input
+                    ref={expMaxRef}
+                    placeholder="Max"
+                    type="number"
+                    value={experienceMax}
+                    onChange={(e) => setExperienceMax(e.target.value)}
+                    onKeyDown={handleKeyDown('expMax')}
+                    className="h-7 text-xs font-normal w-1/2"
+                  />
+                </div>
+              </TableHead>
+              <TableHead className="py-1.5 px-2">
+                <Input
+                  ref={locationRef}
+                  placeholder="Location..."
+                  value={searchLocation}
+                  onChange={(e) => setSearchLocation(e.target.value)}
+                  onKeyDown={handleKeyDown('location')}
+                  className="h-7 text-xs font-normal"
+                />
+              </TableHead>
+              <TableHead className="py-1.5 px-2">
+                <Input
+                  ref={uploadedByRef}
+                  placeholder="Uploaded By..."
+                  value={uploadedBy}
+                  onChange={(e) => setUploadedBy(e.target.value)}
+                  onKeyDown={handleKeyDown('uploadedBy')}
+                  className="h-7 text-xs font-normal"
+                />
+              </TableHead>
+              <TableHead className="py-1.5 px-2">
+                {/* No filter for Actions */}
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -326,10 +429,9 @@ const CandidatesPage = () => {
                <TableRow>
                  <TableCell
                    colSpan={8}
-                   className="h-32 text-center text-sm"
-                   style={{ color: theme.textMuted }}
+                   className="h-32 text-center"
                  >
-                   Loading candidates...
+                   <Loader2 className="size-8 animate-spin mx-auto" style={{ color: theme.accent }} />
                  </TableCell>
                </TableRow>
             ) : candidates.length === 0 ? (
@@ -356,7 +458,7 @@ const CandidatesPage = () => {
                     (e.currentTarget.style.background = 'transparent')
                   }
                 >
-                  <TableCell className="pl-4 w-[40px]" onClick={(e) => e.stopPropagation()}>
+                  <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       className="rounded border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 cursor-pointer"
@@ -365,7 +467,7 @@ const CandidatesPage = () => {
                     />
                   </TableCell>
                   {/* Candidate Name + Role */}
-                  <TableCell className="py-3 max-w-[220px]">
+                  <TableCell className="py-3">
                     <div className="flex items-center gap-2">
                       <div className="min-w-0 flex-1">
                         <p
@@ -399,7 +501,7 @@ const CandidatesPage = () => {
                   </TableCell>
 
                   {/* Contact Info */}
-                  <TableCell className="max-w-[180px]">
+                  <TableCell>
                      <div className="min-w-0">
                         <p
                           className="text-sm truncate"
@@ -418,7 +520,7 @@ const CandidatesPage = () => {
 
                   {/* Company */}
                   <TableCell
-                    className="text-sm max-w-[150px] truncate"
+                    className="text-sm truncate"
                     style={{ color: theme.textSecondary }}
                   >
                     {candidate.current_company || "Not provided"}
@@ -426,7 +528,7 @@ const CandidatesPage = () => {
 
                   {/* Experience */}
                   <TableCell
-                    className="text-sm max-w-[100px] truncate"
+                    className="text-sm truncate"
                     style={{ color: theme.textSecondary }}
                   >
                     {candidate.experience || "N/A"}
@@ -434,7 +536,7 @@ const CandidatesPage = () => {
 
                   {/* Location */}
                   <TableCell
-                    className="text-sm font-medium max-w-[150px] truncate"
+                    className="text-sm font-medium truncate"
                     style={{ color: theme.textSecondary }}
                   >
                     {candidate.current_location || "N/A"}
@@ -442,7 +544,7 @@ const CandidatesPage = () => {
 
                   {/* Created */}
                   <TableCell>
-                    <div className="font-medium text-[13px] truncate max-w-[120px]" style={{ color: theme.textPrimary }}>
+                    <div className="font-medium text-[13px] truncate" style={{ color: theme.textPrimary }}>
                       {candidate.uploaded_by_name || "N/A"}
                     </div>
                     <div className="text-[11px] mt-0.5" style={{ color: theme.textMuted }}>
@@ -486,7 +588,6 @@ const CandidatesPage = () => {
         candidateIds={selectedCandidateIds}
         onSuccess={() => {
            setSelectedCandidateIds([]);
-           fetchCandidates(true);
         }}
       />
     </div>

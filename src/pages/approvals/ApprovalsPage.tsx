@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,17 +19,75 @@ const ApprovalsPage = () => {
   const dispatch = useAppDispatch();
   const { jobs, loading } = useAppSelector((state) => state.positions);
   
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  // Filter input states (what user types)
+  const [searchCode, setSearchCode] = useState('');
+  const [searchDesignation, setSearchDesignation] = useState('');
+  const [searchLocation, setSearchLocation] = useState('');
   const [selectedClient, setSelectedClient] = useState('');
+
+  // Applied filter states (sent to API on Enter)
+  const [appliedCode, setAppliedCode] = useState('');
+  const [appliedDesignation, setAppliedDesignation] = useState('');
+  const [appliedLocation, setAppliedLocation] = useState('');
+  const [appliedStatus, setAppliedStatus] = useState('');
+
   const [clientsData, setClientsData] = useState<{client: {client_id: string, name: string}}[]>([]);
   const [clientsLoading, setClientsLoading] = useState(false);
   const [approvalStats, setApprovalStats] = useState<{ status: string; count: number }[]>([]);
 
+  const statusOptions = [
+    { value: '', label: 'All' },
+    { value: 'open', label: 'Open' },
+    { value: 'ongoing', label: 'On Going' },
+    { value: 'close', label: 'Closed' },
+    { value: 'hold', label: 'Hold' },
+  ];
+
+  // Track which filter was last used by name
+  const activeFieldRef = useRef<string | null>(null);
+  const codeRef = useRef<HTMLInputElement>(null);
+  const designationRef = useRef<HTMLInputElement>(null);
+  const locationRef = useRef<HTMLInputElement>(null);
+
+  const fieldRefs: Record<string, React.RefObject<HTMLInputElement | null>> = {
+    code: codeRef,
+    designation: designationRef,
+    location: locationRef,
+  };
+
+  // Restore focus after loading finishes
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
+    if (!loading && activeFieldRef.current) {
+      const ref = fieldRefs[activeFieldRef.current];
+      if (ref?.current) {
+        ref.current.focus();
+      }
+    }
+  }, [loading]);
+
+  // Apply search on Enter key
+  const applySearch = () => {
+    setAppliedCode(searchCode);
+    setAppliedDesignation(searchDesignation);
+    setAppliedLocation(searchLocation);
+  };
+
+  const handleKeyDown = (field: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      activeFieldRef.current = field;
+      applySearch();
+    }
+  };
+
+  // 5-second debounce fallback if user forgets to press Enter
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAppliedCode(searchCode);
+      setAppliedDesignation(searchDesignation);
+      setAppliedLocation(searchLocation);
+    }, 5000);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchCode, searchDesignation, searchLocation]);
 
   useEffect(() => {
     dispatch({
@@ -47,10 +105,13 @@ const ApprovalsPage = () => {
     });
   }, [dispatch]);
 
+  // Fetch jobs with all filters via API (triggered on Enter or client change)
   useEffect(() => {
     let endpoint = '/api/v1/jobs/?';
-    if (debouncedSearch) endpoint += `search=${encodeURIComponent(debouncedSearch)}&`;
+    const search = [appliedCode, appliedDesignation, appliedLocation].filter(Boolean).join(' ');
+    if (search) endpoint += `search=${encodeURIComponent(search)}&`;
     if (selectedClient) endpoint += `client=${encodeURIComponent(selectedClient)}&`;
+    if (appliedStatus) endpoint += `status=${encodeURIComponent(appliedStatus)}&`;
 
     dispatch({
       type: positionActions.FETCH_JOBS,
@@ -68,7 +129,7 @@ const ApprovalsPage = () => {
       },
       getError: (err: any) => dispatch(setError(err.message)),
     });
-  }, [dispatch, debouncedSearch, selectedClient]);
+  }, [dispatch, appliedCode, appliedDesignation, appliedLocation, appliedStatus, selectedClient]);
 
   const clientOptions = [
     { value: '', label: 'All Clients' },
@@ -77,8 +138,6 @@ const ApprovalsPage = () => {
       label: c.client.name,
     }))
   ];
-
-  const filteredPositions = jobs; // Filter handled by backend now
 
   return (
     <div className="space-y-6">
@@ -115,64 +174,94 @@ const ApprovalsPage = () => {
         </div>
       )}
 
-      {/* Search & Client Filter */}
-      <div className="flex items-center gap-3 w-full sm:w-auto">
-        <div className="w-full sm:w-48 shrink-0">
-          <SearchableDropdown
-            options={clientOptions}
-            value={selectedClient}
-            onChange={setSelectedClient}
-            placeholder="All Clients"
-            loading={clientsLoading}
-          />
-        </div>
-
-        <div className="relative w-full sm:w-64">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 size-4"
-            style={{ color: theme.textMuted }}
-          />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search title, location, or status..."
-            className="pl-9 text-sm"
-            style={{
-              background: theme.surface,
-              borderColor: theme.border,
-              color: theme.textPrimary,
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Table */}
-      {loading ? (
-        <div className="flex items-center justify-center p-12">
-          <Loader2 className="size-8 animate-spin" style={{ color: theme.accent }} />
-        </div>
-      ) : (
-        <div className="rounded-xl overflow-hidden" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
-          <Table>
+      {/* Table - always mounted so filter inputs don't lose focus */}
+        <div className="rounded-xl overflow-x-auto" style={{ background: theme.surface, border: `1px solid ${theme.border}`, minHeight: '500px' }}>
+          <Table style={{ tableLayout: 'fixed', width: '100%', minWidth: '950px' }}>
+            <colgroup>
+              <col style={{ width: '120px' }} />
+              <col style={{ width: '25%' }} />
+              <col style={{ width: '15%' }} />
+              <col style={{ width: '15%' }} />
+              <col style={{ width: '130px' }} />
+              <col style={{ width: '100px' }} />
+            </colgroup>
             <TableHeader style={{ background: theme.surfaceMuted }}>
               <TableRow>
                 <TableHead>Code</TableHead>
-                <TableHead>Designation</TableHead>
+                <TableHead >Designation</TableHead>
                 <TableHead>Client</TableHead>
                 <TableHead>Location</TableHead>
-                <TableHead>Approvals</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className='text-center'>Approvals</TableHead>
+                <TableHead className='text-center'>Status</TableHead>
+              </TableRow>
+              <TableRow>
+                <TableHead className="py-1.5 px-2">
+                  <Input 
+                    ref={codeRef}
+                    placeholder="Code..." 
+                    value={searchCode}
+                    onChange={(e) => setSearchCode(e.target.value)}
+                    onKeyDown={handleKeyDown('code')}
+                    className="h-7 text-xs font-normal"
+                  />
+                </TableHead>
+                <TableHead className="py-1.5 px-2">
+                  <Input 
+                    ref={designationRef}
+                    placeholder="Designation..." 
+                    value={searchDesignation}
+                    onChange={(e) => setSearchDesignation(e.target.value)}
+                    onKeyDown={handleKeyDown('designation')}
+                    className="h-7 text-xs font-normal"
+                  />
+                </TableHead>
+                <TableHead className="py-1.5 px-2">
+                  <SearchableDropdown
+                    options={clientOptions}
+                    value={selectedClient}
+                    onChange={setSelectedClient}
+                    placeholder="All Clients"
+                    loading={clientsLoading}
+                  />
+                </TableHead>
+                <TableHead className="py-1.5 px-2">
+                  <Input 
+                    ref={locationRef}
+                    placeholder="Location..." 
+                    value={searchLocation}
+                    onChange={(e) => setSearchLocation(e.target.value)}
+                    onKeyDown={handleKeyDown('location')}
+                    className="h-7 text-xs font-normal"
+                  />
+                </TableHead>
+                <TableHead className="py-1.5 px-2">
+                  {/* No filter for Approvals */}
+                </TableHead>
+                <TableHead className="py-1.5 px-2">
+                  <SearchableDropdown
+                    options={statusOptions}
+                    value={appliedStatus}
+                    onChange={(val) => setAppliedStatus(val)}
+                    placeholder="All"
+                  />
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPositions.length === 0 ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-12">
+                    <Loader2 className="size-8 animate-spin mx-auto" style={{ color: theme.accent }} />
+                  </TableCell>
+                </TableRow>
+              ) : jobs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8" style={{ color: theme.textMuted }}>
                     No jobs found matching your criteria.
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredPositions.map((job) => (
+                jobs.map((job) => (
                   <TableRow
                     key={job.id}
                     className="cursor-pointer hover:bg-muted/50"
@@ -182,19 +271,19 @@ const ApprovalsPage = () => {
                       {job.code}
                     </TableCell>
                     <TableCell style={{ color: theme.textPrimary }}>
-                      <div className="font-semibold">{job.title}</div>
+                      <div className="font-semibold truncate">{job.title}</div>
                       <div className="text-xs" style={{ color: theme.textMuted }}>
                         Exp: {job.min_experience}-{job.max_experience} yrs
                       </div>
                     </TableCell>
-                    <TableCell style={{ color: theme.textSecondary }}>
+                    <TableCell style={{ color: theme.textSecondary }} className="truncate">
                       {job.client?.name || 'Self'}
                     </TableCell>
-                    <TableCell style={{ color: theme.textSecondary }} className="capitalize">
+                    <TableCell style={{ color: theme.textSecondary }} className="capitalize truncate">
                       {job.location}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex justify-center  gap-1">
                         {job.approval_stats?.map((stat) => {
                           let color: string = theme.textMuted;
                           let bgClass = "bg-muted/50";
@@ -205,7 +294,7 @@ const ApprovalsPage = () => {
                             if (stat.count > 0) {
                               isPendingAction = true;
                               bgClass = "bg-orange-500/10 border border-orange-500/30 animate-pulse shadow-sm";
-                              color = "#f97316"; // brighter orange
+                              color = "#f97316";
                             }
                           } else if (stat.status === 'approved' || stat.status === 'accepted') {
                             color = theme.success;
@@ -216,7 +305,7 @@ const ApprovalsPage = () => {
                           return (
                             <div 
                               key={stat.status}
-                              className={`flex flex-col items-center justify-center rounded-md px-2 py-1 min-w-[40px] cursor-pointer hover:opacity-80 transition-opacity ${bgClass}`}
+                              className={`flex flex-col items-center justify-center rounded-md px-1.5 py-0.5 min-w-[36px] cursor-pointer hover:opacity-80 transition-opacity ${bgClass}`}
                               title={`View ${stat.status} applications`}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -257,7 +346,6 @@ const ApprovalsPage = () => {
             </TableBody>
           </Table>
         </div>
-      )}
     </div>
   );
 };

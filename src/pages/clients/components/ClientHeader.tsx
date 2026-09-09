@@ -130,7 +130,7 @@ const ClientHeader = ({ totalClients, selectedCount = 0, deleting = false, onDel
             </Dialog>
           </>
         )}
-        <Button
+        {/* <Button
           variant="outline"
           size="sm"
           className="gap-1.5"
@@ -143,7 +143,7 @@ const ClientHeader = ({ totalClients, selectedCount = 0, deleting = false, onDel
             <Download className="size-3.5" />
           )}
           <span>Export</span>
-        </Button>
+        </Button> */}
         <Button size="sm" className="gap-1.5" onClick={() => navigate('/clients/new')}>
           <Plus className="size-3.5" />
           <span>Add Client</span>

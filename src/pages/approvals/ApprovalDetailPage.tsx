@@ -1625,42 +1625,42 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="min-w-[400px] max-w-[800px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2">
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0"
                 style={{ background: `${theme.accent}15`, color: theme.accent }}
               >
-                <Send className="w-5 h-5" />
+                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <DialogTitle className="text-xl">Send Trackers to Client</DialogTitle>
+              <DialogTitle className="text-lg sm:text-xl">Send Trackers to Client</DialogTitle>
             </div>
-            <DialogDescription className="text-sm pt-2 text-left">
+            <DialogDescription className="text-xs sm:text-sm pt-2 text-left">
               You are about to send candidate profiles and their trackers directly to the client.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-5 py-2 text-left">
+          <div className="flex flex-col gap-4 sm:gap-5 py-2 text-left">
             <div>
               <span
-                className="text-sm font-semibold mb-2 flex items-center gap-2"
+                className="text-xs sm:text-sm font-semibold mb-2 flex items-center gap-2"
                 style={{ color: theme.textPrimary }}
               >
                 <User className="w-4 h-4 text-muted-foreground" />
                 Selected Candidates ({Array.from(selectedApps).length})
               </span>
               <div 
-                className="max-h-40 overflow-y-auto rounded-md border p-2 bg-muted/20"
+                className="max-h-32 sm:max-h-40 overflow-y-auto rounded-md border p-2 bg-muted/20"
                 style={{ borderColor: theme.border }}
               >
-                <ul className="space-y-2">
+                <ul className="space-y-1.5 sm:space-y-2">
                   {data?.applications
                     .filter((app) => selectedApps.has(app.id))
                     .map((app) => (
-                      <li key={app.id} className="flex items-center gap-2 text-sm px-2 py-1.5 rounded bg-background shadow-sm border border-border">
-                        <CheckCircle2 className="w-4 h-4 text-green-500" />
-                        <span className="font-medium" style={{ color: theme.textPrimary }}>{app.candidate_name}</span>
+                      <li key={app.id} className="flex items-center gap-2 text-xs sm:text-sm px-2 py-1 sm:py-1.5 rounded bg-background shadow-sm border border-border">
+                        <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 shrink-0" />
+                        <span className="font-medium truncate" style={{ color: theme.textPrimary }}>{app.candidate_name}</span>
                       </li>
                     ))}
                 </ul>
@@ -1668,7 +1668,7 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
             </div>
 
             <div>
-              <label className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: theme.textPrimary }}>
+              <label className="text-xs sm:text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: theme.textPrimary }}>
                 <Mail className="w-4 h-4 text-muted-foreground" />
                 CC Emails (Optional)
               </label>
@@ -1677,22 +1677,22 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
                 value={ccEmails}
                 onChange={(e) => setCcEmails(e.target.value)}
                 disabled={sendingToClient}
-                className="shadow-sm"
+                className="shadow-sm text-xs sm:text-sm"
               />
-              <p className="text-xs text-muted-foreground mt-1.5">
+              <p className="text-xs text-muted-foreground mt-1 sm:mt-1.5">
                 Separate multiple emails with commas.
               </p>
             </div>
 
             <div
-              className="flex items-start gap-3 p-3 rounded-lg text-sm border"
+              className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg text-xs sm:text-sm border"
               style={{
                 background: theme.warningSoft,
                 borderColor: `${theme.warning}50`,
                 color: theme.textSecondary,
               }}
             >
-              <AlertCircle className="w-5 h-5 shrink-0" style={{ color: theme.warning }} />
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 mt-0.5" style={{ color: theme.warning }} />
               <div>
                 <strong style={{ color: theme.warning }} className="block mb-0.5">Double check details</strong>
                 Before sending, verify all details and the tracker manually for each candidate to ensure accuracy.
@@ -1700,7 +1700,7 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
             </div>
           </div>
 
-          <DialogFooter className="mt-4 gap-2 sm:gap-0">
+          <DialogFooter className="mt-3 sm:mt-4 gap-2 sm:gap-0 flex-col-reverse sm:flex-row">
             <Button
               variant="outline"
               onClick={() => {
@@ -1708,6 +1708,7 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
                 setCcEmails("");
               }}
               disabled={sendingToClient}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
@@ -1718,7 +1719,7 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
               }}
               onClick={handleSendToClient}
               disabled={sendingToClient}
-              className="shadow-md hover:shadow-lg transition-shadow"
+              className="shadow-md hover:shadow-lg transition-shadow w-full sm:w-auto"
             >
               {sendingToClient ? (
                 <>

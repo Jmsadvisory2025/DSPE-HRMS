@@ -32,6 +32,7 @@ const INITIAL_FORM: AddJobPayload = {
   client: null,
   team_member_id: null,
   status: "open",
+  priority: "medium",
   assigned_recruiter_ids: [],
 };
 
@@ -85,6 +86,7 @@ const EditPositionPage = () => {
         client: selectedJob.client?.id || null,
         team_member_id: selectedJob.client?.team_member?.id || null,
         status: (selectedJob.status?.toLowerCase() as any) || "open",
+        priority: (selectedJob.priority?.toLowerCase() as any) || "medium",
         assigned_recruiter_ids:
           selectedJob.assigned_recruiters?.map((r) => r.id) || [],
       });
@@ -101,7 +103,12 @@ const EditPositionPage = () => {
         auth: true,
         getResponse: (data: any) => {
           setSelectedClientDetail(data);
-          setClientTeamMembers(data.team_members || []);
+          const members = data.team_members || [];
+          setClientTeamMembers(members);
+          // Auto-select first team member if none is selected
+          if (members.length > 0 && !formData.team_member_id) {
+            setFormData((prev) => ({ ...prev, team_member_id: members[0].id }));
+          }
           setIsFetchingClient(false);
         },
         getError: () => setIsFetchingClient(false),
@@ -199,6 +206,7 @@ const EditPositionPage = () => {
     if (formData.education) fd.append("education", formData.education);
     if (formData.budget) fd.append("budget", String(formData.budget));
     if (formData.status) fd.append("status", formData.status);
+    if (formData.priority) fd.append("priority", formData.priority);
 
     if (formData.client) {
       fd.append("client", formData.client);
@@ -281,37 +289,71 @@ const EditPositionPage = () => {
         }}
       >
         <div className="space-y-6">
-          {/* Status (Edit only) */}
-          <div className="space-y-3">
-            <label
-              className="text-sm font-medium"
-              style={{ color: theme.textSecondary }}
-            >
-              Status
-            </label>
-            <div className="relative w-64">
-              <select
-                value={formData.status}
-                onChange={(e) =>
-                  setFormData({ ...formData, status: e.target.value as any })
-                }
-                className="w-full appearance-none rounded-md px-3 py-2 text-sm outline-none"
-                style={{
-                  background: theme.background,
-                  borderColor: theme.border,
-                  color: theme.textPrimary,
-                  border: `1px solid ${theme.border}`,
-                }}
+          {/* Status & Priority (Edit only) */}
+          <div className="flex gap-6 flex-wrap">
+            <div className="space-y-3">
+              <label
+                className="text-sm font-medium"
+                style={{ color: theme.textSecondary }}
               >
-                <option value="open">Open</option>
-                <option value="ongoing">Ongoing</option>
-                <option value="close">Closed</option>
-                <option value="hold">On Hold</option>
-              </select>
-              <ChevronDown
-                className="absolute right-3 top-1/2 -translate-y-1/2 size-4 pointer-events-none"
-                style={{ color: theme.textMuted }}
-              />
+                Status
+              </label>
+              <div className="relative w-64">
+                <select
+                  value={formData.status}
+                  onChange={(e) =>
+                    setFormData({ ...formData, status: e.target.value as any })
+                  }
+                  className="w-full appearance-none rounded-md px-3 py-2 text-sm outline-none"
+                  style={{
+                    background: theme.background,
+                    borderColor: theme.border,
+                    color: theme.textPrimary,
+                    border: `1px solid ${theme.border}`,
+                  }}
+                >
+                  <option value="open">Open</option>
+                  <option value="ongoing">Ongoing</option>
+                  <option value="close">Closed</option>
+                  <option value="hold">On Hold</option>
+                </select>
+                <ChevronDown
+                  className="absolute right-3 top-1/2 -translate-y-1/2 size-4 pointer-events-none"
+                  style={{ color: theme.textMuted }}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label
+                className="text-sm font-medium"
+                style={{ color: theme.textSecondary }}
+              >
+                Priority
+              </label>
+              <div className="relative w-64">
+                <select
+                  value={formData.priority || 'medium'}
+                  onChange={(e) =>
+                    setFormData({ ...formData, priority: e.target.value as any })
+                  }
+                  className="w-full appearance-none rounded-md px-3 py-2 text-sm outline-none"
+                  style={{
+                    background: theme.background,
+                    borderColor: theme.border,
+                    color: theme.textPrimary,
+                    border: `1px solid ${theme.border}`,
+                  }}
+                >
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+                <ChevronDown
+                  className="absolute right-3 top-1/2 -translate-y-1/2 size-4 pointer-events-none"
+                  style={{ color: theme.textMuted }}
+                />
+              </div>
             </div>
           </div>
 
