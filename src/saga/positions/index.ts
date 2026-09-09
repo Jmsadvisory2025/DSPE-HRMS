@@ -15,4 +15,5 @@ export function* watchPositionsSaga() {
   yield takeLatest(positionActions.SEND_INTERVIEW_TO_CLIENT, genericSaga);
   yield takeLatest(positionActions.UPDATE_INTERVIEW_ATTENDANCE, genericSaga);
   yield takeLatest(positionActions.CHANGE_JOB_STATUS, genericSaga);
+  yield takeLatest(positionActions.DELETE_JOBS, genericSaga);
 }

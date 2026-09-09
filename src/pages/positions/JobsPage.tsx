@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Loader2, MoreHorizontal } from 'lucide-react';
+import { Plus, Loader2, MoreHorizontal, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuGroup } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,6 +16,14 @@ import { theme } from '@/config/theme';
 import { getJobStatusStyle } from '@/lib/statusUtils';
 import { SearchableDropdown } from '@/components/ui/searchable-dropdown';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const PRIORITY_COLORS: Record<string, { color: string; bg: string }> = {
   high:   { color: '#ef4444', bg: '#ef444418' },
@@ -133,7 +141,7 @@ const AssignedRecruitersCell = ({ recruiters }: { recruiters: any[] }) => {
 
 const JobsPage = () => {
   const navigate = useNavigate();
-  const { isRecruiter } = useAuth();
+  const { isRecruiter, isAdmin } = useAuth();
   const dispatch = useAppDispatch();
   const { jobs, loading } = useAppSelector((state) => state.positions);
 
@@ -155,6 +163,9 @@ const JobsPage = () => {
   const [selectedClient, setSelectedClient] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('open'); // default is open
   const [selectedPriority, setSelectedPriority] = useState('');
+  const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [clientsData, setClientsData] = useState<{client: {client_id: string, name: string}}[]>([]);
   const [clientsLoading, setClientsLoading] = useState(false);
@@ -248,6 +259,43 @@ const JobsPage = () => {
     });
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    setSelectedJobIds(checked ? jobs.map((job) => job.id) : []);
+  };
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    setSelectedJobIds((current) => checked ? [...current, id] : current.filter((jobId) => jobId !== id));
+  };
+
+  const handleDeleteSelected = () => {
+    if (!isAdmin || selectedJobIds.length === 0) return;
+
+    dispatch({
+      type: positionActions.DELETE_JOBS,
+      method: 'DELETE',
+      endPoint: '/api/v1/jobs/bulk-delete/',
+      auth: true,
+      body: { job_ids: selectedJobIds },
+      setLoading: (val: boolean) => setDeleting(val),
+      getResponse: (response: any) => {
+        toast.success(response?.message || 'Jobs deleted successfully');
+        setSelectedJobIds([]);
+        setDeleteConfirmOpen(false);
+        dispatch({
+          type: positionActions.FETCH_JOBS,
+          method: 'GET',
+          endPoint: buildEndpoint(),
+          auth: true,
+          getResponse: (data: JobResponse) => dispatch(setJobs(data.results || [])),
+          getError: (err: any) => dispatch(setError(err.message)),
+        });
+      },
+      getError: (error: any) => {
+        toast.error(error?.response?.data?.error || 'Failed to delete jobs');
+      },
+    });
+  };
+
   useEffect(() => {
     dispatch({
       type: clientActions.FETCH_CLIENTS,
@@ -315,18 +363,34 @@ const JobsPage = () => {
           </p>
         </div>
 
-        {!isRecruiter && (
-          <Button size="sm" className="gap-1.5 shrink-0" onClick={() => navigate('/positions/new')}>
-            <Plus className="size-3.5" />
-            <span>New Job</span>
-          </Button>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {isAdmin && selectedJobIds.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 animate-in fade-in"
+              style={{ color: theme.destructive, borderColor: theme.destructive + '50', background: theme.destructive + '10' }}
+              disabled={deleting}
+              onClick={() => setDeleteConfirmOpen(true)}
+            >
+              {deleting ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+              <span>Delete Selected ({selectedJobIds.length})</span>
+            </Button>
+          )}
+          {!isRecruiter && (
+            <Button size="sm" className="gap-1.5 shrink-0" onClick={() => navigate('/positions/new')}>
+              <Plus className="size-3.5" />
+              <span>New Job</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
       <div className="rounded-xl overflow-x-auto" style={{ background: theme.surface, border: `1px solid ${theme.border}`, minHeight: '500px' }}>
         <Table style={{ tableLayout: 'fixed', width: '100%', minWidth: '1600px' }}>
           <colgroup>
+            {isAdmin && <col style={{ width: '40px' }} />}
             <col style={{ width: '110px' }} />
             <col style={{ width: '18%' }} />
             <col style={{ width: '12%' }} />
@@ -340,6 +404,16 @@ const JobsPage = () => {
           </colgroup>
           <TableHeader style={{ background: theme.surfaceMuted }}>
             <TableRow>
+              {isAdmin && (
+                <TableHead className="pl-4">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 shadow-sm cursor-pointer"
+                    checked={jobs.length > 0 && selectedJobIds.length === jobs.length}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                  />
+                </TableHead>
+              )}
               <TableHead>Code</TableHead>
               <TableHead>Designation</TableHead>
               <TableHead>Client</TableHead>
@@ -354,6 +428,7 @@ const JobsPage = () => {
             
             {/* Filter Row */}
             <TableRow className="hover:bg-transparent" style={{ borderColor: theme.border }}>
+              {isAdmin && <TableHead className="py-1.5 px-1" />}
               <TableHead className="py-1.5 px-2">
                 <Input 
                   ref={codeRef}
@@ -441,13 +516,13 @@ const JobsPage = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={10} className="h-32 text-center">
+                <TableCell colSpan={isAdmin ? 11 : 10} className="h-32 text-center">
                   <Loader2 className="size-8 animate-spin mx-auto" style={{ color: theme.accent }} />
                 </TableCell>
               </TableRow>
             ) : jobs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-8" style={{ color: theme.textMuted }}>
+                <TableCell colSpan={isAdmin ? 11 : 10} className="text-center py-8" style={{ color: theme.textMuted }}>
                   No jobs found matching your criteria.
                 </TableCell>
               </TableRow>
@@ -461,6 +536,16 @@ const JobsPage = () => {
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => navigate(`/positions/${job.id}`)}
                 >
+                  {isAdmin && (
+                    <TableCell className="pl-4" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 shadow-sm cursor-pointer"
+                        checked={selectedJobIds.includes(job.id)}
+                        onChange={(e) => handleSelectOne(job.id, e.target.checked)}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="font-medium" style={{ color: theme.accent }}>
                     {job.code}
                   </TableCell>
@@ -610,6 +695,24 @@ const JobsPage = () => {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedJobIds.length} selected {selectedJobIds.length === 1 ? 'job' : 'jobs'}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
+            <Button variant="destructive" disabled={deleting} onClick={handleDeleteSelected} style={{ background: theme.destructive, color: '#fff' }}>
+              {deleting ? <Loader2 className="size-3.5 animate-spin" /> : null}
+              Confirm Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

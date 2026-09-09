@@ -88,12 +88,12 @@ export const SearchableDropdown = ({
       <div className="flex items-center border-b px-3">
         <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
         <input
+          ref={(input) => input?.focus({ preventScroll: true })}
           type="text"
           placeholder="Search..."
           className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          autoFocus
         />
       </div>
       <div className="max-h-[200px] overflow-y-auto p-1.5 space-y-0.5">

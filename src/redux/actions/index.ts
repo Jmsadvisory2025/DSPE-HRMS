@@ -25,6 +25,7 @@ export const candidateActions = {
   UPDATE_CANDIDATE: "UPDATE_CANDIDATE",
   SUBMIT_CANDIDATE: "SUBMIT_CANDIDATE",
   EXPORT_CANDIDATES: "EXPORT_CANDIDATES",
+  DELETE_CANDIDATES: "DELETE_CANDIDATES",
 } as const;
 
 /* ── Positions ────────────────────────────────────────────────── */
@@ -41,6 +42,7 @@ export const positionActions = {
   SEND_INTERVIEW_TO_CLIENT: "SEND_INTERVIEW_TO_CLIENT",
   UPDATE_INTERVIEW_ATTENDANCE: "UPDATE_INTERVIEW_ATTENDANCE",
   CHANGE_JOB_STATUS: "CHANGE_JOB_STATUS",
+  DELETE_JOBS: "DELETE_JOBS",
 } as const;
 
 export const approvalActions = {

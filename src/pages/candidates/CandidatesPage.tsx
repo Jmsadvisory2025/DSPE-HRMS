@@ -22,8 +22,11 @@ import {
   TriangleAlert,
   Filter,
   Loader2,
+  Trash2,
 } from 'lucide-react';
 import { theme } from '@/config/theme';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 import { SubmitCandidateModal } from './components/SubmitCandidateModal';
 import { MultiSubmitCandidateModal } from './components/MultiSubmitCandidateModal';
 import { MoreHorizontal, Edit, Send } from 'lucide-react';
@@ -33,6 +36,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const ActionMenu = ({ onOpenSubmit, onEdit }: { onOpenSubmit: () => void, onEdit: () => void }) => {
   return (
@@ -61,6 +72,7 @@ const CandidatesPage = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { candidates, loading } = useAppSelector((state) => state.candidates);
+  const { isAdmin } = useAuth();
   
   // Filter input states (what user types)
   const [searchName, setSearchName] = useState('');
@@ -88,6 +100,9 @@ const CandidatesPage = () => {
   // Multi Submit State
   const [multiSubmitModalOpen, setMultiSubmitModalOpen] = useState(false);
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Focus tracking
   const activeFieldRef = useRef<string | null>(null);
@@ -172,7 +187,7 @@ const CandidatesPage = () => {
       getResponse: (data: any) => dispatch(setCandidates(data.results || [])),
       getError: (err: any) => dispatch(setError(err.message)),
     });
-  }, [dispatch, appliedName, appliedContact, appliedCompany, appliedExpMin, appliedExpMax, appliedLocation, appliedUploadedBy, duplicatesOnly]);
+  }, [dispatch, appliedName, appliedContact, appliedCompany, appliedExpMin, appliedExpMax, appliedLocation, appliedUploadedBy, duplicatesOnly, refreshKey]);
 
   const handleClear = () => {
     setSearchName('');
@@ -209,6 +224,28 @@ const CandidatesPage = () => {
     }
   };
 
+  const handleDeleteSelected = () => {
+    if (!isAdmin || selectedCandidateIds.length === 0) return;
+
+    dispatch({
+      type: candidateActions.DELETE_CANDIDATES,
+      method: 'DELETE',
+      endPoint: '/api/v1/candidates/bulk-delete/',
+      auth: true,
+      body: { candidate_ids: selectedCandidateIds },
+      setLoading: (val: boolean) => setDeleting(val),
+      getResponse: (response: any) => {
+        toast.success(response?.message || 'Candidates deleted successfully');
+        setSelectedCandidateIds([]);
+        setDeleteConfirmOpen(false);
+        setRefreshKey((key) => key + 1);
+      },
+      getError: (error: any) => {
+        toast.error(error?.response?.data?.error || 'Failed to delete candidates');
+      },
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* ── Page Header ─────────────────────────────────────────── */}
@@ -227,15 +264,30 @@ const CandidatesPage = () => {
 
         <div className="flex items-center gap-2 shrink-0">
           {selectedCandidateIds.length > 0 && (
-            <Button
-              size="sm"
-              className="gap-1.5 animate-in fade-in"
-              style={{ background: theme.accent, color: theme.accentForeground }}
-              onClick={() => setMultiSubmitModalOpen(true)}
-            >
-              <Send className="size-3.5" />
-              <span>Submit Selected ({selectedCandidateIds.length})</span>
-            </Button>
+            <>
+              <Button
+                size="sm"
+                className="gap-1.5 animate-in fade-in"
+                style={{ background: theme.accent, color: theme.accentForeground }}
+                onClick={() => setMultiSubmitModalOpen(true)}
+              >
+                <Send className="size-3.5" />
+                <span>Submit Selected ({selectedCandidateIds.length})</span>
+              </Button>
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 animate-in fade-in"
+                  style={{ color: theme.destructive, borderColor: theme.destructive + '50', background: theme.destructive + '10' }}
+                  disabled={deleting}
+                  onClick={() => setDeleteConfirmOpen(true)}
+                >
+                  {deleting ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+                  <span>Delete Selected ({selectedCandidateIds.length})</span>
+                </Button>
+              )}
+            </>
           )}
 
           <div className="flex items-center gap-2">
@@ -572,6 +624,24 @@ const CandidatesPage = () => {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedCandidateIds.length} selected {selectedCandidateIds.length === 1 ? 'candidate' : 'candidates'}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
+            <Button variant="destructive" disabled={deleting} onClick={handleDeleteSelected} style={{ background: theme.destructive, color: '#fff' }}>
+              {deleting ? <Loader2 className="size-3.5 animate-spin" /> : null}
+              Confirm Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
           <SubmitCandidateModal 
          isOpen={submitModalOpen} 
