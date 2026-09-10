@@ -4,7 +4,7 @@ import { TextFlippingBoard } from '@/components/ui/text-flipping-board';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sparkles, ShieldCheck, Zap, Lock, Mail, ArrowRight, Eye, EyeOff, Loader2, X } from 'lucide-react';
+import { Sparkles, ShieldCheck, Zap, Lock, Mail, ArrowRight, Eye, EyeOff, Loader2, X, Bell, Users, CalendarDays, BarChart3, Workflow } from 'lucide-react';
 import { theme } from '@/config/theme';
 import { useAppDispatch } from '@/store/hooks';
 import { authActions } from '@/redux/actions';
@@ -240,35 +240,89 @@ const LoginPage = () => {
             </div>
 
             {/* Feature Badges Footer */}
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-              <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
-                <div
-                  className="size-7 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: theme.accentSoft }}
-                >
-                  <Sparkles className="size-3.5" style={{ color: theme.accent }} />
-                </div>
-                <span>AI Automated Matching</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
-                <div
-                  className="size-7 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: theme.accentSoft }}
-                >
-                  <ShieldCheck className="size-3.5" style={{ color: theme.accent }} />
-                </div>
-                <span>Enterprise Grade Security</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
-                <div
-                  className="size-7 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: theme.accentSoft }}
-                >
-                  <Zap className="size-3.5" style={{ color: theme.accent }} />
-                </div>
-                <span>Instant Sync & Analytics</span>
-              </div>
-            </div>
+           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+  <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+    <div
+      className="size-7 rounded-full flex items-center justify-center"
+      style={{ backgroundColor: theme.accentSoft }}
+    >
+      <Bell className="size-3.5" style={{ color: theme.accent }} />
+    </div>
+    <span>Real-Time Notifications</span>
+  </div>
+
+  <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+    <div
+      className="size-7 rounded-full flex items-center justify-center"
+      style={{ backgroundColor: theme.accentSoft }}
+    >
+      <Sparkles className="size-3.5" style={{ color: theme.accent }}
+    />
+    </div>
+    <span>AI-Powered Resume Parsing</span>
+  </div>
+
+  <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+    <div
+      className="size-7 rounded-full flex items-center justify-center"
+      style={{ backgroundColor: theme.accentSoft }}
+    >
+      <Zap className="size-3.5" style={{ color: theme.accent }} />
+    </div>
+    <span>Automated Recruitment Workflows</span>
+  </div>
+
+  <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+    <div
+      className="size-7 rounded-full flex items-center justify-center"
+      style={{ backgroundColor: theme.accentSoft }}
+    >
+      <Users className="size-3.5" style={{ color: theme.accent }} />
+    </div>
+    <span>Smart Candidate Trackers</span>
+  </div>
+
+  <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+    <div
+      className="size-7 rounded-full flex items-center justify-center"
+      style={{ backgroundColor: theme.accentSoft }}
+    >
+      <CalendarDays className="size-3.5" style={{ color: theme.accent }} />
+    </div>
+    <span>Interview Management</span>
+  </div>
+
+  <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+    <div
+      className="size-7 rounded-full flex items-center justify-center"
+      style={{ backgroundColor: theme.accentSoft }}
+    >
+      <BarChart3 className="size-3.5" style={{ color: theme.accent }} />
+    </div>
+    <span>Live Recruitment Analytics</span>
+  </div>
+
+  <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+    <div
+      className="size-7 rounded-full flex items-center justify-center"
+      style={{ backgroundColor: theme.accentSoft }}
+    >
+      <ShieldCheck className="size-3.5" style={{ color: theme.accent }} />
+    </div>
+    <span>Enterprise-Grade Security</span>
+  </div>
+
+  <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+    <div
+      className="size-7 rounded-full flex items-center justify-center"
+      style={{ backgroundColor: theme.accentSoft }}
+    >
+      <Workflow className="size-3.5" style={{ color: theme.accent }} />
+    </div>
+    <span>End-to-End Hiring Pipeline</span>
+  </div>
+</div>
+
           </div>
 
           {/* ── Right: Login Card, floating on the same canvas ────────────────────── */}

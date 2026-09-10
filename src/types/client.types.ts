@@ -12,8 +12,8 @@ export interface AddClientPayload {
   company_name: string;
   street?: string;
   city: string;
-  state: string;
-  country: string;
+  state?: string;
+  country?: string;
   postal_code?: string;
   client_location?: string;
   gst_number?: string;

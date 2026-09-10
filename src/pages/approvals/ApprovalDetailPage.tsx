@@ -1524,7 +1524,7 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
               </div>
 
               {/* Action Bar (Manager Only) */}
-              {!isRecruiter &&
+              {/* {!isRecruiter &&
                 app.manager_review_status?.toLowerCase() === "pending" && (
                   <div
                     className="flex items-center justify-end gap-3 p-4 border-t"
@@ -1556,7 +1556,7 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
                       Approve
                     </Button>
                   </div>
-                )}
+                )} */}
             </CardContent>
           </Card>
         ))}

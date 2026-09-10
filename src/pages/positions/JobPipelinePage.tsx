@@ -404,7 +404,7 @@ const JobPipelinePage = () => {
   /* ── Confirm Stage Change ────────────────────────────────── */
   const handleConfirmStageChange = useCallback(() => {
     const { candidate, fromStage, toStage, destIndex } = stageChangeModal;
-    if (!candidate || !stageChangeNote.trim()) return;
+    if (!candidate) return;
 
     // Optimistic move
     const prevPipeline = { ...localPipeline };
@@ -2256,7 +2256,7 @@ const JobPipelinePage = () => {
                   className="text-xs font-semibold"
                   style={{ color: theme.textPrimary }}
                 >
-                  Note <span style={{ color: theme.destructive }}>*</span>
+                  Note <span className="font-normal" style={{ color: theme.textMuted }}>(optional)</span>
                 </label>
                 <Textarea
                   value={stageChangeNote}
@@ -2264,7 +2264,7 @@ const JobPipelinePage = () => {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      if (stageChangeNote.trim() && !stageChangeSaving) {
+                      if (!stageChangeSaving) {
                         handleConfirmStageChange();
                       }
                     }
@@ -2279,11 +2279,6 @@ const JobPipelinePage = () => {
                   }}
                   disabled={stageChangeSaving}
                 />
-                {!stageChangeNote.trim() && (
-                  <p className="text-xs" style={{ color: theme.destructive }}>
-                    Note is required to change stage.
-                  </p>
-                )}
               </div>
             </div>
           )}
@@ -2298,7 +2293,7 @@ const JobPipelinePage = () => {
             </Button>
             <Button
               onClick={handleConfirmStageChange}
-              disabled={stageChangeSaving || !stageChangeNote.trim()}
+              disabled={stageChangeSaving}
               style={{
                 background: theme.accent,
                 color: theme.accentForeground,

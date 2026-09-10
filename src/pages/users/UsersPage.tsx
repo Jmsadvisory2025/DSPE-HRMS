@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/select';
 
 const UsersPage = () => {
-  const { isRecruiter } = useAuth();
+  const { isAdmin, isManager, isRecruiter } = useAuth();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { users, loading } = useAppSelector((state) => state.users);
@@ -48,13 +48,13 @@ const UsersPage = () => {
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [editFormData, setEditFormData] = useState({ name: '', email: '', phone: '', role: '' });
+  const [editFormData, setEditFormData] = useState({ name: '', email: '', phone: '', role: '', is_active: true });
   const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
   const [editFormErrors, setEditFormErrors] = useState<Record<string, string[]>>({});
 
   const handleOpenEdit = (user: User) => {
     setEditingUser(user);
-    setEditFormData({ name: user.name, email: user.email, phone: user.phone || '', role: user.role });
+    setEditFormData({ name: user.name, email: user.email, phone: user.phone || '', role: user.role, is_active: user.is_active });
     setEditAvatarFile(null);
     setEditFormErrors({});
     setIsEditDialogOpen(true);
@@ -63,6 +63,12 @@ const UsersPage = () => {
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
+    const canUpdateRole = isAdmin || (isManager && editFormData.role === 'recruiter');
+    if (!canUpdateRole) {
+      toast.error('Managers can only assign the recruiter role.');
+      return;
+    }
+
     setEditFormErrors({});
     setIsSubmitting(true);
 
@@ -71,6 +77,7 @@ const UsersPage = () => {
     formData.append("email", editFormData.email);
     formData.append("phone", editFormData.phone);
     formData.append("role", editFormData.role);
+    formData.append("is_active", String(editFormData.is_active));
     if (editAvatarFile) {
       formData.append("avatar", editAvatarFile);
     }
@@ -102,6 +109,12 @@ const UsersPage = () => {
 
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
+    const canAddRole = isAdmin || (isManager && formData.role === 'recruiter');
+    if (!canAddRole) {
+      toast.error('Managers can only add recruiter users.');
+      return;
+    }
+
     setFormErrors({});
     setIsSubmitting(true);
 
@@ -207,7 +220,8 @@ const UsersPage = () => {
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="manager">Manager</SelectItem>
+                    {isAdmin && <SelectItem value="admin">Admin</SelectItem>}
+                    {isAdmin && <SelectItem value="manager">Manager</SelectItem>}
                     <SelectItem value="recruiter">Recruiter</SelectItem>
                   </SelectContent>
                 </Select>
@@ -452,11 +466,28 @@ const UsersPage = () => {
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
                   <SelectContent>
+                    {isAdmin && <SelectItem value="admin">Admin</SelectItem>}
                     <SelectItem value="manager">Manager</SelectItem>
                     <SelectItem value="recruiter">Recruiter</SelectItem>
                   </SelectContent>
                 </Select>
                 {editFormErrors.role && <p className="text-xs text-red-500">{editFormErrors.role[0]}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select
+                  value={editFormData.is_active ? 'active' : 'inactive'}
+                  onValueChange={val => setEditFormData({ ...editFormData, is_active: val === 'active' })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+                {editFormErrors.is_active && <p className="text-xs text-red-500">{editFormErrors.is_active[0]}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-avatar">Avatar</Label>

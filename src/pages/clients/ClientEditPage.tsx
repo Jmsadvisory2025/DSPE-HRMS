@@ -62,12 +62,8 @@ const ClientEditPage = () => {
     if (selectedClient) {
       setFormData({
         company_name: selectedClient.company_name || '',
-        street: selectedClient.street || '',
         city: selectedClient.city || '',
-        state: selectedClient.state || '',
-        country: selectedClient.country || '',
         postal_code: selectedClient.postal_code || '',
-        client_location: selectedClient.client_location || '',
         gst_number: selectedClient.gst_number || '',
         payment_period_days: selectedClient.payment_period_days || 0,
         replacement_period_days: selectedClient.replacement_period_days || 0,
@@ -303,35 +299,15 @@ const ClientEditPage = () => {
           <div className="rounded-xl p-6" style={{ background: theme.surface, border: `1px solid ${theme.border}` }}>
             <SectionHeader icon={MapPin} title="Address" subtitle="Client office location and address details" />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              <div className="space-y-1.5 md:col-span-2 lg:col-span-3">
-                <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Street Address</label>
-                <Input name="street" value={formData.street} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
-                <FieldError name="street" />
-              </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>City *</label>
                 <Input name="city" value={formData.city} onChange={handleChange} style={{ background: theme.background, borderColor: formErrors.city ? theme.destructive : theme.border, color: theme.textPrimary }} />
                 <FieldError name="city" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>State *</label>
-                <Input name="state" value={formData.state} onChange={handleChange} style={{ background: theme.background, borderColor: formErrors.state ? theme.destructive : theme.border, color: theme.textPrimary }} />
-                <FieldError name="state" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Country *</label>
-                <Input name="country" value={formData.country} onChange={handleChange} style={{ background: theme.background, borderColor: formErrors.country ? theme.destructive : theme.border, color: theme.textPrimary }} />
-                <FieldError name="country" />
-              </div>
-              <div className="space-y-1.5">
                 <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Postal Code</label>
                 <Input name="postal_code" value={formData.postal_code} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
                 <FieldError name="postal_code" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Client Location / Region</label>
-                <Input name="client_location" value={formData.client_location} onChange={handleChange} style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
-                <FieldError name="client_location" />
               </div>
             </div>
           </div>
@@ -489,10 +465,7 @@ const ClientEditPage = () => {
                 <h4 className="font-semibold mb-3 flex items-center gap-2" style={{ color: theme.textPrimary }}>
                   <MapPin className="size-3.5" style={{ color: theme.accent }} /> Address
                 </h4>
-                <p><span className="font-medium" style={{ color: theme.textMuted }}>Street:</span> {formData.street || '—'}</p>
                 <p><span className="font-medium" style={{ color: theme.textMuted }}>City:</span> {formData.city || '—'}</p>
-                <p><span className="font-medium" style={{ color: theme.textMuted }}>State:</span> {formData.state || '—'}</p>
-                <p><span className="font-medium" style={{ color: theme.textMuted }}>Country:</span> {formData.country || '—'}</p>
                 <p><span className="font-medium" style={{ color: theme.textMuted }}>Postal:</span> {formData.postal_code || '—'}</p>
               </div>
 
