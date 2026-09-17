@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -33,17 +33,103 @@ interface AuditResponse {
 
 const AuditLogsPage = () => {
   const dispatch = useAppDispatch();
-  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AuditResponse | null>(null);
   const [page, setPage] = useState(1);
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
 
-  const fetchLogs = (targetPage: number = 1) => {
+  // Filter input states (what user types — supports comma-separated values)
+  const [filterUserName, setFilterUserName] = useState('');
+  const [filterUserEmail, setFilterUserEmail] = useState('');
+  const [filterUserRole, setFilterUserRole] = useState('');
+  const [filterAction, setFilterAction] = useState('');
+  const [filterEvent, setFilterEvent] = useState('');
+  const [filterMethod, setFilterMethod] = useState('');
+
+  // Applied filter states (sent to API on Enter or debounce)
+  const [appliedUserName, setAppliedUserName] = useState('');
+  const [appliedUserEmail, setAppliedUserEmail] = useState('');
+  const [appliedUserRole, setAppliedUserRole] = useState('');
+  const [appliedAction, setAppliedAction] = useState('');
+  const [appliedEvent, setAppliedEvent] = useState('');
+  const [appliedMethod, setAppliedMethod] = useState('');
+
+  // Focus tracking
+  const activeFieldRef = useRef<string | null>(null);
+  const userNameRef = useRef<HTMLInputElement>(null);
+  const userEmailRef = useRef<HTMLInputElement>(null);
+  const userRoleRef = useRef<HTMLInputElement>(null);
+  const actionRef = useRef<HTMLInputElement>(null);
+  const eventRef = useRef<HTMLInputElement>(null);
+  const methodRef = useRef<HTMLInputElement>(null);
+
+  const fieldRefs: Record<string, React.RefObject<HTMLInputElement | null>> = {
+    userName: userNameRef,
+    userEmail: userEmailRef,
+    userRole: userRoleRef,
+    action: actionRef,
+    event: eventRef,
+    method: methodRef,
+  };
+
+  // Restore focus after loading finishes
+  useEffect(() => {
+    if (!loading && activeFieldRef.current) {
+      const ref = fieldRefs[activeFieldRef.current];
+      if (ref?.current) {
+        ref.current.focus();
+      }
+    }
+  }, [loading]);
+
+  const applySearch = () => {
+    setAppliedUserName(filterUserName);
+    setAppliedUserEmail(filterUserEmail);
+    setAppliedUserRole(filterUserRole);
+    setAppliedAction(filterAction);
+    setAppliedEvent(filterEvent);
+    setAppliedMethod(filterMethod);
+    setPage(1);
+  };
+
+  const handleKeyDown = (field: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      activeFieldRef.current = field;
+      applySearch();
+    }
+  };
+
+  // 3-second debounce fallback
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAppliedUserName(filterUserName);
+      setAppliedUserEmail(filterUserEmail);
+      setAppliedUserRole(filterUserRole);
+      setAppliedAction(filterAction);
+      setAppliedEvent(filterEvent);
+      setAppliedMethod(filterMethod);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [filterUserName, filterUserEmail, filterUserRole, filterAction, filterEvent, filterMethod]);
+
+  // Fetch audit logs with applied filters
+  // Supports comma-separated multi-filtering:
+  //   user_name=john,jane → partial match OR
+  //   action_in=CREATED,DELETED → exact match multi-select
+  useEffect(() => {
+    const params = new URLSearchParams();
+    params.append('page', String(page));
+    if (appliedUserName) params.append('user_name', appliedUserName);
+    if (appliedUserEmail) params.append('user_email', appliedUserEmail);
+    if (appliedUserRole) params.append('user_role_in', appliedUserRole);
+    if (appliedAction) params.append('action_in', appliedAction);
+    if (appliedEvent) params.append('event_in', appliedEvent);
+    if (appliedMethod) params.append('method_in', appliedMethod);
+
     dispatch({
       type: auditActions.FETCH_AUDIT_LOGS,
       method: 'GET',
-      endPoint: `/api/v1/audit/?page=${targetPage}`,
+      endPoint: `/api/v1/audit/?${params.toString()}`,
       auth: true,
       setLoading: (val: boolean) => setLoading(val),
       getResponse: (res: AuditResponse) => {
@@ -53,23 +139,7 @@ const AuditLogsPage = () => {
       },
       getError: (err: any) => console.error("Error fetching audit logs:", err),
     });
-  };
-
-  useEffect(() => {
-    fetchLogs(page);
-  }, [dispatch, page]);
-
-  // Client-side search (note: API might support search, but we apply local filter on current page)
-  const filteredLogs = data?.results.filter((log) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      (log.user_info?.name || '').toLowerCase().includes(q) ||
-      (log.action || '').toLowerCase().includes(q) ||
-      (log.event || '').toLowerCase().includes(q) ||
-      (log.path || '').toLowerCase().includes(q)
-    );
-  }) || [];
+  }, [dispatch, page, appliedUserName, appliedUserEmail, appliedUserRole, appliedAction, appliedEvent, appliedMethod]);
 
   const handleNextPage = () => {
     if (data?.next) {
@@ -83,6 +153,22 @@ const AuditLogsPage = () => {
     }
   };
 
+  const handleClear = () => {
+    setFilterUserName('');
+    setFilterUserEmail('');
+    setFilterUserRole('');
+    setFilterAction('');
+    setFilterEvent('');
+    setFilterMethod('');
+    setAppliedUserName('');
+    setAppliedUserEmail('');
+    setAppliedUserRole('');
+    setAppliedAction('');
+    setAppliedEvent('');
+    setAppliedMethod('');
+    setPage(1);
+  };
+
   const formatDate = (isoString: string) => {
     try {
       const date = new Date(isoString);
@@ -94,6 +180,8 @@ const AuditLogsPage = () => {
       return isoString;
     }
   };
+
+  const hasActiveFilters = !!(appliedUserName || appliedUserEmail || appliedUserRole || appliedAction || appliedEvent || appliedMethod);
 
   return (
     <div className="space-y-6">
@@ -113,23 +201,11 @@ const AuditLogsPage = () => {
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="relative w-full sm:w-64">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 size-4"
-              style={{ color: theme.textMuted }}
-            />
-            <Input
-              placeholder="Search user, action, or resource..."
-              className="pl-9 text-sm h-9"
-              style={{
-                background: theme.surface,
-                borderColor: theme.border,
-                color: theme.textPrimary,
-              }}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+          {hasActiveFilters && (
+            <Button variant="outline" size="sm" onClick={handleClear} className="h-9 text-xs shrink-0">
+              Clear Filters
+            </Button>
+          )}
           <Button variant="outline" size="sm" className="gap-1.5 h-9 shrink-0">
             <Download className="size-3.5" />
             <span>Export</span>
@@ -145,6 +221,59 @@ const AuditLogsPage = () => {
           border: `1px solid ${theme.border}`,
         }}
       >
+        {/* Filter Bar */}
+        <div className="px-5 py-4 border-b flex flex-wrap gap-3 items-center" style={{ borderColor: theme.border, background: theme.surfaceHover || 'transparent' }}>
+          <Input
+            ref={userNameRef}
+            placeholder="User name..."
+            value={filterUserName}
+            onChange={(e) => setFilterUserName(e.target.value)}
+            onKeyDown={handleKeyDown('userName')}
+            className="h-8 text-xs font-normal w-36"
+          />
+          <Input
+            ref={userEmailRef}
+            placeholder="User email..."
+            value={filterUserEmail}
+            onChange={(e) => setFilterUserEmail(e.target.value)}
+            onKeyDown={handleKeyDown('userEmail')}
+            className="h-8 text-xs font-normal w-44"
+          />
+          <Input
+            ref={userRoleRef}
+            placeholder="Role (e.g. admin)"
+            value={filterUserRole}
+            onChange={(e) => setFilterUserRole(e.target.value)}
+            onKeyDown={handleKeyDown('userRole')}
+            className="h-8 text-xs font-normal w-36"
+          />
+          <div className="h-5 w-px mx-1" style={{ background: theme.border }}></div>
+          <Input
+            ref={actionRef}
+            placeholder="Action (e.g. CREATED)"
+            value={filterAction}
+            onChange={(e) => setFilterAction(e.target.value)}
+            onKeyDown={handleKeyDown('action')}
+            className="h-8 text-xs font-normal w-40"
+          />
+          <Input
+            ref={eventRef}
+            placeholder="Event (e.g. Candidate)"
+            value={filterEvent}
+            onChange={(e) => setFilterEvent(e.target.value)}
+            onKeyDown={handleKeyDown('event')}
+            className="h-8 text-xs font-normal w-44"
+          />
+          <Input
+            ref={methodRef}
+            placeholder="Method (e.g. GET)"
+            value={filterMethod}
+            onChange={(e) => setFilterMethod(e.target.value)}
+            onKeyDown={handleKeyDown('method')}
+            className="h-8 text-xs font-normal w-36"
+          />
+        </div>
+
         <div className="w-full overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead
@@ -161,6 +290,7 @@ const AuditLogsPage = () => {
                 <th className="px-5 py-3 font-semibold w-[20%]">Event / Resource</th>
                 <th className="px-5 py-3 font-semibold w-auto">Details</th>
               </tr>
+
             </thead>
             <tbody>
               {loading ? (
@@ -170,14 +300,14 @@ const AuditLogsPage = () => {
                     <span style={{ color: theme.textMuted }}>Loading audit logs...</span>
                   </td>
                 </tr>
-              ) : filteredLogs.length === 0 ? (
+              ) : (data?.results || []).length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-5 py-12 text-center" style={{ color: theme.textMuted }}>
                     No audit logs match your search criteria.
                   </td>
                 </tr>
               ) : (
-                filteredLogs.map((log, index) => {
+                (data?.results || []).map((log, index) => {
                   const getActionStyle = (action: string | null) => {
                     const act = action?.toUpperCase() || '';
                     switch (act) {

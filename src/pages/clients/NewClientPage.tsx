@@ -15,7 +15,6 @@ const STEPS = ['Details', 'Review'];
 const initialFormData: AddClientPayload = {
   company_name: '',
   city: '',
-  postal_code: '',
   gst_number: '',
   payment_period_days: 30,
   replacement_period_days: 90,
@@ -75,10 +74,14 @@ const NewClientPage = () => {
   const handleSubmit = () => {
     setFormErrors({});
 
-    // Validate at least 1 team member with a name
-    const validMembers = (formData.team_members || []).filter(m => m.name?.trim());
-    if (validMembers.length === 0) {
+    if (!formData.team_members || formData.team_members.length === 0) {
       toast.error('At least one team member / POC is required.');
+      return;
+    }
+
+    const hasInvalidMember = formData.team_members.some(m => !m.name?.trim() || !m.email?.trim());
+    if (hasInvalidMember) {
+      toast.error('Name and Email are required for all team members.');
       return;
     }
 
@@ -231,11 +234,6 @@ const NewClientPage = () => {
                 <Input name="city" value={formData.city} onChange={handleChange} placeholder="e.g. Mumbai" style={{ background: theme.background, borderColor: formErrors.city ? theme.destructive : theme.border, color: theme.textPrimary }} />
                 <FieldError name="city" />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium" style={{ color: theme.textSecondary }}>Postal Code</label>
-                <Input name="postal_code" value={formData.postal_code} onChange={handleChange} placeholder="e.g. 400001" style={{ background: theme.background, borderColor: theme.border, color: theme.textPrimary }} />
-                <FieldError name="postal_code" />
-              </div>
             </div>
           </div>
 
@@ -310,12 +308,12 @@ const NewClientPage = () => {
               {(formData.team_members || []).map((member, index) => (
                 <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 items-end p-4 rounded-lg" style={{ background: theme.background, border: `1px solid ${theme.border}` }}>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium" style={{ color: theme.textMuted }}>Name</label>
-                    <Input placeholder="e.g. Jane Smith" value={member.name} onChange={(e) => handleTeamMemberChange(index, 'name', e.target.value)} style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }} />
+                    <label className="text-xs font-medium" style={{ color: theme.textMuted }}>Name <span className="text-red-500">*</span></label>
+                    <Input placeholder="e.g. Jane Smith" value={member.name} onChange={(e) => handleTeamMemberChange(index, 'name', e.target.value)} style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }} required />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium" style={{ color: theme.textMuted }}>Email</label>
-                    <Input placeholder="e.g. jane@company.com" type="email" value={member.email} onChange={(e) => handleTeamMemberChange(index, 'email', e.target.value)} style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }} />
+                    <label className="text-xs font-medium" style={{ color: theme.textMuted }}>Email <span className="text-red-500">*</span></label>
+                    <Input placeholder="e.g. jane@company.com" type="email" value={member.email} onChange={(e) => handleTeamMemberChange(index, 'email', e.target.value)} style={{ background: theme.surface, borderColor: theme.border, color: theme.textPrimary }} required />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium" style={{ color: theme.textMuted }}>Phone</label>
@@ -385,7 +383,6 @@ const NewClientPage = () => {
                   <MapPin className="size-3.5" style={{ color: theme.accent }} /> Address
                 </h4>
                 <p><span className="font-medium" style={{ color: theme.textMuted }}>City:</span> {formData.city || '—'}</p>
-                <p><span className="font-medium" style={{ color: theme.textMuted }}>Postal:</span> {formData.postal_code || '—'}</p>
               </div>
 
               {/* Commercials */}

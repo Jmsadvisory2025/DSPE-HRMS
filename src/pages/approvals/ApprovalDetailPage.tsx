@@ -343,10 +343,14 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
       .map((email) => email.trim())
       .filter((email) => email !== "");
 
+    const isResend = activeTab === "accepted";
+
     dispatch({
       type: approvalActions.SEND_TO_CLIENT,
       method: "POST",
-      endPoint: "/api/v1/candidates/applications/send-to-client/",
+      endPoint: isResend 
+        ? "/api/v1/candidates/applications/resend-client/" 
+        : "/api/v1/candidates/applications/send-to-client/",
       auth: true,
       body: { 
         application_ids: Array.from(selectedApps),
@@ -370,27 +374,31 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
           );
         } else {
           toast.success(
-            res?.message || "Trackers successfully sent to the client!",
+            res?.message || (isResend ? "Trackers successfully resent to the client!" : "Trackers successfully sent to the client!"),
           );
         }
 
-        // Automatically mark them as accepted
-        const appsToAccept = Array.from(selectedApps);
-        dispatch({
-          type: approvalActions.REVIEW_APPLICATION,
-          method: "POST",
-          endPoint: "/api/v1/candidates/applications/bulk-review/",
-          auth: true,
-          body: { application_ids: appsToAccept, status: "accepted" },
-          setLoading: () => {}, // silent
-          getResponse: () => {
-            fetchDetail();
-          },
-          getError: (err: any) => {
-            console.error("Failed to auto-accept after sending to client:", err);
-            fetchDetail();
-          }
-        });
+        if (!isResend) {
+          // Automatically mark them as accepted
+          const appsToAccept = Array.from(selectedApps);
+          dispatch({
+            type: approvalActions.REVIEW_APPLICATION,
+            method: "POST",
+            endPoint: "/api/v1/candidates/applications/bulk-review/",
+            auth: true,
+            body: { application_ids: appsToAccept, status: "accepted" },
+            setLoading: () => {}, // silent
+            getResponse: () => {
+              fetchDetail();
+            },
+            getError: (err: any) => {
+              console.error("Failed to auto-accept after sending to client:", err);
+              fetchDetail();
+            }
+          });
+        } else {
+          fetchDetail();
+        }
 
         setSelectedApps(new Set());
         setCcEmails("");
@@ -750,7 +758,7 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
                 ) : (
                   <Send className="size-4" />
                 )}
-                Send {selectedApps.size} to Client
+                {activeTab === "accepted" ? "Resend" : "Send"} {selectedApps.size} to Client
               </Button>
             </>
           )}
@@ -1625,115 +1633,114 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
           }
         }}
       >
-        <DialogContent className="min-w-[400px] max-w-[800px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-          <DialogHeader>
-            <div className="flex items-center gap-2 sm:gap-3 mb-2">
-              <div
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: `${theme.accent}15`, color: theme.accent }}
-              >
-                <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-              <DialogTitle className="text-lg sm:text-xl">Send Trackers to Client</DialogTitle>
-            </div>
-            <DialogDescription className="text-xs sm:text-sm pt-2 text-left">
-              You are about to send candidate profiles and their trackers directly to the client.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden" style={{ borderRadius: '12px' }}>
+          <div className="p-6">
+            <DialogHeader className="mb-4">
+              <DialogTitle className="flex items-center gap-2 text-xl" style={{ color: theme.textPrimary }}>
+                <Send className="w-5 h-5" style={{ color: theme.accent }} />
+                {activeTab === "accepted" ? "Resend Trackers" : "Send Trackers"}
+              </DialogTitle>
+              <DialogDescription className="text-sm pt-1">
+                You are about to {activeTab === "accepted" ? "resend" : "send"} {selectedApps.size} candidate profile(s) directly to the client.
+              </DialogDescription>
+            </DialogHeader>
 
-          <div className="flex flex-col gap-4 sm:gap-5 py-2 text-left">
-            <div>
-              <span
-                className="text-xs sm:text-sm font-semibold mb-2 flex items-center gap-2"
-                style={{ color: theme.textPrimary }}
+            {activeTab === "accepted" && (
+              <div
+                className="mb-5 text-sm p-3 rounded-lg border flex items-start gap-2.5"
+                style={{
+                  background: theme.infoSoft || '#eff6ff',
+                  borderColor: `${theme.info || '#3b82f6'}30`,
+                  color: theme.textSecondary,
+                }}
               >
-                <User className="w-4 h-4 text-muted-foreground" />
-                Selected Candidates ({Array.from(selectedApps).length})
-              </span>
-              <div 
-                className="max-h-32 sm:max-h-40 overflow-y-auto rounded-md border p-2 bg-muted/20"
-                style={{ borderColor: theme.border }}
-              >
-                <ul className="space-y-1.5 sm:space-y-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: theme.info || '#3b82f6' }} />
+                <div className="leading-relaxed">
+                  <strong style={{ color: theme.info || '#3b82f6' }} className="font-semibold">Restriction Bypassed: </strong>
+                  This action manually resends profiles, overriding the 3-month duplicate rule.
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-5">
+              {/* Candidates (Compact Badges) */}
+              <div>
+                <label className="text-sm font-semibold mb-2 block" style={{ color: theme.textPrimary }}>
+                  Selected Candidates
+                </label>
+                <div 
+                  className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto p-2.5 rounded-lg border shadow-inner"
+                  style={{ background: 'rgba(0,0,0,0.02)', borderColor: theme.border }}
+                >
                   {data?.applications
                     .filter((app) => selectedApps.has(app.id))
                     .map((app) => (
-                      <li key={app.id} className="flex items-center gap-2 text-xs sm:text-sm px-2 py-1 sm:py-1.5 rounded bg-background shadow-sm border border-border">
-                        <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 shrink-0" />
-                        <span className="font-medium truncate" style={{ color: theme.textPrimary }}>{app.candidate_name}</span>
-                      </li>
+                      <Badge 
+                        key={app.id} 
+                        variant="secondary" 
+                        className="text-xs font-medium px-2 py-1 flex items-center gap-1.5"
+                        style={{ background: theme.surface, border: `1px solid ${theme.border}` }}
+                      >
+                        <CheckCircle2 className="w-3 h-3 text-green-500" />
+                        {app.candidate_name}
+                      </Badge>
                     ))}
-                </ul>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="text-xs sm:text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: theme.textPrimary }}>
-                <Mail className="w-4 h-4 text-muted-foreground" />
-                CC Emails (Optional)
-              </label>
-              <Input
-                placeholder="e.g., manager@company.com, HR@company.com"
-                value={ccEmails}
-                onChange={(e) => setCcEmails(e.target.value)}
-                disabled={sendingToClient}
-                className="shadow-sm text-xs sm:text-sm"
-              />
-              <p className="text-xs text-muted-foreground mt-1 sm:mt-1.5">
-                Separate multiple emails with commas.
-              </p>
-            </div>
-
-            <div
-              className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg text-xs sm:text-sm border"
-              style={{
-                background: theme.warningSoft,
-                borderColor: `${theme.warning}50`,
-                color: theme.textSecondary,
-              }}
-            >
-              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 mt-0.5" style={{ color: theme.warning }} />
+              {/* CC Emails */}
               <div>
-                <strong style={{ color: theme.warning }} className="block mb-0.5">Double check details</strong>
-                Before sending, verify all details and the tracker manually for each candidate to ensure accuracy.
+                <label className="text-sm font-semibold mb-2 block" style={{ color: theme.textPrimary }}>
+                  CC Emails <span className="text-muted-foreground font-normal">(Optional)</span>
+                </label>
+                <Input
+                  placeholder="e.g. manager@company.com, hr@company.com"
+                  value={ccEmails}
+                  onChange={(e) => setCcEmails(e.target.value)}
+                  className="h-10 text-sm shadow-sm"
+                  disabled={sendingToClient}
+                />
               </div>
             </div>
           </div>
 
-          <DialogFooter className="mt-3 sm:mt-4 gap-2 sm:gap-0 flex-col-reverse sm:flex-row">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSendClientModalOpen(false);
-                setCcEmails("");
-              }}
-              disabled={sendingToClient}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </Button>
-            <Button
-              style={{
-                background: theme.accent,
-                color: theme.accentForeground,
-              }}
-              onClick={handleSendToClient}
-              disabled={sendingToClient}
-              className="shadow-md hover:shadow-lg transition-shadow w-full sm:w-auto"
-            >
-              {sendingToClient ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="mr-2 h-4 w-4" />
-                  Confirm & Send
-                </>
-              )}
-            </Button>
-          </DialogFooter>
+          <div 
+            className="px-6 py-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4"
+            style={{ background: theme.surfaceMuted, borderColor: theme.border }}
+          >
+            <div className="flex items-start sm:items-center gap-2 text-xs" style={{ color: theme.warning }}>
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 sm:mt-0" />
+              <span className="leading-tight">Please double-check tracker details before sending.</span>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button 
+                variant="outline" 
+                onClick={() => { setSendClientModalOpen(false); setCcEmails(""); }} 
+                className="w-full sm:w-auto shadow-sm"
+                disabled={sendingToClient}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSendToClient} 
+                disabled={sendingToClient} 
+                className="w-full sm:w-auto shadow-sm"
+                style={{ background: theme.accent, color: theme.accentForeground }}
+              >
+                {sendingToClient ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    Confirm & {activeTab === "accepted" ? "Resend" : "Send"}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

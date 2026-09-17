@@ -29,7 +29,7 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { SubmitCandidateModal } from './components/SubmitCandidateModal';
 import { MultiSubmitCandidateModal } from './components/MultiSubmitCandidateModal';
-import { MoreHorizontal, Edit, Send } from 'lucide-react';
+import { MoreHorizontal, Edit, Send, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -93,6 +93,11 @@ const CandidatesPage = () => {
   const [appliedLocation, setAppliedLocation] = useState('');
   const [appliedUploadedBy, setAppliedUploadedBy] = useState('');
 
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
   // Submit Candidate Modal State
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
   const [targetCandidateId, setTargetCandidateId] = useState<string | null>(null);
@@ -135,6 +140,7 @@ const CandidatesPage = () => {
   }, [loading]);
 
   const applySearch = () => {
+    setPage(1);
     setAppliedName(searchName);
     setAppliedContact(searchContact);
     setAppliedCompany(searchCompany);
@@ -154,6 +160,7 @@ const CandidatesPage = () => {
   // 5-second debounce fallback
   useEffect(() => {
     const timer = setTimeout(() => {
+      setPage(1);
       setAppliedName(searchName);
       setAppliedContact(searchContact);
       setAppliedCompany(searchCompany);
@@ -166,10 +173,15 @@ const CandidatesPage = () => {
   }, [searchName, searchContact, searchCompany, experienceMin, experienceMax, searchLocation, uploadedBy]);
 
   // Fetch candidates with applied filters
+  // Each filter field maps to its own backend query param, supporting comma-separated
+  // multi-filtering (e.g. "ahmedabad,pune" → candidates in either location)
   useEffect(() => {
     const params = new URLSearchParams();
-    const search = [appliedName, appliedContact, appliedCompany, appliedLocation].filter(Boolean).join(' ');
-    if (search) params.append('search', search);
+    params.append('page', page.toString());
+    if (appliedName) params.append('candidate_name', appliedName);
+    if (appliedContact) params.append('email', appliedContact);
+    if (appliedCompany) params.append('current_company', appliedCompany);
+    if (appliedLocation) params.append('current_location', appliedLocation);
     if (appliedExpMin) params.append('experience_min', appliedExpMin);
     if (appliedExpMax) params.append('experience_max', appliedExpMax);
     if (duplicatesOnly) params.append('is_duplicate', 'true');
@@ -184,10 +196,14 @@ const CandidatesPage = () => {
       endPoint,
       auth: true,
       setLoading: (val: boolean) => dispatch(setLoading(val)),
-      getResponse: (data: any) => dispatch(setCandidates(data.results || [])),
+      getResponse: (data: any) => {
+        dispatch(setCandidates(data.results || []));
+        setTotalCount(data.count || 0);
+        setTotalPages(Math.ceil((data.count || 0) / 100)); // 100 items per page
+      },
       getError: (err: any) => dispatch(setError(err.message)),
     });
-  }, [dispatch, appliedName, appliedContact, appliedCompany, appliedExpMin, appliedExpMax, appliedLocation, appliedUploadedBy, duplicatesOnly, refreshKey]);
+  }, [dispatch, page, appliedName, appliedContact, appliedCompany, appliedExpMin, appliedExpMax, appliedLocation, appliedUploadedBy, duplicatesOnly, refreshKey]);
 
   const handleClear = () => {
     setSearchName('');
@@ -199,6 +215,7 @@ const CandidatesPage = () => {
     setUploadedBy('');
     setDuplicatesOnly(false);
     setSelectedCandidateIds([]);
+    setPage(1);
     setAppliedName('');
     setAppliedContact('');
     setAppliedCompany('');
@@ -258,7 +275,7 @@ const CandidatesPage = () => {
             Candidates
           </h1>
           <p className="text-sm mt-1" style={{ color: theme.textMuted }}>
-            {candidates.length} candidates found
+            {totalCount} candidates found
           </p>
         </div>
 
@@ -624,6 +641,38 @@ const CandidatesPage = () => {
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination Controls */}
+      {!loading && totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between py-2 gap-4">
+          <p className="text-sm" style={{ color: theme.textSecondary }}>
+            Showing <span className="font-medium" style={{ color: theme.textPrimary }}>{(page - 1) * 100 + 1}</span> to <span className="font-medium" style={{ color: theme.textPrimary }}>{Math.min(page * 100, totalCount)}</span> of <span className="font-medium" style={{ color: theme.textPrimary }}>{totalCount}</span> results
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              style={{ borderColor: theme.border, color: theme.textPrimary }}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+            </Button>
+            <div className="text-sm font-medium px-2" style={{ color: theme.textSecondary }}>
+              Page {page} of {totalPages}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              style={{ borderColor: theme.border, color: theme.textPrimary }}
+            >
+              Next <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent>

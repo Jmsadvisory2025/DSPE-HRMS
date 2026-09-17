@@ -14,6 +14,7 @@ import JobsPage from "@/pages/positions/JobsPage";
 import JobDetailPage from "@/pages/positions/JobDetailPage";
 import EditPositionPage from "@/pages/positions/EditPositionPage";
 import JobPipelinePage from "@/pages/positions/JobPipelinePage";
+import DirectJobSubmit from "@/pages/positions/DirectJobSubmit";
 import ApprovalsPage from "@/pages/approvals/ApprovalsPage";
 import ApprovalDetailPage from "@/pages/approvals/ApprovalDetailPage";
 import UsersPage from "@/pages/users/UsersPage";
@@ -25,6 +26,7 @@ import EditCandidatePage from "@/pages/candidates/EditCandidatePage";
 import SetPinPage from "@/pages/auth/SetPinPage";
 import TrackersPage from "@/pages/trackers/TrackersPage";
 import NotificationsPage from "@/pages/notifications/NotificationsPage";
+import EmailLogsPage from "@/pages/email-logs/EmailLogsPage";
 
 export const router = createBrowserRouter([
   /* ── Public routes ─────────────────────────────────────────── */
@@ -41,8 +43,8 @@ export const router = createBrowserRouter([
     element: <PrivacyPolicyPage />,
   },
   {
-    path:"/set-pin",
-    element: <SetPinPage />
+    path: "/set-pin",
+    element: <SetPinPage />,
   },
   /* ── Authenticated routes (with sidebar) ───────────────────── */
   {
@@ -97,6 +99,10 @@ export const router = createBrowserRouter([
         element: <JobDetailPage />,
       },
       {
+        path: "/positions/:jobId/direct-submit",
+        element: <DirectJobSubmit />,
+      },
+      {
         path: "/positions/:jobId/edit",
         element: <EditPositionPage />,
       },
@@ -129,6 +135,10 @@ export const router = createBrowserRouter([
         element: <AuditLogsPage />,
       },
       {
+        path: "/email-logs",
+        element: <EmailLogsPage />,
+      },
+      {
         path: "/settings",
         element: <SettingsPage />,
       },
@@ -155,4 +165,3 @@ export const router = createBrowserRouter([
     ],
   },
 ]);
-

@@ -24,6 +24,7 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeft,
+  Mail,
 } from "lucide-react";
 import { theme } from "@/config/theme";
 import { useAuth, type UserRole } from "@/context/AuthContext";
@@ -82,6 +83,7 @@ const mainNavItems: NavItem[] = [
 
 const bottomNavItems: NavItem[] = [
   { label: "Users", icon: Users, path: "/users", roles: ["admin", "manager"] },
+  { label: "Email Logs", icon: Mail, path: "/email-logs", roles: ["admin", "manager", "recruiter"] },
   {
     label: "Audit Logs",
     icon: Activity,

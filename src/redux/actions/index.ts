@@ -81,3 +81,8 @@ export const notificationActions = {
 export const dashboardActions = {
   FETCH_DASHBOARD: "FETCH_DASHBOARD",
 } as const;
+
+/* ── Email Logs ───────────────────────────────────────────────── */
+export const emailLogActions = {
+  FETCH_EMAIL_LOGS: "FETCH_EMAIL_LOGS",
+} as const;
