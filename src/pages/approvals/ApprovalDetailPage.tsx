@@ -154,6 +154,11 @@ const ApprovalDetailPage = () => {
   const [sendClientModalOpen, setSendClientModalOpen] = useState(false);
   const [ccEmails, setCcEmails] = useState("");
 
+  // Bulk Reject State
+  const [bulkRejectModalOpen, setBulkRejectModalOpen] = useState(false);
+  const [bulkRejectNotes, setBulkRejectNotes] = useState("");
+  const [bulkRejecting, setBulkRejecting] = useState(false);
+
   // Past Jobs State
   const [pastJobsModalOpen, setPastJobsModalOpen] = useState(false);
   const [pastJobsLoading, setPastJobsLoading] = useState(false);
@@ -448,6 +453,37 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
     setModalOpen(true);
   };
 
+  const handleBulkReject = () => {
+    if (selectedApps.size === 0) return;
+    setBulkRejecting(true);
+
+    dispatch({
+      type: approvalActions.REVIEW_APPLICATION,
+      method: "POST",
+      endPoint: `/api/v1/candidates/applications/bulk-review/`,
+      auth: true,
+      body: { 
+        application_ids: Array.from(selectedApps), 
+        status: "rejected", 
+        notes: bulkRejectNotes 
+      },
+      setLoading: (val: boolean) => {
+        if (!val) setBulkRejecting(false);
+      },
+      getResponse: () => {
+        toast.success("Candidates rejected successfully");
+        setBulkRejectModalOpen(false);
+        setBulkRejectNotes("");
+        setSelectedApps(new Set());
+        fetchDetail();
+      },
+      getError: (err: any) => {
+        console.error("Bulk reject failed:", err);
+        toast.error("Failed to reject candidates");
+      },
+    });
+  };
+
   const submitAction = (notes: string) => {
     if (!targetAppId || !actionType) return;
     setSubmitting(true);
@@ -468,7 +504,6 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
       getError: (err: any) => console.error("Action failed:", err),
     });
   };
-
   const handleEditSynopsis = (appId: string, currentSynopsis: string) => {
     setEditingSynopsisId(appId);
     setSynopsisValue(currentSynopsis || "");
@@ -728,24 +763,18 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
                 Client Reminder
               </Button>
 
-              {/* {!isRecruiter && (
-                <>
-                  <Button
-                    onClick={() => handleBulkReview("accepted")}
-                    disabled={sendingToClient}
-                    className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    Bulk Approve
-                  </Button>
-                  <Button
-                    onClick={() => handleBulkReview("rejected")}
-                    disabled={sendingToClient}
-                    className="gap-2 bg-red-600 hover:bg-red-700 text-white"
-                  >
-                    Bulk Reject
-                  </Button>
-                </>
-              )} */}
+              {!isRecruiter && (
+                <Button
+                  variant="outline"
+                  onClick={() => setBulkRejectModalOpen(true)}
+                  disabled={sendingToClient || exportLoading || sendingReminder}
+                  className="gap-2"
+                  style={{ color: theme.destructive, borderColor: theme.destructive + '50', background: theme.destructive + '10' }}
+                >
+                  <X className="size-4" />
+                  Reject Candidates
+                </Button>
+              )}
 
               <Button
                 onClick={() => setSendClientModalOpen(true)}
@@ -1936,6 +1965,45 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
           <DialogFooter className="mt-4 pt-4 border-t" style={{ borderColor: theme.border }}>
             <Button variant="outline" className="w-full sm:w-auto font-semibold" onClick={() => setPastJobsModalOpen(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={bulkRejectModalOpen} onOpenChange={(open) => {
+        setBulkRejectModalOpen(open);
+        if (!open) setBulkRejectNotes("");
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Candidates</DialogTitle>
+            <DialogDescription>
+              You are about to reject {selectedApps.size} selected {selectedApps.size === 1 ? 'candidate' : 'candidates'}. 
+              An email will be sent to their respective recruiters.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium mb-1.5 block" style={{ color: theme.textSecondary }}>
+              Rejection Notes (Optional)
+            </label>
+            <textarea
+              className="w-full min-h-[100px] p-3 rounded-md border text-sm focus:outline-none focus:ring-1"
+              style={{ borderColor: theme.border, background: theme.background, color: theme.textPrimary }}
+              placeholder="e.g. Rejected due to mismatch in requirements."
+              value={bulkRejectNotes}
+              onChange={(e) => setBulkRejectNotes(e.target.value)}
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setBulkRejectModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleBulkReject} 
+              disabled={bulkRejecting}
+              style={{ background: theme.destructive, color: '#fff', border: 'none' }}
+            >
+              {bulkRejecting ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
+              Reject Candidates
             </Button>
           </DialogFooter>
         </DialogContent>
