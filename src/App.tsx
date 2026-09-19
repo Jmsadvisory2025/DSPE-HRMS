@@ -7,7 +7,7 @@ import './App.css';
 import { Toaster } from '@/components/ui/sonner';
 
 // SET THIS TO TRUE TO ENABLE MAINTENANCE MODE GLOBALLY
-const MAINTENANCE_MODE = true;
+const MAINTENANCE_MODE = false;
 
 function App() {
   if (MAINTENANCE_MODE) {
