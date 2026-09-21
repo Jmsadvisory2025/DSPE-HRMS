@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAppDispatch } from "@/store/hooks";
 import { Button } from "@/components/ui/button";
@@ -153,6 +153,12 @@ const ApprovalDetailPage = () => {
   const [sendingToClient, setSendingToClient] = useState(false);
   const [sendClientModalOpen, setSendClientModalOpen] = useState(false);
   const [ccEmails, setCcEmails] = useState("");
+
+  // Email Preview State
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
+  const [emailHtml, setEmailHtml] = useState("");
 
   // Bulk Reject State
   const [bulkRejectModalOpen, setBulkRejectModalOpen] = useState(false);
@@ -340,6 +346,40 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
     });
   };
 
+  const handleFetchEmailPreview = () => {
+    if (selectedApps.size === 0) return;
+    setLoadingPreview(true);
+
+    dispatch({
+      type: approvalActions.SEND_TO_CLIENT,
+      method: "POST",
+      endPoint: "/api/v1/candidates/applications/preview-client-submission/",
+      auth: true,
+      body: { 
+        application_ids: Array.from(selectedApps),
+        header_color: theme.accent,
+        text_color: theme.textPrimary
+      },
+      setLoading: (val: boolean) => setLoadingPreview(val),
+      getResponse: (res: any) => {
+        setEmailSubject(res?.subject || "");
+        setEmailMessage(res?.plain_message || "");
+        setEmailHtml(res?.html_message || "");
+        setSendClientModalOpen(true);
+      },
+      getError: (err: any) => {
+        console.error("Failed to fetch email preview:", err);
+        const errorData = err?.response?.data;
+        toast.error(
+          errorData?.message ||
+            errorData?.detail ||
+            errorData?.error ||
+            "Failed to load email preview",
+        );
+      },
+    });
+  };
+
   const handleSendToClient = () => {
     if (selectedApps.size === 0) return;
 
@@ -359,7 +399,9 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
       auth: true,
       body: { 
         application_ids: Array.from(selectedApps),
-        ...(parsedCcEmails.length > 0 ? { cc_emails: parsedCcEmails } : {})
+        ...(parsedCcEmails.length > 0 ? { cc_emails: parsedCcEmails } : {}),
+        subject_override: emailSubject,
+        text_override: emailMessage
       },
       setLoading: (val: boolean) => setSendingToClient(val),
       getResponse: (res: any) => {
@@ -437,6 +479,48 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
       },
     });
   };
+
+  // Add a ref to track if it's the initial load so we don't fetch twice when opening
+  const initialPreviewFetch = useRef(true);
+
+  // Live Preview Debounce
+  useEffect(() => {
+    if (!sendClientModalOpen) {
+       initialPreviewFetch.current = true;
+       return;
+    }
+    
+    // Skip the first run right after the modal opens, since we already fetched it
+    if (initialPreviewFetch.current) {
+       initialPreviewFetch.current = false;
+       return;
+    }
+
+    const timer = setTimeout(() => {
+      dispatch({
+        type: approvalActions.SEND_TO_CLIENT,
+        method: "POST",
+        endPoint: "/api/v1/candidates/applications/preview-client-submission/",
+        auth: true,
+        body: { 
+          application_ids: Array.from(selectedApps),
+          header_color: theme.accent,
+          text_color: theme.textPrimary,
+          subject_override: emailSubject,
+          text_override: emailMessage
+        },
+        setLoading: () => {}, // silent background fetch
+        getResponse: (res: any) => {
+          setEmailHtml(res?.html_message || "");
+        },
+        getError: (err: any) => {
+          console.error("Live preview update failed:", err);
+        },
+      });
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [emailSubject, emailMessage, sendClientModalOpen]);
 
   useEffect(() => {
     fetchDetail();
@@ -777,12 +861,12 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
               )}
 
               <Button
-                onClick={() => setSendClientModalOpen(true)}
-                disabled={sendingToClient}
+                onClick={handleFetchEmailPreview}
+                disabled={sendingToClient || loadingPreview}
                 className="gap-2"
                 style={{ background: theme.accent }}
               >
-                {sendingToClient ? (
+                {sendingToClient || loadingPreview ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
                   <Send className="size-4" />
@@ -1662,15 +1746,15 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden" style={{ borderRadius: '12px' }}>
-          <div className="p-6">
+        <DialogContent className="w-[95vw] sm:max-w-[800px] lg:max-w-[1100px] p-0 overflow-hidden max-h-[90vh] flex flex-col" style={{ borderRadius: '12px' }}>
+          <div className="p-6 overflow-y-auto flex-1">
             <DialogHeader className="mb-4">
               <DialogTitle className="flex items-center gap-2 text-xl" style={{ color: theme.textPrimary }}>
                 <Send className="w-5 h-5" style={{ color: theme.accent }} />
                 {activeTab === "accepted" ? "Resend Trackers" : "Send Trackers"}
               </DialogTitle>
               <DialogDescription className="text-sm pt-1">
-                You are about to {activeTab === "accepted" ? "resend" : "send"} {selectedApps.size} candidate profile(s) directly to the client.
+                You are about to {activeTab === "accepted" ? "resend" : "send"} {selectedApps.size} candidate profile(s) directly to the client. You can preview and edit the email before sending.
               </DialogDescription>
             </DialogHeader>
 
@@ -1691,44 +1775,88 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
               </div>
             )}
 
-            <div className="space-y-5">
-              {/* Candidates (Compact Badges) */}
-              <div>
-                <label className="text-sm font-semibold mb-2 block" style={{ color: theme.textPrimary }}>
-                  Selected Candidates
-                </label>
-                <div 
-                  className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto p-2.5 rounded-lg border shadow-inner"
-                  style={{ background: 'rgba(0,0,0,0.02)', borderColor: theme.border }}
-                >
-                  {data?.applications
-                    .filter((app) => selectedApps.has(app.id))
-                    .map((app) => (
-                      <Badge 
-                        key={app.id} 
-                        variant="secondary" 
-                        className="text-xs font-medium px-2 py-1 flex items-center gap-1.5"
-                        style={{ background: theme.surface, border: `1px solid ${theme.border}` }}
-                      >
-                        <CheckCircle2 className="w-3 h-3 text-green-500" />
-                        {app.candidate_name}
-                      </Badge>
-                    ))}
+            <div className="flex flex-col lg:grid lg:grid-cols-5 gap-6 h-full">
+              {/* Form Controls - Left Side */}
+              <div className="lg:col-span-2 space-y-5">
+                {/* Email Subject */}
+                <div>
+                  <label className="text-sm font-semibold mb-1.5 block" style={{ color: theme.textPrimary }}>
+                    Email Subject
+                  </label>
+                  <Input
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                    className="h-10 text-sm shadow-sm"
+                    disabled={sendingToClient}
+                  />
+                </div>
+
+                {/* Introduction Message */}
+                <div>
+                  <label className="text-sm font-semibold mb-1.5 block" style={{ color: theme.textPrimary }}>
+                    Introduction Message
+                  </label>
+                  <textarea
+                    className="w-full min-h-[120px] p-3 rounded-md border text-sm shadow-sm focus:outline-none focus:ring-1"
+                    style={{ borderColor: theme.border, background: theme.background, color: theme.textPrimary }}
+                    value={emailMessage}
+                    onChange={(e) => setEmailMessage(e.target.value)}
+                    disabled={sendingToClient}
+                  />
+                </div>
+
+                {/* CC Emails */}
+                <div>
+                  <label className="text-sm font-semibold mb-2 block" style={{ color: theme.textPrimary }}>
+                    CC Emails <span className="text-muted-foreground font-normal">(Optional)</span>
+                  </label>
+                  <Input
+                    placeholder="e.g. manager@company.com, hr@company.com"
+                    value={ccEmails}
+                    onChange={(e) => setCcEmails(e.target.value)}
+                    className="h-10 text-sm shadow-sm"
+                    disabled={sendingToClient}
+                  />
+                </div>
+
+                {/* Candidates (Compact Badges) */}
+                <div>
+                  <label className="text-sm font-semibold mb-2 block" style={{ color: theme.textPrimary }}>
+                    Selected Candidates ({selectedApps.size})
+                  </label>
+                  <div 
+                    className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto p-2.5 rounded-lg border shadow-inner"
+                    style={{ background: 'rgba(0,0,0,0.02)', borderColor: theme.border }}
+                  >
+                    {data?.applications
+                      .filter((app) => selectedApps.has(app.id))
+                      .map((app) => (
+                        <Badge 
+                          key={app.id} 
+                          variant="secondary" 
+                          className="text-xs font-medium px-2 py-1 flex items-center gap-1.5"
+                          style={{ background: theme.surface, border: `1px solid ${theme.border}` }}
+                        >
+                          <CheckCircle2 className="w-3 h-3 text-green-500" />
+                          {app.candidate_name}
+                        </Badge>
+                      ))}
+                  </div>
                 </div>
               </div>
 
-              {/* CC Emails */}
-              <div>
-                <label className="text-sm font-semibold mb-2 block" style={{ color: theme.textPrimary }}>
-                  CC Emails <span className="text-muted-foreground font-normal">(Optional)</span>
+              {/* Email Preview HTML - Right Side */}
+              <div className="lg:col-span-3 flex flex-col min-h-[350px]">
+                <label className="text-sm font-semibold mb-1.5 block" style={{ color: theme.textPrimary }}>
+                  Live Email Preview
                 </label>
-                <Input
-                  placeholder="e.g. manager@company.com, hr@company.com"
-                  value={ccEmails}
-                  onChange={(e) => setCcEmails(e.target.value)}
-                  className="h-10 text-sm shadow-sm"
-                  disabled={sendingToClient}
-                />
+                <div className="border rounded-md overflow-hidden bg-white shadow-sm flex-1" style={{ borderColor: theme.border }}>
+                  <iframe 
+                    srcDoc={emailHtml} 
+                    title="Email Preview" 
+                    className="w-full h-full border-none" 
+                  />
+                </div>
               </div>
             </div>
           </div>
