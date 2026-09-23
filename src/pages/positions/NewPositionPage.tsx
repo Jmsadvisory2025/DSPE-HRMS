@@ -129,14 +129,6 @@ const NewPositionPage = () => {
     let errors: Record<string, string[]> = {};
 
     if (!formData.title?.trim()) errors.title = ["This field is required."];
-    if (!formData.description?.trim())
-      errors.description = ["This field is required."];
-    if (!formData.location?.trim())
-      errors.location = ["This field is required."];
-    if (!String(formData.min_experience)?.trim())
-      errors.min_experience = ["Min experience is required."];
-    if (!String(formData.max_experience)?.trim())
-      errors.max_experience = ["Max experience is required."];
 
     if (!formData.client) errors.client = ["Client must be selected."];
     if (!formData.team_member_id)
@@ -399,7 +391,7 @@ const NewPositionPage = () => {
                 className="text-sm font-medium"
                 style={{ color: theme.textSecondary }}
               >
-                Location *
+                Location
               </label>
               <Input
                 value={formData.location}
@@ -676,7 +668,7 @@ const NewPositionPage = () => {
               className="text-sm font-medium"
               style={{ color: theme.textSecondary }}
             >
-              Job Description *
+              Job Description
             </label>
             <textarea
               value={formData.description}
