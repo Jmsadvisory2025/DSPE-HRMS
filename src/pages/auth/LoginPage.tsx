@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TextFlippingBoard } from '@/components/ui/text-flipping-board';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import { setCredentials } from '@/redux/slices/authSlice';
 import type { LoginResponse, LoginErrorResponse } from '@/types/auth.types';
 import { toast } from 'sonner';
 import { useGoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+import { PublicClientApplication } from '@azure/msal-browser';
+import { MsalProvider, useMsal } from '@azure/msal-react';
 import RecruitOSLogo from '@/assets/RecruitOSLogo.png';
 
 const CustomGoogleLoginButton = ({ onAuthCode, theme }: { onAuthCode: (code: string) => void, theme: any }) => {
@@ -33,6 +35,27 @@ const CustomGoogleLoginButton = ({ onAuthCode, theme }: { onAuthCode: (code: str
     </button>
   );
 };
+
+const CustomMicrosoftLoginButton = ({ onToken, theme }: { onToken: (payload: any) => void, theme: any }) => {
+  const { instance } = useMsal();
+
+  const handleLogin = () => {
+    instance.loginRedirect({
+      scopes: ["openid", "profile", "email", "User.Read", "Mail.Send", "offline_access"],
+    }).catch((e) => {
+      console.error("MSAL Error:", e);
+      toast.error("Microsoft login failed");
+    });
+  };
+
+  return (
+    <button onClick={handleLogin} className="w-full flex items-center justify-center gap-3 py-3 rounded-full font-medium shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5" style={{ backgroundColor: theme.surface, color: theme.textPrimary, border: `1px solid ${theme.border}` }}>
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 21 21"><path fill="#f25022" d="M0 0h10v10H0z" /><path fill="#7fba00" d="M11 0h10v10H11z" /><path fill="#00a4ef" d="M0 11h10v10H0z" /><path fill="#ffb900" d="M11 11h10v10H11z" /></svg>
+      Sign in with Microsoft
+    </button>
+  );
+};
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@base-ui/react';
 
@@ -68,10 +91,14 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleClientId, setGoogleClientId] = useState<string | null>(null);
+  const [msalInstance, setMsalInstance] = useState<PublicClientApplication | null>(null);
   const [showDemoModal, setShowDemoModal] = useState(false);
 
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+
+  // Keep a fresh reference to handleMicrosoftLogin so the MSAL init promise doesn't use a stale closure
+  const handleMicrosoftLoginRef = React.useRef<((payload: any) => void) | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -95,6 +122,68 @@ const LoginPage = () => {
         }
       })
       .catch(err => console.error("Failed to fetch Google config", err));
+
+    // Fetch Microsoft Config from backend
+    fetch(`${baseUrl}/api/v1/auth/microsoft-config/`)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP status ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        if (data.client_id) {
+          const msalConfig = {
+            auth: {
+              clientId: data.client_id,
+              authority: `https://login.microsoftonline.com/${data.tenant_id || 'common'}`,
+              redirectUri: window.location.origin + window.location.pathname, // Clean URI
+            }
+          };
+          const instance = new PublicClientApplication(msalConfig);
+          instance.initialize().then(() => {
+            setMsalInstance(instance);
+            
+            // Handle the redirect response (if coming back from Microsoft login)
+            instance.handleRedirectPromise().then((response: any) => {
+              if (response) {
+                let msalRefreshToken = null;
+                const storageTypes = [sessionStorage, localStorage];
+                for (const storage of storageTypes) {
+                    for (let i = 0; i < storage.length; i++) {
+                        const key = storage.key(i);
+                        if (key && key.includes('refreshtoken')) {
+                            try {
+                                const val = JSON.parse(storage.getItem(key) || '{}');
+                                if (val.secret) {
+                                    msalRefreshToken = val.secret;
+                                    break;
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                    if (msalRefreshToken) break;
+                }
+
+                const payload = {
+                  id_token: response.idToken,
+                  access_token: response.accessToken,
+                  refresh_token: msalRefreshToken || null,
+                  expires_in: response.expiresIn || 3600
+                };
+                
+                if (payload.id_token && handleMicrosoftLoginRef.current) {
+                  handleMicrosoftLoginRef.current(payload);
+                } else if (!payload.id_token) {
+                  toast.error("Microsoft login failed: No token received");
+                }
+              }
+            }).catch(err => {
+              console.error("Popup MSAL error:", err);
+              toast.error("Microsoft authentication error.");
+            });
+          });
+        }
+      })
+      .catch(err => console.error("Failed to fetch Microsoft config", err));
   }, []);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -166,268 +255,322 @@ const LoginPage = () => {
     });
   };
 
+  const handleMicrosoftLogin = (payload: any) => {
+    if (!payload || !payload.id_token) {
+      toast.error("Microsoft Login failed: No id_token received.");
+      return;
+    }
+
+    dispatch({
+      type: authActions.LOGIN,
+      method: "POST" as const,
+      endPoint: "/api/v1/auth/microsoft/",
+      body: payload,
+      auth: false,
+      setLoading,
+      getResponse: (data: unknown) => {
+        const res = data as LoginResponse;
+        dispatch(
+          setCredentials({
+            user: res.user,
+            accessToken: res.access,
+            refreshToken: res.refresh,
+          })
+        );
+        navigate('/dashboard');
+        toast.success("Microsoft Login successful");
+      },
+      getError: (err: unknown) => {
+        console.error("Microsoft Backend Login Error:", err);
+        const axiosErr = err as any;
+        const msg =
+          axiosErr?.response?.data?.detail ||
+          axiosErr?.response?.data?.error ||
+          axiosErr?.response?.data?.message ||
+          'Your account is not registered in our system. Please contact the administrator.';
+        toast.error(msg);
+      },
+    });
+  };
+
+  // Update ref whenever handleMicrosoftLogin changes
+  useEffect(() => {
+    handleMicrosoftLoginRef.current = handleMicrosoftLogin;
+  }, [handleMicrosoftLogin]);
+
   return (
     <>
-    <div
-      className="h-screen w-full relative overflow-hidden flex flex-col"
-      style={{ backgroundColor: theme.background, color: theme.textPrimary }}
-    >
-      {/* ── Shared ambient canvas — spans the FULL page, no hard split ───────────── */}
       <div
-        className="absolute inset-0 opacity-[0.35] pointer-events-none"
-        style={{
-          backgroundImage: `radial-gradient(${theme.border} 1px, transparent 1px)`,
-          backgroundSize: '28px 28px',
-        }}
-      />
-    
+        className="h-screen w-full relative overflow-hidden flex flex-col"
+        style={{ backgroundColor: theme.background, color: theme.textPrimary }}
+      >
+        {/* ── Shared ambient canvas — spans the FULL page, no hard split ───────────── */}
+        <div
+          className="absolute inset-0 opacity-[0.35] pointer-events-none"
+          style={{
+            backgroundImage: `radial-gradient(${theme.border} 1px, transparent 1px)`,
+            backgroundSize: '28px 28px',
+          }}
+        />
 
-      <div className="relative z-10 h-full w-full flex items-center justify-center px-6 py-4 lg:px-12">
-        <div className="w-full max-w-5xl flex items-center gap-10 lg:gap-16 xl:gap-20">
-          {/* ── Left: Flipping Board Showcase ─────────────────────────────────────── */}
-          <div className="hidden lg:flex flex-1 flex-col justify-center gap-10">
-            {/* Brand Header */}
-            <div className="flex items-center ">
-              <img
-                src={RecruitOSLogo}
-                alt="RECRUIT-OS Logo"
-                className="size-20 rounded-xl object-contain drop-shadow-lg"
-                style={{
-                  filter: `drop-shadow(0 10px 25px ${hexToRgba(theme.accent, 0.35)})`,
-                }}
-              />
-              <div className=''>
-                <h1 className="font-bold text-lg tracking-wider" style={{ color: theme.textPrimary }}>
-                  RECRUIT-OS
-                </h1>
-                <p className="text-xs" style={{ color: theme.textMuted }}>
-                  Next-Gen Recruitment Platform
-                </p>
-              </div>
-            </div>
 
-            {/* Flipping Board Display */}
-            <div className="space-y-7">
-             
-
-              <div className="w-full transform scale-95 hover:scale-100 transition-transform duration-500 ease-out">
-                {/* <TextFlippingBoard
-                  text={FEATURE_TEXTS[textIndex]}
-                  duration={FLIP_DURATION_S}
-                /> */}
-              </div>
-
-              <div className="space-y-3 max-w-md pl-1">
-                <p className="text-sm font-medium leading-relaxed" style={{ color: theme.textSecondary }}>
-                  Transforming how teams source, screen, and hire top talent.
-                </p>
-                <div className="flex items-center gap-2">
-                  {FEATURE_TEXTS.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setTextIndex(i)}
-                      className="h-1.5 rounded-full transition-all duration-300"
-                      style={{
-                        width: i === textIndex ? '24px' : '6px',
-                        backgroundColor: i === textIndex ? theme.accent : theme.textMuted,
-                        opacity: i === textIndex ? 1 : 0.4,
-                      }}
-                      aria-label={`Go to slide ${i + 1}`}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Feature Badges Footer */}
-           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-  <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
-    <div
-      className="size-7 rounded-full flex items-center justify-center"
-      style={{ backgroundColor: theme.accentSoft }}
-    >
-      <Bell className="size-3.5" style={{ color: theme.accent }} />
-    </div>
-    <span>Real-Time Notifications</span>
-  </div>
-
-  <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
-    <div
-      className="size-7 rounded-full flex items-center justify-center"
-      style={{ backgroundColor: theme.accentSoft }}
-    >
-      <Sparkles className="size-3.5" style={{ color: theme.accent }}
-    />
-    </div>
-    <span>AI-Powered Resume Parsing</span>
-  </div>
-
-  <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
-    <div
-      className="size-7 rounded-full flex items-center justify-center"
-      style={{ backgroundColor: theme.accentSoft }}
-    >
-      <Zap className="size-3.5" style={{ color: theme.accent }} />
-    </div>
-    <span>Automated Recruitment Workflows</span>
-  </div>
-
-  <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
-    <div
-      className="size-7 rounded-full flex items-center justify-center"
-      style={{ backgroundColor: theme.accentSoft }}
-    >
-      <Users className="size-3.5" style={{ color: theme.accent }} />
-    </div>
-    <span>Smart Candidate Trackers</span>
-  </div>
-
-  <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
-    <div
-      className="size-7 rounded-full flex items-center justify-center"
-      style={{ backgroundColor: theme.accentSoft }}
-    >
-      <CalendarDays className="size-3.5" style={{ color: theme.accent }} />
-    </div>
-    <span>Interview Management</span>
-  </div>
-
-  <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
-    <div
-      className="size-7 rounded-full flex items-center justify-center"
-      style={{ backgroundColor: theme.accentSoft }}
-    >
-      <BarChart3 className="size-3.5" style={{ color: theme.accent }} />
-    </div>
-    <span>Live Recruitment Analytics</span>
-  </div>
-
-  <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
-    <div
-      className="size-7 rounded-full flex items-center justify-center"
-      style={{ backgroundColor: theme.accentSoft }}
-    >
-      <ShieldCheck className="size-3.5" style={{ color: theme.accent }} />
-    </div>
-    <span>Enterprise-Grade Security</span>
-  </div>
-
-  <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
-    <div
-      className="size-7 rounded-full flex items-center justify-center"
-      style={{ backgroundColor: theme.accentSoft }}
-    >
-      <Workflow className="size-3.5" style={{ color: theme.accent }} />
-    </div>
-    <span>End-to-End Hiring Pipeline</span>
-  </div>
-</div>
-
-          </div>
-
-          {/* ── Right: Login Card, floating on the same canvas ────────────────────── */}
-          <div className="w-full lg:w-auto lg:flex-1 flex items-center justify-center">
-            <div className="w-full max-w-md space-y-6">
-              {/* Mobile Logo Header */}
-              <div className="flex lg:hidden items-center justify-center gap-2 mb-6">
+        <div className="relative z-10 h-full w-full flex items-center justify-center px-6 py-4 lg:px-12">
+          <div className="w-full max-w-5xl flex items-center gap-10 lg:gap-16 xl:gap-20">
+            {/* ── Left: Flipping Board Showcase ─────────────────────────────────────── */}
+            <div className="hidden lg:flex flex-1 flex-col justify-center gap-10">
+              {/* Brand Header */}
+              <div className="flex items-center ">
                 <img
                   src={RecruitOSLogo}
                   alt="RECRUIT-OS Logo"
-                  className="size-9 rounded-lg object-contain"
+                  className="size-20 rounded-xl object-contain drop-shadow-lg"
+                  style={{
+                    filter: `drop-shadow(0 10px 25px ${hexToRgba(theme.accent, 0.35)})`,
+                  }}
                 />
-                <span className="font-bold text-xl tracking-wider" style={{ color: theme.textPrimary }}>
-                  RECRUIT-OS
-                </span>
+                <div className=''>
+                  <h1 className="font-bold text-lg tracking-wider" style={{ color: theme.textPrimary }}>
+                    RECRUIT-OS
+                  </h1>
+                  <p className="text-xs" style={{ color: theme.textMuted }}>
+                    Next-Gen Recruitment Platform
+                  </p>
+                </div>
               </div>
 
-              <div className="relative group">
-                {/* Subtle animated gradient glow behind the card */}
-                <div 
-                  className="absolute -inset-0.5 bg-gradient-to-r blur opacity-30 group-hover:opacity-50 transition duration-1000 rounded-2xl"
-                  style={{ backgroundImage: `linear-gradient(to right, ${theme.accent}, ${theme.chart2}, ${theme.accent})` }}
-                />
-                <Card
-                  className="relative backdrop-blur-2xl shadow-2xl transition-all duration-300 rounded-2xl"
-                  style={{
-                    backgroundColor: hexToRgba(theme.surface, 0.85),
-                    borderColor: hexToRgba(theme.border, 0.5),
-                    borderWidth: '1px',
-                    boxShadow: `0 30px 60px -15px ${hexToRgba(theme.textPrimary, 0.15)}`,
-                  }}
-                >
-                  <CardHeader className="space-y-4 text-center pb-8 pt-8">
-                    <div className="flex justify-center mb-2">
-                      <div
-                        className="size-16 rounded-2xl flex items-center justify-center shadow-lg relative overflow-hidden"
-                        style={{ backgroundColor: theme.surfaceMuted, border: `1px solid ${hexToRgba(theme.border, 0.5)}` }}
-                      >
-                        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `linear-gradient(to top right, ${theme.accent}, transparent)` }} />
-                        <img
-                          src={RecruitOSLogo}
-                          alt="RECRUIT-OS Logo"
-                          className="size-12 relative z-10 object-contain"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <CardTitle className="text-3xl font-extrabold tracking-tight mb-2" style={{ color: theme.textPrimary }}>
-                        Welcome back
-                      </CardTitle>
-                      <CardDescription className="text-sm px-6 font-medium" style={{ color: theme.textMuted }}>
-                        Sign in with your Google Workspace account to access RECRUIT-OS.
-                      </CardDescription>
-                    </div>
-                  </CardHeader>
+              {/* Flipping Board Display */}
+              <div className="space-y-7">
 
-                  <CardContent className="space-y-6 pb-12 px-8">
-                    {loading ? (
-                      <div className="flex flex-col items-center justify-center py-6 animate-in fade-in zoom-in duration-300">
-                        <div className="relative size-14 mb-5">
-                          <div className="absolute inset-0 rounded-full border-t-2 border-r-2 animate-spin" style={{ borderColor: theme.accent, animationDuration: '1s' }}></div>
-                          <div className="absolute inset-2 rounded-full border-b-2 border-l-2 animate-spin" style={{ borderColor: theme.chart2, animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <Zap className="size-4 animate-pulse" style={{ color: theme.textPrimary }} />
-                          </div>
-                        </div>
-                        <span className="text-sm font-semibold tracking-wide animate-pulse" style={{ color: theme.textPrimary }}>Authenticating...</span>
-                        <span className="text-xs mt-1 text-center" style={{ color: theme.textMuted }}>Securely connecting to your workspace</span>
-                      </div>
-                    ) : googleClientId ? (
-                      <div className="flex flex-col items-center justify-center gap-5 animate-in fade-in duration-500">
-                        <GoogleOAuthProvider clientId={googleClientId}>
-                          <div className="w-full max-w-[300px] hover:scale-[1.02] transition-transform duration-300 shadow-xl rounded-full relative overflow-hidden">
-                            <CustomGoogleLoginButton 
-                                onAuthCode={(code) => handleGoogleLogin(code)} 
-                                theme={theme}
-                            />
-                          </div>
-                        </GoogleOAuthProvider>
-                        <div className="flex items-center gap-2 mt-4 text-xs font-medium px-4 py-2 rounded-full" style={{ backgroundColor: theme.surfaceMuted, color: theme.textMuted, border: `1px solid ${theme.border}` }}>
-                          <ShieldCheck className="size-3.5" style={{ color: theme.success }} />
-                          <span>Secure, single sign-on access</span>
-                        </div>
-                        <button
-                          onClick={() => { setEmail(''); setPassword(''); setShowPassword(false); setShowDemoModal(true); }}
-                          className="text-xs font-medium cursor-pointer transition-colors duration-200 hover:underline"
-                          style={{ color: theme.textMuted }}
+
+                <div className="w-full transform scale-95 hover:scale-100 transition-transform duration-500 ease-out">
+                  {/* <TextFlippingBoard
+                  text={FEATURE_TEXTS[textIndex]}
+                  duration={FLIP_DURATION_S}
+                /> */}
+                </div>
+
+                <div className="space-y-3 max-w-md pl-1">
+                  <p className="text-sm font-medium leading-relaxed" style={{ color: theme.textSecondary }}>
+                    Transforming how teams source, screen, and hire top talent.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {FEATURE_TEXTS.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setTextIndex(i)}
+                        className="h-1.5 rounded-full transition-all duration-300"
+                        style={{
+                          width: i === textIndex ? '24px' : '6px',
+                          backgroundColor: i === textIndex ? theme.accent : theme.textMuted,
+                          opacity: i === textIndex ? 1 : 0.4,
+                        }}
+                        aria-label={`Go to slide ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Feature Badges Footer */}
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+                  <div
+                    className="size-7 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: theme.accentSoft }}
+                  >
+                    <Bell className="size-3.5" style={{ color: theme.accent }} />
+                  </div>
+                  <span>Real-Time Notifications</span>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+                  <div
+                    className="size-7 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: theme.accentSoft }}
+                  >
+                    <Sparkles className="size-3.5" style={{ color: theme.accent }}
+                    />
+                  </div>
+                  <span>AI-Powered Resume Parsing</span>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+                  <div
+                    className="size-7 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: theme.accentSoft }}
+                  >
+                    <Zap className="size-3.5" style={{ color: theme.accent }} />
+                  </div>
+                  <span>Automated Recruitment Workflows</span>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+                  <div
+                    className="size-7 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: theme.accentSoft }}
+                  >
+                    <Users className="size-3.5" style={{ color: theme.accent }} />
+                  </div>
+                  <span>Smart Candidate Trackers</span>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+                  <div
+                    className="size-7 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: theme.accentSoft }}
+                  >
+                    <CalendarDays className="size-3.5" style={{ color: theme.accent }} />
+                  </div>
+                  <span>Interview Management</span>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+                  <div
+                    className="size-7 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: theme.accentSoft }}
+                  >
+                    <BarChart3 className="size-3.5" style={{ color: theme.accent }} />
+                  </div>
+                  <span>Live Recruitment Analytics</span>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+                  <div
+                    className="size-7 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: theme.accentSoft }}
+                  >
+                    <ShieldCheck className="size-3.5" style={{ color: theme.accent }} />
+                  </div>
+                  <span>Enterprise-Grade Security</span>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs" style={{ color: theme.textMuted }}>
+                  <div
+                    className="size-7 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: theme.accentSoft }}
+                  >
+                    <Workflow className="size-3.5" style={{ color: theme.accent }} />
+                  </div>
+                  <span>End-to-End Hiring Pipeline</span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* ── Right: Login Card, floating on the same canvas ────────────────────── */}
+            <div className="w-full lg:w-auto lg:flex-1 flex items-center justify-center">
+              <div className="w-full max-w-md space-y-6">
+                {/* Mobile Logo Header */}
+                <div className="flex lg:hidden items-center justify-center gap-2 mb-6">
+                  <img
+                    src={RecruitOSLogo}
+                    alt="RECRUIT-OS Logo"
+                    className="size-9 rounded-lg object-contain"
+                  />
+                  <span className="font-bold text-xl tracking-wider" style={{ color: theme.textPrimary }}>
+                    RECRUIT-OS
+                  </span>
+                </div>
+
+                <div className="relative group">
+                  {/* Subtle animated gradient glow behind the card */}
+                  <div
+                    className="absolute -inset-0.5 bg-gradient-to-r blur opacity-30 group-hover:opacity-50 transition duration-1000 rounded-2xl"
+                    style={{ backgroundImage: `linear-gradient(to right, ${theme.accent}, ${theme.chart2}, ${theme.accent})` }}
+                  />
+                  <Card
+                    className="relative backdrop-blur-2xl shadow-2xl transition-all duration-300 rounded-2xl"
+                    style={{
+                      backgroundColor: hexToRgba(theme.surface, 0.85),
+                      borderColor: hexToRgba(theme.border, 0.5),
+                      borderWidth: '1px',
+                      boxShadow: `0 30px 60px -15px ${hexToRgba(theme.textPrimary, 0.15)}`,
+                    }}
+                  >
+                    <CardHeader className="space-y-4 text-center pb-8 pt-8">
+                      <div className="flex justify-center mb-2">
+                        <div
+                          className="size-16 rounded-2xl flex items-center justify-center shadow-lg relative overflow-hidden"
+                          style={{ backgroundColor: theme.surfaceMuted, border: `1px solid ${hexToRgba(theme.border, 0.5)}` }}
                         >
-                          Try with demo credentials →
-                        </button>
+                          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `linear-gradient(to top right, ${theme.accent}, transparent)` }} />
+                          <img
+                            src={RecruitOSLogo}
+                            alt="RECRUIT-OS Logo"
+                            className="size-12 relative z-10 object-contain"
+                          />
+                        </div>
                       </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-6">
-                        <Loader2 className="size-6 animate-spin mb-3" style={{ color: theme.textMuted }} />
-                        <span className="text-xs font-medium" style={{ color: theme.textMuted }}>Initializing secure connection...</span>
+                      <div>
+                        <CardTitle className="text-3xl font-extrabold tracking-tight mb-2" style={{ color: theme.textPrimary }}>
+                          Welcome back
+                        </CardTitle>
+                        <CardDescription className="text-sm px-6 font-medium" style={{ color: theme.textMuted }}>
+                          Sign in with your Google Workspace account to access RECRUIT-OS.
+                        </CardDescription>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    </CardHeader>
+
+                    <CardContent className="space-y-6 pb-12 px-8">
+                      {loading ? (
+                        <div className="flex flex-col items-center justify-center py-6 animate-in fade-in zoom-in duration-300">
+                          <div className="relative size-14 mb-5">
+                            <div className="absolute inset-0 rounded-full border-t-2 border-r-2 animate-spin" style={{ borderColor: theme.accent, animationDuration: '1s' }}></div>
+                            <div className="absolute inset-2 rounded-full border-b-2 border-l-2 animate-spin" style={{ borderColor: theme.chart2, animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Zap className="size-4 animate-pulse" style={{ color: theme.textPrimary }} />
+                            </div>
+                          </div>
+                          <span className="text-sm font-semibold tracking-wide animate-pulse" style={{ color: theme.textPrimary }}>Authenticating...</span>
+                          <span className="text-xs mt-1 text-center" style={{ color: theme.textMuted }}>Securely connecting to your workspace</span>
+                        </div>
+                      ) : googleClientId ? (
+                        <div className="flex flex-col items-center justify-center gap-5 animate-in fade-in duration-500">
+                          <GoogleOAuthProvider clientId={googleClientId}>
+                            <div className="w-full hover:scale-[1.02] transition-transform duration-300 shadow-xl rounded-full relative overflow-hidden">
+                              <CustomGoogleLoginButton
+                                onAuthCode={(code) => handleGoogleLogin(code)}
+                                theme={theme}
+                              />
+                            </div>
+                          </GoogleOAuthProvider>
+
+                          {msalInstance && (
+                            <MsalProvider instance={msalInstance}>
+                              <div className="w-full hover:scale-[1.02] transition-transform duration-300 shadow-xl rounded-full relative overflow-hidden">
+                                <CustomMicrosoftLoginButton
+                                  onToken={(payload) => handleMicrosoftLogin(payload)}
+                                  theme={theme}
+                                />
+                              </div>
+                            </MsalProvider>
+                          )}
+                          <div className="flex items-center gap-2 mt-4 text-xs font-medium px-4 py-2 rounded-full" style={{ backgroundColor: theme.surfaceMuted, color: theme.textMuted, border: `1px solid ${theme.border}` }}>
+                            <ShieldCheck className="size-3.5" style={{ color: theme.success }} />
+                            <span>Secure, single sign-on access</span>
+                          </div>
+                          <button
+                            onClick={() => { setEmail(''); setPassword(''); setShowPassword(false); setShowDemoModal(true); }}
+                            className="text-xs font-medium cursor-pointer transition-colors duration-200 hover:underline"
+                            style={{ color: theme.textMuted }}
+                          >
+                            Try with demo credentials →
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-6">
+                          <Loader2 className="size-6 animate-spin mb-3" style={{ color: theme.textMuted }} />
+                          <span className="text-xs font-medium" style={{ color: theme.textMuted }}>Initializing secure connection...</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
       {/* ── Demo Login Modal ──────────────────────────────────────────────────── */}
       {showDemoModal && (
