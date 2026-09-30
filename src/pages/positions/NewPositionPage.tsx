@@ -202,6 +202,15 @@ const NewPositionPage = () => {
     });
   };
 
+  const recruiterIds = users.filter((u: any) => u.role === "recruiter").map((u: any) => u.id);
+  const managerIds = users.filter((u: any) => u.role === "manager").map((u: any) => u.id);
+  const adminIds = users.filter((u: any) => u.role === "admin").map((u: any) => u.id);
+
+  const allRecruitersSelected = recruiterIds.length > 0 && recruiterIds.every((id: string) => formData.assigned_recruiter_ids?.includes(id));
+  const allManagersSelected = managerIds.length > 0 && managerIds.every((id: string) => formData.assigned_recruiter_ids?.includes(id));
+  const allAdminsSelected = adminIds.length > 0 && adminIds.every((id: string) => formData.assigned_recruiter_ids?.includes(id));
+  const allUsersSelected = users.length > 0 && users.every((u: any) => formData.assigned_recruiter_ids?.includes(u.id));
+
   return (
     <div className="space-y-6 w-full pb-10 px-4 md:px-8 pt-4">
       <div>
@@ -606,12 +615,103 @@ const NewPositionPage = () => {
           </div>
 
           <div className="space-y-3 w-xl">
-            <label
-              className="text-sm font-medium"
-              style={{ color: theme.textSecondary }}
-            >
-              Assign Users
-            </label>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <label
+                className="text-sm font-medium"
+                style={{ color: theme.textSecondary }}
+              >
+                Assign Users
+              </label>
+              
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-medium mr-0.5" style={{ color: theme.textMuted }}>Select All:</span>
+                
+                {users.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (allUsersSelected) {
+                        setFormData(prev => ({ ...prev, assigned_recruiter_ids: [] }));
+                      } else {
+                        setFormData(prev => ({ ...prev, assigned_recruiter_ids: users.map((u: any) => u.id) }));
+                      }
+                    }}
+                    className="text-[10px] px-2 py-0.5 rounded-md border transition-colors focus:outline-none focus:ring-1"
+                    style={{ 
+                      borderColor: allUsersSelected ? theme.primary : theme.border,
+                      color: allUsersSelected ? theme.primary : theme.textSecondary,
+                      background: allUsersSelected ? `${theme.primary}15` : theme.background
+                    }}
+                  >
+                    All
+                  </button>
+                )}
+
+                {recruiterIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (allRecruitersSelected) {
+                        setFormData(prev => ({ ...prev, assigned_recruiter_ids: (prev.assigned_recruiter_ids || []).filter(id => !recruiterIds.includes(id)) }));
+                      } else {
+                        setFormData(prev => ({ ...prev, assigned_recruiter_ids: Array.from(new Set([...(prev.assigned_recruiter_ids || []), ...recruiterIds])) }));
+                      }
+                    }}
+                    className="text-[10px] px-2 py-0.5 rounded-md border transition-colors focus:outline-none focus:ring-1"
+                    style={{ 
+                      borderColor: allRecruitersSelected ? theme.primary : theme.border,
+                      color: allRecruitersSelected ? theme.primary : theme.textSecondary,
+                      background: allRecruitersSelected ? `${theme.primary}15` : theme.background
+                    }}
+                  >
+                    Recruiters
+                  </button>
+                )}
+
+                {managerIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (allManagersSelected) {
+                        setFormData(prev => ({ ...prev, assigned_recruiter_ids: (prev.assigned_recruiter_ids || []).filter(id => !managerIds.includes(id)) }));
+                      } else {
+                        setFormData(prev => ({ ...prev, assigned_recruiter_ids: Array.from(new Set([...(prev.assigned_recruiter_ids || []), ...managerIds])) }));
+                      }
+                    }}
+                    className="text-[10px] px-2 py-0.5 rounded-md border transition-colors focus:outline-none focus:ring-1"
+                    style={{ 
+                      borderColor: allManagersSelected ? theme.primary : theme.border,
+                      color: allManagersSelected ? theme.primary : theme.textSecondary,
+                      background: allManagersSelected ? `${theme.primary}15` : theme.background
+                    }}
+                  >
+                    Managers
+                  </button>
+                )}
+
+                {adminIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (allAdminsSelected) {
+                        setFormData(prev => ({ ...prev, assigned_recruiter_ids: (prev.assigned_recruiter_ids || []).filter(id => !adminIds.includes(id)) }));
+                      } else {
+                        setFormData(prev => ({ ...prev, assigned_recruiter_ids: Array.from(new Set([...(prev.assigned_recruiter_ids || []), ...adminIds])) }));
+                      }
+                    }}
+                    className="text-[10px] px-2 py-0.5 rounded-md border transition-colors focus:outline-none focus:ring-1"
+                    style={{ 
+                      borderColor: allAdminsSelected ? theme.primary : theme.border,
+                      color: allAdminsSelected ? theme.primary : theme.textSecondary,
+                      background: allAdminsSelected ? `${theme.primary}15` : theme.background
+                    }}
+                  >
+                    Admins
+                  </button>
+                )}
+              </div>
+            </div>
+            
             <SearchableDropdown
               options={users.map((u: any) => ({
                 value: u.id,
