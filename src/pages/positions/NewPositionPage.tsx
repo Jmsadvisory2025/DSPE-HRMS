@@ -638,9 +638,9 @@ const NewPositionPage = () => {
                     }}
                     className="text-[10px] px-2 py-0.5 rounded-md border transition-colors focus:outline-none focus:ring-1"
                     style={{ 
-                      borderColor: allUsersSelected ? theme.primary : theme.border,
-                      color: allUsersSelected ? theme.primary : theme.textSecondary,
-                      background: allUsersSelected ? `${theme.primary}15` : theme.background
+                      borderColor: allUsersSelected ? theme.accent : theme.border,
+                      color: allUsersSelected ? theme.accent : theme.textSecondary,
+                      background: allUsersSelected ? `${theme.accent}15` : theme.background
                     }}
                   >
                     All
@@ -659,9 +659,9 @@ const NewPositionPage = () => {
                     }}
                     className="text-[10px] px-2 py-0.5 rounded-md border transition-colors focus:outline-none focus:ring-1"
                     style={{ 
-                      borderColor: allRecruitersSelected ? theme.primary : theme.border,
-                      color: allRecruitersSelected ? theme.primary : theme.textSecondary,
-                      background: allRecruitersSelected ? `${theme.primary}15` : theme.background
+                      borderColor: allRecruitersSelected ? theme.accent : theme.border,
+                      color: allRecruitersSelected ? theme.accent : theme.textSecondary,
+                      background: allRecruitersSelected ? `${theme.accent}15` : theme.background
                     }}
                   >
                     Recruiters
@@ -680,9 +680,9 @@ const NewPositionPage = () => {
                     }}
                     className="text-[10px] px-2 py-0.5 rounded-md border transition-colors focus:outline-none focus:ring-1"
                     style={{ 
-                      borderColor: allManagersSelected ? theme.primary : theme.border,
-                      color: allManagersSelected ? theme.primary : theme.textSecondary,
-                      background: allManagersSelected ? `${theme.primary}15` : theme.background
+                      borderColor: allManagersSelected ? theme.accent : theme.border,
+                      color: allManagersSelected ? theme.accent : theme.textSecondary,
+                      background: allManagersSelected ? `${theme.accent}15` : theme.background
                     }}
                   >
                     Managers
@@ -701,9 +701,9 @@ const NewPositionPage = () => {
                     }}
                     className="text-[10px] px-2 py-0.5 rounded-md border transition-colors focus:outline-none focus:ring-1"
                     style={{ 
-                      borderColor: allAdminsSelected ? theme.primary : theme.border,
-                      color: allAdminsSelected ? theme.primary : theme.textSecondary,
-                      background: allAdminsSelected ? `${theme.primary}15` : theme.background
+                      borderColor: allAdminsSelected ? theme.accent : theme.border,
+                      color: allAdminsSelected ? theme.accent : theme.textSecondary,
+                      background: allAdminsSelected ? `${theme.accent}15` : theme.background
                     }}
                   >
                     Admins
