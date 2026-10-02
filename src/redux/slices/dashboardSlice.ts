@@ -9,6 +9,7 @@ export interface ActiveJob {
 export interface UpcomingInterview {
   candidate_name: string;
   job_title: string;
+  job_id?: string;
   date: string;
   time: string;
   round: string;
@@ -20,6 +21,7 @@ export interface ActivityItem {
   title: string;
   message: string;
   type: string;
+  link?: string;
   created_at: string;
 }
 

@@ -33,6 +33,7 @@ import {
   Bar,
   Cell,
 } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 
 /* ── Animation variants ──────────────────────────────────────── */
 const containerVariants: any = {
@@ -52,7 +53,8 @@ const HIRE_COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#818cf8', '#3b
 const DashboardPage = () => {
   const dispatch = useAppDispatch();
   const { data, loading } = useAppSelector((state) => state.dashboard);
-
+  const navigate = useNavigate();
+  
   useEffect(() => {
     dispatch({
       type: dashboardActions.FETCH_DASHBOARD,
@@ -86,10 +88,10 @@ const DashboardPage = () => {
   const totalActiveJobs = (topStats.active_jobs_by_status || []).reduce((sum, j) => sum + j.count, 0);
 
   const statCards = [
-    { title: 'Total Candidates', value: topStats.total_candidates?.toLocaleString('en-IN') || '0', icon: Users, color: '#3b82f6' },
-    { title: 'Active Positions', value: totalActiveJobs.toLocaleString('en-IN'), icon: Briefcase, color: '#8b5cf6' },
-    { title: 'Upcoming Interviews', value: topStats.interviews_upcoming_count.toString(), icon: Video, color: '#f59e0b' },
-    { title: 'Active Clients', value: topStats.active_clients?.toLocaleString('en-IN') || '0', icon: Building2, color: '#10b981' },
+    { title: 'Total Candidates', value: topStats.total_candidates?.toLocaleString('en-IN') || '0', icon: Users, color: '#3b82f6', path: '/candidates' },
+    { title: 'Active Positions', value: totalActiveJobs.toLocaleString('en-IN'), icon: Briefcase, color: '#8b5cf6', path: '/positions' },
+    { title: 'Upcoming Interviews', value: topStats.interviews_upcoming_count.toString(), icon: Video, color: '#f59e0b', path: '#upcoming-interviews' },
+    { title: 'Active Clients', value: topStats.active_clients?.toLocaleString('en-IN') || '0', icon: Building2, color: '#10b981', path: '/clients' },
   ];
 
   const funnelChartData = (data.funnel_trend || []).map((d) => ({
@@ -149,6 +151,8 @@ const DashboardPage = () => {
     APPROVAL: '#10b981',
     REJECTION: '#ef4444',
     OFFER: '#8b5cf6',
+    info: '#38bdf8',
+    INFO: '#38bdf8',
   };
 
   return (
@@ -190,8 +194,15 @@ const DashboardPage = () => {
           <motion.div
             key={i}
             variants={itemVariants}
-            className="relative overflow-hidden rounded-2xl border p-7 shadow-sm group hover:shadow-lg transition-all duration-300 hover:-translate-y-1.5 cursor-default"
+            className="relative overflow-hidden rounded-2xl border p-7 shadow-sm group hover:shadow-lg transition-all duration-300 hover:-translate-y-1.5 cursor-pointer"
             style={{ background: theme.surface, borderColor: theme.border }}
+            onClick={() => {
+              if (stat.path.startsWith('#')) {
+                document.getElementById(stat.path.substring(1))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              } else if (stat.path) {
+                navigate(stat.path);
+              }
+            }}
           >
             {/* Background Glow */}
             <div
@@ -224,8 +235,9 @@ const DashboardPage = () => {
         {/* Jobs by Status */}
         <motion.div
           variants={itemVariants}
-          className="rounded-3xl border shadow-sm p-7"
+          className="rounded-3xl border shadow-sm p-7 cursor-pointer hover:shadow-md transition-shadow"
           style={{ background: theme.surface, borderColor: theme.border }}
+          onClick={() => navigate('/positions')}
         >
           <div className="mb-6">
             <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Active Jobs</h3>
@@ -264,8 +276,9 @@ const DashboardPage = () => {
         {funnelChartData.length > 0 && (
           <motion.div
             variants={itemVariants}
-            className="lg:col-span-2 rounded-3xl border shadow-sm p-7 flex flex-col"
+            className="lg:col-span-2 rounded-3xl border shadow-sm p-7 flex flex-col cursor-pointer hover:shadow-md transition-shadow"
             style={{ background: theme.surface, borderColor: theme.border }}
+            onClick={() => navigate('/reports')}
           >
             <div className="flex justify-between items-center mb-8">
               <div>
@@ -308,8 +321,9 @@ const DashboardPage = () => {
         {/* Pipeline Overview Chart */}
         <motion.div
           variants={itemVariants}
-          className="lg:col-span-2 rounded-3xl border shadow-sm p-7 flex flex-col"
+          className="lg:col-span-2 rounded-3xl border shadow-sm p-7 flex flex-col cursor-pointer hover:shadow-md transition-shadow"
           style={{ background: theme.surface, borderColor: theme.border }}
+          onClick={() => navigate('')}
         >
           <div className="flex justify-between items-center mb-8">
             <div>
@@ -364,7 +378,12 @@ const DashboardPage = () => {
           ) : (
             <div className="space-y-4 overflow-y-auto pr-2 max-h-[300px]">
               {topJobs.slice(0, 5).map((job, idx) => (
-                <div key={job.job_id} className="p-4 rounded-xl border flex items-center justify-between group hover:shadow-sm transition-all" style={{ background: theme.surfaceHover, borderColor: theme.border }}>
+                <div 
+                  key={job.job_id} 
+                  className="p-4 rounded-xl border flex items-center justify-between group hover:shadow-md transition-all cursor-pointer" 
+                  style={{ background: theme.surfaceHover, borderColor: theme.border }}
+                  onClick={() => navigate(`/positions/${job.job_id}`)}
+                >
                   <div className="min-w-0 flex-1 mr-4">
                     <p className="text-sm font-bold truncate" style={{ color: theme.textPrimary }}>{job.title}</p>
                     <div className="flex items-center gap-2 mt-1.5">
@@ -388,8 +407,9 @@ const DashboardPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Upcoming Interviews */}
         <motion.div
+          id="upcoming-interviews"
           variants={itemVariants}
-          className="lg:col-span-2 rounded-3xl border shadow-sm p-7"
+          className="lg:col-span-2 rounded-3xl border shadow-sm p-7 hover:shadow-md transition-shadow"
           style={{ background: theme.surface, borderColor: theme.border }}
         >
           <div className="flex justify-between items-center mb-6">
@@ -420,7 +440,11 @@ const DashboardPage = () => {
                 </thead>
                 <tbody className="divide-y" style={{ borderColor: theme.border }}>
                   {(data.upcoming_interviews || []).map((interview, idx) => (
-                    <tr key={idx} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
+                    <tr 
+                      key={idx} 
+                      className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors group cursor-pointer"
+                      onClick={() => navigate(`/positions/${interview.job_id}/pipeline`)}
+                    >
                       <td className="py-4 px-2">
                         <div className="flex items-center gap-3">
                           <div
@@ -473,8 +497,9 @@ const DashboardPage = () => {
         {/* Hires by Client */}
         <motion.div
           variants={itemVariants}
-          className="rounded-3xl border shadow-sm p-7 flex flex-col"
+          className="rounded-3xl border shadow-sm p-7 flex flex-col cursor-pointer hover:shadow-md transition-shadow"
           style={{ background: theme.surface, borderColor: theme.border }}
+          onClick={() => navigate('/clients')}
         >
           <div className="mb-4">
             <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Hires by Client</h3>
@@ -533,35 +558,45 @@ const DashboardPage = () => {
         {/* Activity Feed */}
         <motion.div
           variants={itemVariants}
-          className="lg:col-span-2 rounded-3xl border shadow-sm p-7"
+          className="lg:col-span-2 rounded-3xl border shadow-sm p-7 cursor-pointer hover:shadow-md transition-shadow"
           style={{ background: theme.surface, borderColor: theme.border }}
+          onClick={() => navigate('/notifications')}
         >
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg" style={{ background: theme.accent + '20' }}>
                 <Activity className="size-5" style={{ color: theme.accent }} />
               </div>
-              <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Recent Activity</h3>
+              <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Unread Activity</h3>
             </div>
           </div>
 
           {(data.unread_activity || []).length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <Activity className="size-10" style={{ color: theme.textMuted + '60' }} />
-              <p className="text-sm font-medium" style={{ color: theme.textMuted }}>No recent activity</p>
+              <p className="text-sm font-medium" style={{ color: theme.textMuted }}>No unread activity</p>
             </div>
           ) : (
             <div className="space-y-6 pl-2">
               {(data.unread_activity || []).slice(0, 8).map((item, idx, arr) => {
                 const dotColor = activityColors[item.type] || theme.accent;
                 return (
-                  <div key={idx} className="flex gap-5 group">
+                  <div 
+                    key={idx} 
+                    className={`flex gap-5 group ${item.link ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+                    onClick={(e) => {
+                      if (item.link) {
+                        e.stopPropagation();
+                        navigate(item.link);
+                      }
+                    }}
+                  >
                     <div className="relative flex flex-col items-center">
                       <div
                         className="size-10 rounded-full flex items-center justify-center font-bold text-xs z-10 shadow-sm border-2"
                         style={{ background: dotColor + '18', color: dotColor, borderColor: dotColor + '40' }}
                       >
-                        {item.type?.charAt(0) || 'A'}
+                        {item.type?.charAt(0)?.toUpperCase() || 'A'}
                       </div>
                       {idx !== arr.length - 1 && (
                         <div className="absolute top-10 bottom-[-24px] w-[2px]" style={{ background: theme.border }} />
@@ -571,7 +606,7 @@ const DashboardPage = () => {
                       <p className="text-[15px] font-semibold leading-relaxed truncate" style={{ color: theme.textPrimary }}>
                         {item.title}
                       </p>
-                      <p className="text-sm mt-0.5 truncate" style={{ color: theme.textSecondary }}>
+                      <p className="text-sm mt-0.5 line-clamp-2" style={{ color: theme.textSecondary }}>
                         {item.message}
                       </p>
                       <p className="text-xs font-semibold mt-1.5 uppercase tracking-wider" style={{ color: theme.textMuted }}>
@@ -588,8 +623,9 @@ const DashboardPage = () => {
         {/* Efficiency + Quick Stats */}
         <motion.div
           variants={itemVariants}
-          className="rounded-3xl border shadow-sm p-7 flex flex-col"
+          className="rounded-3xl border shadow-sm p-7 flex flex-col cursor-pointer hover:shadow-md transition-shadow"
           style={{ background: theme.surface, borderColor: theme.border }}
+          onClick={() => navigate('/reports')}
         >
           <div className="mb-6">
             <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Efficiency Metrics</h3>
