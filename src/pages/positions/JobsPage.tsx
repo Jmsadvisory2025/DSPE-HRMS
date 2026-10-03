@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Loader2, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Plus, Loader2, MoreHorizontal, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuGroup } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -141,34 +141,40 @@ const AssignedRecruitersCell = ({ recruiters }: { recruiters: any[] }) => {
 
 const JobsPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isRecruiter, isAdmin } = useAuth();
   const dispatch = useAppDispatch();
   const { jobs, loading } = useAppSelector((state) => state.positions);
 
   // Filter input states (what user types)
-  const [searchCode, setSearchCode] = useState('');
-  const [searchDesignation, setSearchDesignation] = useState('');
-  const [searchLocation, setSearchLocation] = useState('');
-  const [searchCreatedBy, setSearchCreatedBy] = useState('');
-  const [searchAssignedTo, setSearchAssignedTo] = useState('');
+  const [searchCode, setSearchCode] = useState(searchParams.get('code') || '');
+  const [searchDesignation, setSearchDesignation] = useState(searchParams.get('title') || '');
+  const [searchLocation, setSearchLocation] = useState(searchParams.get('location') || '');
+  const [searchCreatedBy, setSearchCreatedBy] = useState(searchParams.get('created_by_name') || '');
+  const [searchAssignedTo, setSearchAssignedTo] = useState(searchParams.get('assigned_to_name') || '');
 
   // Applied filter states (sent to API on Enter)
-  const [appliedCode, setAppliedCode] = useState('');
-  const [appliedDesignation, setAppliedDesignation] = useState('');
-  const [appliedLocation, setAppliedLocation] = useState('');
-  const [appliedCreatedBy, setAppliedCreatedBy] = useState('');
-  const [appliedAssignedTo, setAppliedAssignedTo] = useState('');
+  const [appliedCode, setAppliedCode] = useState(searchParams.get('code') || '');
+  const [appliedDesignation, setAppliedDesignation] = useState(searchParams.get('title') || '');
+  const [appliedLocation, setAppliedLocation] = useState(searchParams.get('location') || '');
+  const [appliedCreatedBy, setAppliedCreatedBy] = useState(searchParams.get('created_by_name') || '');
+  const [appliedAssignedTo, setAppliedAssignedTo] = useState(searchParams.get('assigned_to_name') || '');
 
   // Dropdown states (apply immediately)
-  const [selectedClient, setSelectedClient] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('open'); // default is open
-  const [selectedPriority, setSelectedPriority] = useState('');
+  const [selectedClient, setSelectedClient] = useState(searchParams.get('client_name') || '');
+  const [selectedStatus, setSelectedStatus] = useState(searchParams.get('status') ?? 'open');
+  const [selectedPriority, setSelectedPriority] = useState(searchParams.get('priority') || '');
   const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const [clientsData, setClientsData] = useState<{client: {client_id: string, name: string}}[]>([]);
   const [clientsLoading, setClientsLoading] = useState(false);
+
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Focus tracking
   const activeFieldRef = useRef<string | null>(null);
@@ -197,6 +203,7 @@ const JobsPage = () => {
   }, [loading]);
 
   const applySearch = () => {
+    setPage(1);
     setAppliedCode(searchCode);
     setAppliedDesignation(searchDesignation);
     setAppliedLocation(searchLocation);
@@ -214,6 +221,7 @@ const JobsPage = () => {
   // 5-second debounce fallback
   useEffect(() => {
     const timer = setTimeout(() => {
+      setPage(1);
       setAppliedCode(searchCode);
       setAppliedDesignation(searchDesignation);
       setAppliedLocation(searchLocation);
@@ -225,6 +233,7 @@ const JobsPage = () => {
 
   const buildEndpoint = () => {
     const params = new URLSearchParams();
+    params.append('page', page.toString());
     if (appliedCode) params.append('code', appliedCode);
     if (appliedDesignation) params.append('title', appliedDesignation);
     if (selectedClient) params.append('client_name', selectedClient);
@@ -319,10 +328,14 @@ const JobsPage = () => {
       endPoint: buildEndpoint(),
       auth: true,
       setLoading: (val: boolean) => dispatch(setLoading(val)),
-      getResponse: (data: JobResponse) => dispatch(setJobs(data.results || [])),
+      getResponse: (data: any) => {
+        dispatch(setJobs(data.results || []));
+        setTotalCount(data.count || 0);
+        setTotalPages(Math.ceil((data.count || 0) / 100)); // Assuming 100 per page
+      },
       getError: (err: any) => dispatch(setError(err.message)),
     });
-  }, [dispatch, appliedCode, appliedDesignation, appliedLocation, appliedCreatedBy, appliedAssignedTo, selectedClient, selectedStatus, selectedPriority]);
+  }, [dispatch, page, appliedCode, appliedDesignation, appliedLocation, appliedCreatedBy, appliedAssignedTo, selectedClient, selectedStatus, selectedPriority]);
 
   const clientOptions = [
     { value: '', label: 'All Clients' },
@@ -359,7 +372,7 @@ const JobsPage = () => {
             Jobs
           </h1>
           <p className="text-sm mt-1" style={{ color: theme.textMuted }}>
-            Open mandates, assignments, and hiring priorities across clients.
+            Open mandates, assignments, and hiring priorities across clients. ({totalCount} jobs)
           </p>
         </div>
 
@@ -695,6 +708,38 @@ const JobsPage = () => {
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination Controls */}
+      {!loading && totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between py-2 gap-4">
+          <p className="text-sm" style={{ color: theme.textSecondary }}>
+            Showing <span className="font-medium" style={{ color: theme.textPrimary }}>{(page - 1) * 100 + 1}</span> to <span className="font-medium" style={{ color: theme.textPrimary }}>{Math.min(page * 100, totalCount)}</span> of <span className="font-medium" style={{ color: theme.textPrimary }}>{totalCount}</span> results
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              style={{ borderColor: theme.border, color: theme.textPrimary }}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+            </Button>
+            <div className="text-sm font-medium px-2" style={{ color: theme.textSecondary }}>
+              Page {page} of {totalPages}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              style={{ borderColor: theme.border, color: theme.textPrimary }}
+            >
+              Next <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent>

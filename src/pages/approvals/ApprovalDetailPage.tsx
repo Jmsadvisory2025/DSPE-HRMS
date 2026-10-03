@@ -106,12 +106,12 @@ const ApprovalDetailPage = () => {
   const { isRecruiter } = useAuth();
 
   const [searchParams] = useSearchParams();
-  const initialTab = searchParams.get("tab") as "pending" | "accepted" | "rejected" | null;
+  const initialTab = searchParams.get("tab") as "all" | "pending" | "accepted" | "rejected" | null;
 
   const [data, setData] = useState<GroupedResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"pending" | "accepted" | "rejected">(
-    initialTab && ["pending", "accepted", "rejected"].includes(initialTab) ? initialTab : "pending"
+  const [activeTab, setActiveTab] = useState<"all" | "pending" | "accepted" | "rejected">(
+    initialTab && ["all", "pending", "accepted", "rejected"].includes(initialTab) ? initialTab : "all"
   );
   const [jobTitle, setJobTitle] = useState<string>("");
 
@@ -212,7 +212,7 @@ const ApprovalDetailPage = () => {
       dispatch({
         type: approvalActions.FETCH_GROUPED_APPROVALS,
         method: "GET",
-        endPoint: `/api/v1/candidates/applications/grouped-approval-queue/?job=${jobId}&manager_review_status=${activeTab}`,
+        endPoint: `/api/v1/candidates/applications/grouped-approval-queue/?job=${jobId}${activeTab !== "all" ? `&manager_review_status=${activeTab}` : ""}`,
         auth: true,
         setLoading: (val: boolean) => setLoading(val),
         getResponse: (res: GroupedResponse[]) => {
@@ -880,7 +880,7 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
 
       {/* Tabs */}
       <div className="flex border-b" style={{ borderColor: theme.border }}>
-        {["pending", "accepted", "rejected"].map((tab) => (
+        {["all", "pending", "accepted", "rejected"].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab as any)}
@@ -921,6 +921,7 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
       ) : (
       <>
         {/* Select All */}
+        {activeTab !== "all" && (
         <div
           className="flex items-center gap-3 px-4 py-2.5 rounded-lg border"
           style={{ background: theme.surfaceHover, borderColor: theme.border }}
@@ -958,6 +959,7 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
             </Badge>
           )}
         </div>
+        )}
 
       <div className="grid grid-cols-1 gap-6">
         {data.applications.map((app) => (
@@ -972,13 +974,15 @@ const handleBulkReview = (status: "accepted" | "rejected") => {
                   {/* Candidate Info */}
                   <div className="space-y-1">
                     <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        className="size-4 rounded border-gray-300 cursor-pointer shrink-0"
-                        checked={selectedApps.has(app.id)}
-                        onChange={() => handleToggleSelect(app.id)}
-                        style={{ accentColor: theme.accent }}
-                      />
+                      {activeTab !== "all" && (
+                        <input
+                          type="checkbox"
+                          className="size-4 rounded border-gray-300 cursor-pointer shrink-0"
+                          checked={selectedApps.has(app.id)}
+                          onChange={() => handleToggleSelect(app.id)}
+                          style={{ accentColor: theme.accent }}
+                        />
+                      )}
                       <h3
                         className="text-lg font-bold"
                         style={{ color: theme.textPrimary }}

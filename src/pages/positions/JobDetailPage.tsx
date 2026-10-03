@@ -217,15 +217,16 @@ const JobDetailPage = () => {
           </div>
         </div>
         <div
-          className="rounded-xl p-5"
+          className="rounded-xl p-5 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
           style={{
             background: theme.surface,
             border: `1px solid ${theme.border}`,
           }}
+          onClick={()=>navigate(`/approvals/${job.id}`)}
         >
           <div className="flex items-center justify-between mb-2">
             <span
-              className="text-xs font-bold tracking-wider"
+              className="text-xs font-bold tracking-wider group-hover:text-primary transition-colors"
               style={{ color: theme.textMuted }}
             >
               CANDIDATES

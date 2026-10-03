@@ -246,13 +246,21 @@ const DashboardPage = () => {
           <div className="space-y-3">
             {(topStats.active_jobs_by_status || []).map((job, idx) => {
               const statusColors: Record<string, string> = {
-                OPEN: '#10b981', 'ON-HOLD': '#f59e0b', CLOSED: '#ef4444',
-                open: '#10b981', 'on-hold': '#f59e0b', closed: '#ef4444',
+                OPEN: '#10b981', 'ON-HOLD': '#f59e0b', HOLD: '#f59e0b', CLOSED: '#ef4444', CLOSE: '#ef4444', ONGOING: '#3b82f6',
+                open: '#10b981', 'on-hold': '#f59e0b', hold: '#f59e0b', closed: '#ef4444', close: '#ef4444', ongoing: '#3b82f6',
               };
               const color = statusColors[job.status] || theme.accent;
               const pct = totalActiveJobs > 0 ? Math.round((job.count / totalActiveJobs) * 100) : 0;
               return (
-                <div key={idx} className="rounded-xl p-4 border transition-all hover:shadow-sm" style={{ background: theme.surfaceHover, borderColor: theme.border }}>
+                <div 
+                  key={idx} 
+                  className="rounded-xl p-4 border transition-all hover:shadow-md cursor-pointer group hover:-translate-y-0.5" 
+                  style={{ background: theme.surfaceHover, borderColor: theme.border }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/positions?status=${(job.status || '').toLowerCase()}`);
+                  }}
+                >
                   <div className="flex items-center justify-between mb-2.5">
                     <div className="flex items-center gap-2.5">
                       <div className="size-2.5 rounded-full" style={{ background: color }} />

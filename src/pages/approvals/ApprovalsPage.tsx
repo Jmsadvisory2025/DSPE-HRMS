@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -34,6 +34,11 @@ const ApprovalsPage = () => {
   const [clientsData, setClientsData] = useState<{client: {client_id: string, name: string}}[]>([]);
   const [clientsLoading, setClientsLoading] = useState(false);
   const [approvalStats, setApprovalStats] = useState<{ status: string; count: number }[]>([]);
+
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   const statusOptions = [
     { value: '', label: 'All' },
@@ -67,6 +72,7 @@ const ApprovalsPage = () => {
 
   // Apply search on Enter key
   const applySearch = () => {
+    setPage(1);
     setAppliedCode(searchCode);
     setAppliedDesignation(searchDesignation);
     setAppliedLocation(searchLocation);
@@ -82,6 +88,7 @@ const ApprovalsPage = () => {
   // 5-second debounce fallback if user forgets to press Enter
   useEffect(() => {
     const timer = setTimeout(() => {
+      setPage(1);
       setAppliedCode(searchCode);
       setAppliedDesignation(searchDesignation);
       setAppliedLocation(searchLocation);
@@ -107,7 +114,7 @@ const ApprovalsPage = () => {
 
   // Fetch jobs with all filters via API (triggered on Enter or client change)
   useEffect(() => {
-    let endpoint = '/api/v1/jobs/?';
+    let endpoint = `/api/v1/jobs/?page=${page}&`;
     const search = [appliedCode, appliedDesignation, appliedLocation].filter(Boolean).join(' ');
     if (search) endpoint += `search=${encodeURIComponent(search)}&`;
     if (selectedClient) endpoint += `client=${encodeURIComponent(selectedClient)}&`;
@@ -119,8 +126,10 @@ const ApprovalsPage = () => {
       endPoint: endpoint,
       auth: true,
       setLoading: (val: boolean) => dispatch(setLoading(val)),
-      getResponse: (data: JobResponse) => {
+      getResponse: (data: any) => {
         dispatch(setJobs(data.results || []));
+        setTotalCount(data.count || 0);
+        setTotalPages(Math.ceil((data.count || 0) / 100)); // Assuming 100 per page
         if (data.approval_stats) {
           setApprovalStats(data.approval_stats);
         } else {
@@ -129,7 +138,7 @@ const ApprovalsPage = () => {
       },
       getError: (err: any) => dispatch(setError(err.message)),
     });
-  }, [dispatch, appliedCode, appliedDesignation, appliedLocation, appliedStatus, selectedClient]);
+  }, [dispatch, page, appliedCode, appliedDesignation, appliedLocation, appliedStatus, selectedClient]);
 
   const clientOptions = [
     { value: '', label: 'All Clients' },
@@ -151,7 +160,7 @@ const ApprovalsPage = () => {
             Approvals
           </h1>
           <p className="text-sm mt-1" style={{ color: theme.textMuted }}>
-            Select a job to review pending applications.
+            Select a job to review pending applications. ({totalCount} jobs)
           </p>
         </div>
       </div>
@@ -346,6 +355,38 @@ const ApprovalsPage = () => {
             </TableBody>
           </Table>
         </div>
+
+      {/* Pagination Controls */}
+      {!loading && totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between py-2 gap-4">
+          <p className="text-sm" style={{ color: theme.textSecondary }}>
+            Showing <span className="font-medium" style={{ color: theme.textPrimary }}>{(page - 1) * 100 + 1}</span> to <span className="font-medium" style={{ color: theme.textPrimary }}>{Math.min(page * 100, totalCount)}</span> of <span className="font-medium" style={{ color: theme.textPrimary }}>{totalCount}</span> results
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              style={{ borderColor: theme.border, color: theme.textPrimary }}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+            </Button>
+            <div className="text-sm font-medium px-2" style={{ color: theme.textSecondary }}>
+              Page {page} of {totalPages}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              style={{ borderColor: theme.border, color: theme.textPrimary }}
+            >
+              Next <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
