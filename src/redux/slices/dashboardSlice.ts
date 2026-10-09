@@ -10,11 +10,21 @@ export interface UpcomingInterview {
   candidate_name: string;
   job_title: string;
   job_id?: string;
+  client?: {
+    id: string;
+    name: string;
+  };
+  client_name?: string;
   date: string;
   time: string;
   round: string;
   mode: string;
   interviewer_name: string;
+  worked_by?: {
+    id: string;
+    name: string;
+    role: string;
+  };
 }
 
 export interface ActivityItem {

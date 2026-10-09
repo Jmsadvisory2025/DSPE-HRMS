@@ -1,18 +1,26 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Loader2, ChevronLeft, ChevronRight, Mail, Phone, Briefcase, Building, MapPin, Calendar, IndianRupee, Clock, User, FileText, ExternalLink, GraduationCap, CheckCircle2, X, CalendarClock, Video, Eye, Pencil, Save, FileClock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { positionActions, clientActions } from '@/redux/actions';
+import { positionActions, clientActions, approvalActions } from '@/redux/actions';
 import { setJobs, setLoading, setError } from '@/redux/slices/positionSlice';
 import type { JobResponse } from '@/types/position.types';
 import { useAuth } from '@/context/AuthContext';
 import { theme } from '@/config/theme';
 import { getJobStatusStyle } from '@/lib/statusUtils';
 import { SearchableDropdown } from '@/components/ui/searchable-dropdown';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 const ApprovalsPage = () => {
   const navigate = useNavigate();
@@ -148,6 +156,12 @@ const ApprovalsPage = () => {
     }))
   ];
 
+  // Handle stat card click — navigate to the new page
+  const handleStatCardClick = useCallback((status: string) => {
+    const apiStatus = status === 'approved' ? 'approved' : status;
+    navigate(`/approvals/queue?status=${encodeURIComponent(apiStatus)}`);
+  }, [navigate]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -168,18 +182,37 @@ const ApprovalsPage = () => {
       {/* Approval Stats Summary */}
       {approvalStats.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {approvalStats.map((stat, i) => (
-            <div 
-              key={i} 
-              className="p-4 rounded-xl flex items-center justify-between"
-              style={{ background: theme.surface, border: `1px solid ${theme.border}` }}
-            >
-              <div>
-                <p className="text-sm font-medium capitalize" style={{ color: theme.textSecondary }}>{stat.status} Applications</p>
-                <h3 className="text-2xl font-bold mt-1" style={{ color: theme.textPrimary }}>{stat.count}</h3>
+          {approvalStats.map((stat, i) => {
+            const statusColor = stat.status === 'pending'
+              ? theme.warning
+              : stat.status === 'approved' || stat.status === 'accepted'
+                ? theme.success
+                : theme.destructive;
+            const statusBg = stat.status === 'pending'
+              ? theme.warningSoft
+              : stat.status === 'approved' || stat.status === 'accepted'
+                ? theme.successSoft
+                : theme.destructiveSoft;
+            return (
+              <div 
+                key={i} 
+                className="p-5 rounded-xl flex items-center justify-between cursor-pointer group transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                style={{ background: theme.surface, border: `1px solid ${theme.border}` }}
+                onClick={() => handleStatCardClick(stat.status)}
+              >
+                <div>
+                  <p className="text-sm font-medium capitalize" style={{ color: theme.textSecondary }}>{stat.status} Applications</p>
+                  <h3 className="text-2xl font-bold mt-1" style={{ color: theme.textPrimary }}>{stat.count}</h3>
+                </div>
+                <div
+                  className="size-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
+                  style={{ background: statusBg, color: statusColor }}
+                >
+                  <Briefcase className="size-5" />
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

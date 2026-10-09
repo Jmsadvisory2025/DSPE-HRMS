@@ -1,8 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { theme } from '@/config/theme';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { dashboardActions } from '@/redux/actions';
+import { dashboardActions, userActions } from '@/redux/actions';
+import { useAuth } from '@/context/AuthContext';
+import { setUsers } from '@/redux/slices/userSlice';
 import {
   setDashboardData,
   setLoading,
@@ -12,15 +14,30 @@ import {
 import {
   Users,
   Briefcase,
-  CalendarDays,
   TrendingUp,
   Activity,
   Clock,
   Video,
-  Zap,
   Building2,
   Loader2,
+  ChevronRight,
+  MapPin,
+  ArrowUpRight,
+  Target,
+  Timer,
+  CheckCircle2,
+  XCircle,
+  UserCheck,
+  CalendarClock,
+  BarChart3,
+  CalendarDays,
+  Download,
+  Filter,
+  Search,
+  ChevronDown,
+  X,
 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AreaChart,
   Area,
@@ -35,592 +52,414 @@ import {
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 
-/* ── Animation variants ──────────────────────────────────────── */
-const containerVariants: any = {
+/* ── Animation ───────────────────────────────────────────────── */
+const container: any = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
+  visible: { opacity: 1, transition: { staggerChildren: 0.05 } },
+};
+const item: any = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 150, damping: 18 } },
 };
 
-const itemVariants: any = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 90, damping: 14 } },
-};
-
-/* ── Hires chart color palette ───────────────────────────────── */
-const HIRE_COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#818cf8', '#3b82f6', '#60a5fa', '#38bdf8', '#22d3ee', '#10b981'];
+/* ── Palette (muted, professional) ───────────────────────────── */
+const ACCENT = '#3B82C4';       // theme accent
+const CHART_A = '#3B82C4';      // blue
+const CHART_B = '#6AADEB';      // light blue
+const PIE_COLORS = ['#3B82C4', '#6AADEB', '#4A9FD9', '#93C5FD', '#BFC6D2', '#D8DDE6', '#7C8497', '#A0AEC0'];
 
 /* ── Component ───────────────────────────────────────────────── */
 const DashboardPage = () => {
   const dispatch = useAppDispatch();
-  const { data, loading } = useAppSelector((state) => state.dashboard);
+  const { data, loading } = useAppSelector((s) => s.dashboard);
+  const { users } = useAppSelector((s) => s.users);
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const isAdmin = user?.role === 'ADMIN' || user?.role?.toUpperCase() === 'ADMIN';
+
+  const [filters, setFilters] = useState({
+    user_id: '',
+    from_date: '',
+    to_date: '',
+  });
   
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
+
   useEffect(() => {
+    const params = new URLSearchParams();
+    if (filters.user_id) params.append('user_id', filters.user_id);
+    if (filters.from_date) params.append('from_date', filters.from_date);
+    if (filters.to_date) params.append('to_date', filters.to_date);
+
     dispatch({
       type: dashboardActions.FETCH_DASHBOARD,
       method: 'GET',
-      endPoint: '/api/v1/dashboard/',
+      endPoint: `/api/v1/dashboard/?${params.toString()}`,
       auth: true,
-      setLoading: (val: boolean) => dispatch(setLoading(val)),
-      getResponse: (res: DashboardData) => dispatch(setDashboardData(res)),
-      getError: (err: any) => dispatch(setError(err?.message || 'Failed to load dashboard')),
+      setLoading: (v: boolean) => dispatch(setLoading(v)),
+      getResponse: (r: DashboardData) => dispatch(setDashboardData(r)),
+      getError: (e: any) => dispatch(setError(e?.message || 'Failed to load dashboard')),
     });
-  }, [dispatch]);
+  }, [dispatch, filters]);
 
-  /* ── Loading state ─────────────────────────────────────────── */
+  useEffect(() => {
+    if (isAdmin && users.length === 0) {
+      dispatch({
+        type: userActions.FETCH_USERS,
+        method: 'GET',
+        endPoint: '/api/v1/users/',
+        auth: true,
+        getResponse: (data: any) => dispatch(setUsers(data.results || [])),
+      });
+    }
+  }, [dispatch, isAdmin, users.length]);
+
+  const handleExport = () => {
+    const params = new URLSearchParams();
+    params.append('export', 'true');
+    if (filters.user_id) params.append('user_id', filters.user_id);
+    if (filters.from_date) params.append('from_date', filters.from_date);
+    if (filters.to_date) params.append('to_date', filters.to_date);
+
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    
+    let token = '';
+    const loginDataRaw = localStorage.getItem('RecruitOS_Login_Data');
+    if (loginDataRaw) {
+      try {
+        token = JSON.parse(loginDataRaw)?.accessToken || '';
+      } catch (e) {
+        console.error('Failed to parse login data', e);
+      }
+    }
+    
+    fetch(`${baseUrl}/api/v1/dashboard/?${params.toString()}`, {
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Export failed with status: ${res.status}`);
+        }
+        return res.blob();
+      })
+      .then((blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'dashboard_export.xlsx';
+        a.click();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch((err) => {
+        console.error('Export failed:', err);
+        alert('Failed to export. Check console for details.');
+      });
+  };
+
   if (loading || !data) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Loader2 className="size-10 animate-spin" style={{ color: theme.accent }} />
-        <p className="text-sm font-medium" style={{ color: theme.textMuted }}>Loading your dashboard…</p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <Loader2 className="size-8 animate-spin" style={{ color: ACCENT }} />
+        <p className="text-sm font-medium" style={{ color: theme.textMuted }}>Loading dashboard…</p>
       </div>
     );
   }
 
-  /* ── Derived data ──────────────────────────────────────────── */
-  const topStats = data.top_stats || {
-    total_candidates: 0,
-    active_jobs_by_status: [],
-    interviews_upcoming_count: 0,
-    active_clients: 0
-  };
+  /* ── Derived ───────────────────────────────────────────────── */
+  const ts = data.top_stats || { total_candidates: 0, active_jobs_by_status: [], interviews_upcoming_count: 0, active_clients: 0 };
+  const totalJobs = (ts.active_jobs_by_status || []).reduce((s, j) => s + j.count, 0);
 
-  const totalActiveJobs = (topStats.active_jobs_by_status || []).reduce((sum, j) => sum + j.count, 0);
-
-  const statCards = [
-    { title: 'Total Candidates', value: topStats.total_candidates?.toLocaleString('en-IN') || '0', icon: Users, color: '#3b82f6', path: '/candidates' },
-    { title: 'Active Positions', value: totalActiveJobs.toLocaleString('en-IN'), icon: Briefcase, color: '#8b5cf6', path: '/positions' },
-    { title: 'Upcoming Interviews', value: topStats.interviews_upcoming_count.toString(), icon: Video, color: '#f59e0b', path: '#upcoming-interviews' },
-    { title: 'Active Clients', value: topStats.active_clients?.toLocaleString('en-IN') || '0', icon: Building2, color: '#10b981', path: '/clients' },
+  const stats = [
+    { label: 'Total Candidates', value: ts.total_candidates?.toLocaleString('en-IN') || '0', icon: Users, path: '/candidates' },
+    { label: 'Active Positions', value: totalJobs.toLocaleString('en-IN'), icon: Briefcase, path: '/positions' },
+    { label: 'Upcoming Interviews', value: ts.interviews_upcoming_count.toString(), icon: CalendarClock, path: '#upcoming-interviews' },
+    { label: 'Active Clients', value: ts.active_clients?.toLocaleString('en-IN') || '0', icon: Building2, path: '/clients' },
   ];
 
-  const funnelChartData = (data.funnel_trend || []).map((d) => ({
-    name: d.month,
-    Sourced: d.sourced,
-    Interviewed: d.interviewed,
-  }));
-
-  const hiresChartData = (data.hires_by_client || [])
-    .sort((a, b) => b.hires_count - a.hires_count)
-    .slice(0, 10);
-
-  const pipelineData = (data.pipeline_overview || []).map(p => ({
-    name: (p.status || 'unknown').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-    count: p.count,
-  }));
-  // Filter out zero-count stages for cleaner chart, or keep all to show funnel width.
-  // We'll keep them to show the full pipeline stage, but maybe limit to those with some activity if it's too wide.
-  const activePipelineData = pipelineData.filter(p => p.count > 0);
-
-  const topJobs = (data.top_performing_jobs || []);
-
-  const formatTime = (time: string) => {
-    if (!time) return '—';
-    const [h, m] = time.split(':');
-    const hour = parseInt(h);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    return `${hour > 12 ? hour - 12 : hour || 12}:${m} ${ampm}`;
+  const funnelData = (data.funnel_trend || []).map((d) => ({ name: d.month, Sourced: d.sourced, Interviewed: d.interviewed }));
+  const hiresData = (data.hires_by_client || []).sort((a, b) => b.hires_count - a.hires_count).slice(0, 8);
+  const getStageName = (s: string) => {
+    const m: Record<string, string> = { 'hr-round': 'HR Round', 'client-round': 'Client Round', 'screening': 'Screening', 'technical': 'Technical', 'offer': 'Offer', 'hired': 'Hired', 'duplicate': 'Duplicate' };
+    return m[s?.toLowerCase()] || (s || '').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   };
+  const pipeData = (data.pipeline_overview || []).filter((p) => p.count > 0).map((p) => ({
+    name: getStageName(p.status),
+    key: p.status || '',
+    value: p.count,
+  }));
+  const pipeTotal = pipeData.reduce((s, d) => s + d.value, 0);
+  const topJobs = data.top_performing_jobs || [];
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    const today = new Date();
-    if (d.toDateString() === today.toDateString()) return 'Today';
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    if (d.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
-    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  /* ── Helpers ───────────────────────────────────────────────── */
+  const fmtTime = (t: string) => {
+    if (!t) return '—';
+    const [h, m] = t.split(':');
+    const hr = parseInt(h);
+    return `${hr > 12 ? hr - 12 : hr || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
   };
-
-  const timeAgo = (iso: string) => {
-    const diff = Date.now() - new Date(iso).getTime();
-    const mins = Math.floor(diff / 60000);
+  const fmtDate = (d: string) => {
+    if (!d) return '';
+    const dt = new Date(d), now = new Date();
+    if (dt.toDateString() === now.toDateString()) return 'Today';
+    const tmr = new Date(now); tmr.setDate(now.getDate() + 1);
+    if (dt.toDateString() === tmr.toDateString()) return 'Tomorrow';
+    return dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  };
+  const ago = (iso: string) => {
+    const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
     if (mins < 1) return 'Just now';
     if (mins < 60) return `${mins}m ago`;
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
-    const days = Math.floor(hrs / 24);
-    return `${days}d ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
   };
 
-  /* ── Activity type colors ──────────────────────────────────── */
-  const activityColors: Record<string, string> = {
-    APPLICATION: '#3b82f6',
-    INTERVIEW: '#f59e0b',
-    APPROVAL: '#10b981',
-    REJECTION: '#ef4444',
-    OFFER: '#8b5cf6',
-    info: '#38bdf8',
-    INFO: '#38bdf8',
+  const statusColor: Record<string, string> = {
+    open: '#3AAF76', ongoing: '#3B82C4', hold: '#E0963A', 'on-hold': '#E0963A', close: '#D9534F', closed: '#D9534F',
   };
+
+  const actColor: Record<string, string> = {
+    APPLICATION: ACCENT, INTERVIEW: '#E0963A', APPROVAL: '#3AAF76', REJECTION: '#D9534F', OFFER: '#7367D6', info: '#4A9FD9', INFO: '#4A9FD9',
+  };
+
+  /* ── card wrapper style ─────────────────────────────────────── */
+  const card = { background: theme.surface, borderColor: theme.border };
 
   return (
-    <motion.div
-      className="space-y-8"
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-    >
-      {/* ── Header ──────────────────────────────────────────────── */}
-      <div
-        className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-4 border-b"
-        style={{ borderColor: theme.border }}
-      >
-        <div>
-          <h1 className="text-4xl font-extrabold tracking-tight" style={{ color: theme.textPrimary }}>
-            Dashboard Overview
-          </h1>
-          <p className="text-base mt-2" style={{ color: theme.textSecondary }}>
-            Welcome back! Here's a comprehensive look at your recruitment performance.
-          </p>
-        </div>
-        <div
-          className="flex items-center gap-3 text-sm px-5 py-2.5 rounded-xl border shadow-sm backdrop-blur-md"
-          style={{ background: theme.surfaceHover, borderColor: theme.border, color: theme.textSecondary }}
-        >
-          <CalendarDays className="size-5" style={{ color: theme.accent }} />
-          <span className="font-medium">
-            {new Date().toLocaleDateString('en-IN', {
-              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-            })}
-          </span>
-        </div>
-      </div>
+    <motion.div className="space-y-5" initial="hidden" animate="visible" variants={container}>
 
-      {/* ── Row 1: KPI Stat Cards ───────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((stat, i) => (
+      {/* ── Header ──────────────────────────────────────────── */}
+      <motion.div variants={item} className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 pb-4 border-b" style={{ borderColor: theme.border }}>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: theme.textPrimary }}>Dashboard</h1>
+          <p className="text-sm mt-0.5" style={{ color: theme.textMuted }}>Overview of your recruitment pipeline</p>
+        </div>
+        
+        {/* <div className="flex flex-wrap items-center gap-3">
+          
+            <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-lg border bg-slate-50/50" style={{ borderColor: theme.border }}>
+              <div className="flex items-center pl-2 pr-1">
+                <Filter className="size-3.5 text-slate-400" />
+              </div>
+              <div className="relative">
+                <button
+                  className="flex items-center justify-between w-[160px] h-7 text-xs bg-white border border-slate-200 rounded-md px-2 outline-none focus:ring-1 focus:ring-slate-300"
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                >
+                  <span className="truncate pr-2">
+                    {filters.user_id 
+                      ? users.find((u: any) => u.id === filters.user_id)?.name || 'All Members'
+                      : 'All Members'}
+                  </span>
+                  <ChevronDown className="size-3 text-slate-400 shrink-0" />
+                </button>
+                
+                {userDropdownOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setUserDropdownOpen(false)} 
+                    />
+                    <div className="absolute top-full right-0 lg:left-0 mt-1 w-[260px] bg-white border border-slate-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                      <div className="flex items-center px-2 border-b border-slate-100 bg-slate-50/50">
+                        <Search className="size-3 text-slate-400 mr-2 shrink-0" />
+                        <input 
+                          type="text" 
+                          placeholder="Search members..." 
+                          value={userSearch}
+                          onChange={(e) => setUserSearch(e.target.value)}
+                          className="w-full text-[11px] font-medium py-2 outline-none bg-transparent"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-[220px] overflow-y-auto custom-scrollbar">
+                        <div 
+                          className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-slate-50 transition-colors ${!filters.user_id ? 'bg-slate-50' : ''}`}
+                          onClick={() => { setFilters(f => ({ ...f, user_id: '' })); setUserDropdownOpen(false); setUserSearch(''); }}
+                        >
+                          <div className="size-7 rounded-full bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200">
+                            <Users className="size-3.5 text-slate-400" />
+                          </div>
+                          <span className={`text-[11px] ${!filters.user_id ? 'font-bold text-slate-900' : 'font-semibold text-slate-700'}`}>All Members</span>
+                        </div>
+                        {users.filter((u: any) => (u.name || '').toLowerCase().includes(userSearch.toLowerCase())).map((u: any) => (
+                          <div 
+                            key={u.id}
+                            className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer border-t border-slate-50 hover:bg-slate-50 transition-colors ${filters.user_id === u.id ? 'bg-slate-50' : ''}`}
+                            onClick={() => { setFilters(f => ({ ...f, user_id: u.id })); setUserDropdownOpen(false); setUserSearch(''); }}
+                          >
+                            {u.avatar ? (
+                              <img src={u.avatar} alt={u.name} className="size-7 rounded-full object-cover shrink-0 border border-slate-200" />
+                            ) : (
+                              <div className="size-7 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 shrink-0 border border-slate-200">
+                                {(u.name || 'U').charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className={`text-[11px] truncate ${filters.user_id === u.id ? 'font-bold text-slate-900' : 'font-semibold text-slate-700'}`}>{u.name}</span>
+                                <span className="text-[9px] font-medium uppercase tracking-wider text-slate-400 shrink-0">{u.role}</span>
+                              </div>
+                              <p className="text-[9px] text-slate-500 truncate">{u.email}</p>
+                            </div>
+                          </div>
+                        ))}
+                        {users.filter((u: any) => (u.name || '').toLowerCase().includes(userSearch.toLowerCase())).length === 0 && (
+                          <div className="px-3 py-4 text-xs text-center text-slate-400">
+                            No members found
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              <input
+                type="date"
+                className="text-xs font-medium bg-white border-slate-200 rounded-md py-1 px-2 outline-none cursor-pointer"
+                value={filters.from_date}
+                onChange={(e) => setFilters(f => ({ ...f, from_date: e.target.value }))}
+              />
+              <span className="text-xs text-slate-400">to</span>
+              <input
+                type="date"
+                className="text-xs font-medium bg-white border-slate-200 rounded-md py-1 px-2 outline-none cursor-pointer"
+                value={filters.to_date}
+                onChange={(e) => setFilters(f => ({ ...f, to_date: e.target.value }))}
+              />
+              
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-md py-1 px-3 text-xs font-semibold transition-colors"
+                style={{ color: ACCENT }}
+              >
+                <Download className="size-3.5" />
+                Export
+              </button>
+              
+              {(filters.user_id || filters.from_date || filters.to_date) && (
+                <button
+                  onClick={() => setFilters({ user_id: '', from_date: '', to_date: '' })}
+                  className="flex items-center justify-center p-1 px-2 ml-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                  title="Clear filters"
+                >
+                  <X className="size-3.5" />
+                  <span className="text-[10px] font-semibold ml-1">Clear</span>
+                </button>
+              )}
+            </div>
+          
+          
+
+          <div className="flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg border h-[32px]" style={{ background: theme.surfaceMuted, borderColor: theme.border, color: theme.textSecondary }}>
+            <CalendarDays className="size-3.5" style={{ color: ACCENT }} />
+            {new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+          </div>
+        </div> */}
+      </motion.div>
+
+      {/* ── KPI Cards ──────────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((s, i) => (
           <motion.div
             key={i}
-            variants={itemVariants}
-            className="relative overflow-hidden rounded-2xl border p-7 shadow-sm group hover:shadow-lg transition-all duration-300 hover:-translate-y-1.5 cursor-pointer"
-            style={{ background: theme.surface, borderColor: theme.border }}
+            variants={item}
+            whileHover={{ y: -2, transition: { duration: 0.15 } }}
+            className="rounded-xl border p-5 cursor-pointer group"
+            style={card}
             onClick={() => {
-              if (stat.path.startsWith('#')) {
-                document.getElementById(stat.path.substring(1))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              } else if (stat.path) {
-                navigate(stat.path);
-              }
+              if (s.path.startsWith('#')) document.getElementById(s.path.substring(1))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              else navigate(s.path);
             }}
           >
-            {/* Background Glow */}
-            <div
-              className="absolute -top-12 -right-12 w-40 h-40 opacity-10 blur-3xl pointer-events-none rounded-full transition-all duration-700 group-hover:scale-150 group-hover:opacity-20"
-              style={{ background: stat.color }}
-            />
-
-            <div className="flex justify-between items-start mb-6 relative z-10">
-              <div
-                className="p-3.5 rounded-2xl shadow-sm"
-                style={{ background: `${stat.color}15`, color: stat.color, border: `1px solid ${stat.color}30` }}
-              >
-                <stat.icon className="size-6" strokeWidth={2.5} />
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2 rounded-lg" style={{ background: theme.surfaceMuted }}>
+                <s.icon className="size-4" style={{ color: ACCENT }} />
               </div>
+              <ArrowUpRight className="size-3.5 opacity-0 group-hover:opacity-60 transition-opacity" style={{ color: theme.textMuted }} />
             </div>
-            <div className="space-y-1.5 relative z-10">
-              <h3 className="text-4xl font-black tracking-tight" style={{ color: theme.textPrimary }}>
-                {stat.value}
-              </h3>
-              <p className="text-sm font-semibold tracking-wide uppercase" style={{ color: theme.textMuted }}>
-                {stat.title}
-              </p>
-            </div>
+            <p className="text-2xl font-extrabold tracking-tight" style={{ color: theme.textPrimary }}>{s.value}</p>
+            <p className="text-[11px] font-medium mt-0.5" style={{ color: theme.textMuted }}>{s.label}</p>
           </motion.div>
         ))}
       </div>
 
-      {/* ── Row 2: Active Jobs Breakdown + Efficiency ────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* ── Row 2: Jobs + Pipeline + Metrics ────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
         {/* Jobs by Status */}
-        <motion.div
-          variants={itemVariants}
-          className="rounded-3xl border shadow-sm p-7 cursor-pointer hover:shadow-md transition-shadow"
-          style={{ background: theme.surface, borderColor: theme.border }}
-          onClick={() => navigate('/positions')}
-        >
-          <div className="mb-6">
-            <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Active Jobs</h3>
-            <p className="text-sm mt-1" style={{ color: theme.textMuted }}>Breakdown by status</p>
+        <motion.div variants={item} className="rounded-xl border p-5 cursor-pointer" style={card} onClick={() => navigate('/positions')}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold" style={{ color: theme.textPrimary }}>Jobs by Status</h3>
+            <ChevronRight className="size-3.5" style={{ color: theme.textMuted }} />
           </div>
-          <div className="space-y-3">
-            {(topStats.active_jobs_by_status || []).map((job, idx) => {
-              const statusColors: Record<string, string> = {
-                OPEN: '#10b981', 'ON-HOLD': '#f59e0b', HOLD: '#f59e0b', CLOSED: '#ef4444', CLOSE: '#ef4444', ONGOING: '#3b82f6',
-                open: '#10b981', 'on-hold': '#f59e0b', hold: '#f59e0b', closed: '#ef4444', close: '#ef4444', ongoing: '#3b82f6',
-              };
-              const color = statusColors[job.status] || theme.accent;
-              const pct = totalActiveJobs > 0 ? Math.round((job.count / totalActiveJobs) * 100) : 0;
+          <div className="grid grid-cols-2 gap-3">
+            {(ts.active_jobs_by_status || []).map((j, idx) => {
+              const clr = statusColor[j.status?.toLowerCase()] || ACCENT;
               return (
                 <div 
                   key={idx} 
-                  className="rounded-xl p-4 border transition-all hover:shadow-md cursor-pointer group hover:-translate-y-0.5" 
-                  style={{ background: theme.surfaceHover, borderColor: theme.border }}
+                  className="rounded-xl p-3.5 flex flex-col justify-between hover:brightness-95 transition-all" 
+                  style={{ background: theme.surfaceMuted }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/positions?status=${(job.status || '').toLowerCase()}`);
+                    navigate(`/positions?status=${j.status?.toLowerCase()}`);
                   }}
                 >
-                  <div className="flex items-center justify-between mb-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="size-2.5 rounded-full" style={{ background: color }} />
-                      <span className="text-sm font-semibold capitalize" style={{ color: theme.textPrimary }}>{(job.status || 'unknown').toLowerCase().replace('-', ' ')}</span>
-                    </div>
-                    <span className="text-lg font-black" style={{ color: theme.textPrimary }}>{job.count}</span>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="size-2 rounded-full" style={{ background: clr }} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: theme.textSecondary }}>{j.status}</span>
                   </div>
-                  <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: theme.surfaceMuted }}>
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{ width: `${pct}%`, background: color }}
-                    />
-                  </div>
+                  <span className="text-xl font-extrabold leading-none" style={{ color: theme.textPrimary }}>{j.count}</span>
                 </div>
               );
             })}
-          </div>
-        </motion.div>
-
-        {/* Funnel Trend Chart (Spans 2 columns) */}
-        {funnelChartData.length > 0 && (
-          <motion.div
-            variants={itemVariants}
-            className="lg:col-span-2 rounded-3xl border shadow-sm p-7 flex flex-col cursor-pointer hover:shadow-md transition-shadow"
-            style={{ background: theme.surface, borderColor: theme.border }}
-            onClick={() => navigate('/reports')}
-          >
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Recruitment Funnel Trend</h3>
-                <p className="text-sm mt-1" style={{ color: theme.textMuted }}>Candidates sourced vs interviewed</p>
+            {(ts.active_jobs_by_status || []).length === 0 && (
+              <div className="col-span-2 text-center py-6">
+                <p className="text-xs font-medium" style={{ color: theme.textMuted }}>No active jobs</p>
               </div>
-            </div>
-            <div className="flex-1 min-h-[280px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={funnelChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorSourced" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={theme.accent} stopOpacity={0.4} />
-                      <stop offset="95%" stopColor={theme.accent} stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="colorInterviewed" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="4 4" vertical={false} stroke={theme.border} opacity={0.4} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.textMuted, fontSize: 13, fontWeight: 500 }} dy={15} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.textMuted, fontSize: 13, fontWeight: 500 }} />
-                  <RechartsTooltip
-                    contentStyle={{ backgroundColor: theme.surface, borderRadius: '12px', border: `1px solid ${theme.border}`, boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                    itemStyle={{ color: theme.textPrimary, fontWeight: 600 }}
-                    labelStyle={{ color: theme.textMuted, marginBottom: '8px', fontWeight: 700 }}
-                  />
-                  <Area type="monotone" dataKey="Sourced" stroke={theme.accent} strokeWidth={4} fillOpacity={1} fill="url(#colorSourced)" />
-                  <Area type="monotone" dataKey="Interviewed" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorInterviewed)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
-        )}
-      </div>
-
-      {/* ── Row 3: Pipeline Overview & Top Jobs ─────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Pipeline Overview Chart */}
-        <motion.div
-          variants={itemVariants}
-          className="lg:col-span-2 rounded-3xl border shadow-sm p-7 flex flex-col cursor-pointer hover:shadow-md transition-shadow"
-          style={{ background: theme.surface, borderColor: theme.border }}
-          onClick={() => navigate('')}
-        >
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Pipeline Overview</h3>
-              <p className="text-sm mt-1" style={{ color: theme.textMuted }}>Current candidates by stage</p>
-            </div>
+            )}
           </div>
-          {activePipelineData.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center py-12 gap-3">
-              <Users className="size-10" style={{ color: theme.textMuted + '60' }} />
-              <p className="text-sm font-medium" style={{ color: theme.textMuted }}>No active candidates in pipeline</p>
-            </div>
-          ) : (
-            <div className="flex-1 min-h-[280px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={activePipelineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="4 4" vertical={false} stroke={theme.border} opacity={0.4} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: theme.textMuted, fontSize: 12, fontWeight: 500 }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: theme.textMuted, fontSize: 12, fontWeight: 500 }} />
-                  <RechartsTooltip
-                    cursor={{ fill: theme.surfaceHover }}
-                    contentStyle={{ backgroundColor: theme.surface, borderRadius: '12px', border: `1px solid ${theme.border}`, boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                    itemStyle={{ color: theme.textPrimary, fontWeight: 600 }}
-                    labelStyle={{ color: theme.textMuted, marginBottom: '8px', fontWeight: 700 }}
-                  />
-                  <Bar dataKey="count" name="Candidates" radius={[6, 6, 0, 0]} barSize={32}>
-                    {activePipelineData.map((_entry, index) => (
-                      <Cell key={`cell-${index}`} fill={HIRE_COLORS[index % HIRE_COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
         </motion.div>
 
-        {/* Top Performing Jobs */}
-        <motion.div
-          variants={itemVariants}
-          className="rounded-3xl border shadow-sm p-7 flex flex-col"
-          style={{ background: theme.surface, borderColor: theme.border }}
-        >
-          <div className="mb-6">
-            <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Top Performing Jobs</h3>
-            <p className="text-sm mt-1" style={{ color: theme.textMuted }}>By active candidates</p>
+        {/* Pipeline Overview */}
+        <motion.div variants={item} className="rounded-xl border p-5" style={card}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold" style={{ color: theme.textPrimary }}>Pipeline Overview</h3>
+            {pipeTotal > 0 && (
+              <span className="text-xs font-bold" style={{ color: theme.textPrimary }}>{pipeTotal} <span className="font-medium" style={{ color: theme.textMuted }}>total</span></span>
+            )}
           </div>
-          {topJobs.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3">
-              <Briefcase className="size-10" style={{ color: theme.textMuted + '60' }} />
-              <p className="text-sm font-medium" style={{ color: theme.textMuted }}>No active jobs</p>
+          {pipeData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 gap-2">
+              <Target className="size-7" style={{ color: theme.textMuted + '50' }} />
+              <p className="text-xs" style={{ color: theme.textMuted }}>No pipeline data</p>
             </div>
           ) : (
-            <div className="space-y-4 overflow-y-auto pr-2 max-h-[300px]">
-              {topJobs.slice(0, 5).map((job, idx) => (
-                <div 
-                  key={job.job_id} 
-                  className="p-4 rounded-xl border flex items-center justify-between group hover:shadow-md transition-all cursor-pointer" 
-                  style={{ background: theme.surfaceHover, borderColor: theme.border }}
-                  onClick={() => navigate(`/positions/${job.job_id}`)}
-                >
-                  <div className="min-w-0 flex-1 mr-4">
-                    <p className="text-sm font-bold truncate" style={{ color: theme.textPrimary }}>{job.title}</p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: theme.surfaceMuted }}>
-                        <div className="h-full rounded-full" style={{ background: HIRE_COLORS[idx % HIRE_COLORS.length], width: `${Math.min(100, (job.active_candidates / Math.max(1, topJobs[0].active_candidates)) * 100)}%` }} />
-                      </div>
-                      <span className="text-xs font-semibold" style={{ color: theme.textMuted }}>{job.active_candidates} active</span>
-                    </div>
-                  </div>
-                  <div className="size-8 rounded-full flex items-center justify-center font-bold text-xs" style={{ background: `${HIRE_COLORS[idx % HIRE_COLORS.length]}20`, color: HIRE_COLORS[idx % HIRE_COLORS.length] }}>
-                    #{idx + 1}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </motion.div>
-      </div>
-
-      {/* ── Row 3: Upcoming Interviews + Hires by Client ──────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Upcoming Interviews */}
-        <motion.div
-          id="upcoming-interviews"
-          variants={itemVariants}
-          className="lg:col-span-2 rounded-3xl border shadow-sm p-7 hover:shadow-md transition-shadow"
-          style={{ background: theme.surface, borderColor: theme.border }}
-        >
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Upcoming Interviews</h3>
-              <p className="text-sm mt-1" style={{ color: theme.textMuted }}>
-                {(data.upcoming_interviews || []).length} scheduled
-              </p>
-            </div>
-          </div>
-
-          {(data.upcoming_interviews || []).length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Video className="size-10" style={{ color: theme.textMuted + '60' }} />
-              <p className="text-sm font-medium" style={{ color: theme.textMuted }}>No upcoming interviews</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b" style={{ borderColor: theme.border }}>
-                    <th className="py-3 px-2 text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Candidate</th>
-                    <th className="py-3 px-2 text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Position</th>
-                    <th className="py-3 px-2 text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Schedule</th>
-                    <th className="py-3 px-2 text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Round</th>
-                    <th className="py-3 px-2 text-xs font-bold uppercase tracking-wider" style={{ color: theme.textMuted }}>Interviewer</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y" style={{ borderColor: theme.border }}>
-                  {(data.upcoming_interviews || []).map((interview, idx) => (
-                    <tr 
-                      key={idx} 
-                      className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors group cursor-pointer"
-                      onClick={() => navigate(`/positions/${interview.job_id}/pipeline`)}
-                    >
-                      <td className="py-4 px-2">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="size-8 rounded-full flex items-center justify-center font-bold text-xs"
-                            style={{ background: theme.accent + '20', color: theme.accent }}
-                          >
-                            {interview.candidate_name?.charAt(0) || '?'}
-                          </div>
-                          <span className="font-bold text-sm" style={{ color: theme.textPrimary }}>
-                            {interview.candidate_name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-2 text-sm font-medium max-w-[200px] truncate" style={{ color: theme.textSecondary }}>
-                        {interview.job_title}
-                      </td>
-                      <td className="py-4 px-2">
-                        <div className="flex flex-col gap-0.5">
-                          <span
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold w-fit"
-                            style={{ background: theme.surfaceMuted, color: theme.textPrimary }}
-                          >
-                            <Clock className="size-3" style={{ color: theme.accent }} />
-                            {formatTime(interview.time)}
-                          </span>
-                          <span className="text-[11px] font-medium" style={{ color: theme.textMuted }}>
-                            {formatDate(interview.date)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-2">
-                        <span
-                          className="text-xs font-semibold px-2 py-1 rounded-md"
-                          style={{ background: '#f59e0b18', color: '#d97706' }}
-                        >
-                          {interview.round}
-                        </span>
-                      </td>
-                      <td className="py-4 px-2 text-sm font-medium" style={{ color: theme.textSecondary }}>
-                        {interview.interviewer_name || '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </motion.div>
-
-        {/* Hires by Client */}
-        <motion.div
-          variants={itemVariants}
-          className="rounded-3xl border shadow-sm p-7 flex flex-col cursor-pointer hover:shadow-md transition-shadow"
-          style={{ background: theme.surface, borderColor: theme.border }}
-          onClick={() => navigate('/clients')}
-        >
-          <div className="mb-4">
-            <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Hires by Client</h3>
-            <p className="text-sm mt-1" style={{ color: theme.textMuted }}>Placement distribution</p>
-          </div>
-          {hiresChartData.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center py-8 gap-3">
-              <Building2 className="size-10" style={{ color: theme.textMuted + '60' }} />
-              <p className="text-sm font-medium" style={{ color: theme.textMuted }}>No hire data yet</p>
-            </div>
-          ) : (
-            <>
-              <div className="flex-1 min-h-[220px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={hiresChartData} layout="vertical" margin={{ top: 0, right: 20, left: -10, bottom: 0 }}>
-                    <XAxis type="number" hide />
-                    <YAxis
-                      dataKey="client_name"
-                      type="category"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: theme.textPrimary, fontSize: 12, fontWeight: 600 }}
-                      width={110}
-                    />
-                    <RechartsTooltip
-                      cursor={{ fill: theme.surfaceHover }}
-                      contentStyle={{
-                        backgroundColor: theme.surface,
-                        borderRadius: '8px',
-                        border: `1px solid ${theme.border}`,
-                      }}
-                    />
-                    <Bar dataKey="hires_count" name="Hires" radius={[0, 6, 6, 0]} barSize={18}>
-                      {hiresChartData.map((_entry, index) => (
-                        <Cell key={`cell-${index}`} fill={HIRE_COLORS[index % HIRE_COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-4 pt-4 flex items-center justify-between" style={{ borderTop: `1px solid ${theme.border}` }}>
-                <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: theme.textMuted }}>
-                  Total Hires
-                </span>
-                <span className="text-lg font-black" style={{ color: theme.textPrimary }}>
-                  {hiresChartData.reduce((s, d) => s + d.hires_count, 0)}
-                </span>
-              </div>
-            </>
-          )}
-        </motion.div>
-      </div>
-
-      {/* ── Row 4: Activity Feed + Efficiency ────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Activity Feed */}
-        <motion.div
-          variants={itemVariants}
-          className="lg:col-span-2 rounded-3xl border shadow-sm p-7 cursor-pointer hover:shadow-md transition-shadow"
-          style={{ background: theme.surface, borderColor: theme.border }}
-          onClick={() => navigate('/notifications')}
-        >
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg" style={{ background: theme.accent + '20' }}>
-                <Activity className="size-5" style={{ color: theme.accent }} />
-              </div>
-              <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Unread Activity</h3>
-            </div>
-          </div>
-
-          {(data.unread_activity || []).length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Activity className="size-10" style={{ color: theme.textMuted + '60' }} />
-              <p className="text-sm font-medium" style={{ color: theme.textMuted }}>No unread activity</p>
-            </div>
-          ) : (
-            <div className="space-y-6 pl-2">
-              {(data.unread_activity || []).slice(0, 8).map((item, idx, arr) => {
-                const dotColor = activityColors[item.type] || theme.accent;
+            <div className="space-y-1.5 max-h-[170px] overflow-y-auto pr-1">
+              {pipeData.map((d, i) => {
+                const pct = pipeTotal > 0 ? (d.value / pipeTotal) * 100 : 0;
+                const clr = PIE_COLORS[i % PIE_COLORS.length];
                 return (
                   <div 
-                    key={idx} 
-                    className={`flex gap-5 group ${item.link ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+                    key={i} 
+                    className="flex items-center justify-between p-2.5 rounded-lg border hover:shadow-sm hover:brightness-95 transition-all group cursor-pointer bg-white" 
+                    style={{ borderColor: theme.border }}
                     onClick={(e) => {
-                      if (item.link) {
-                        e.stopPropagation();
-                        navigate(item.link);
-                      }
+                      e.stopPropagation();
+                      navigate(`/approvals/queue?stage=${encodeURIComponent(d.key)}`);
                     }}
                   >
-                    <div className="relative flex flex-col items-center">
-                      <div
-                        className="size-10 rounded-full flex items-center justify-center font-bold text-xs z-10 shadow-sm border-2"
-                        style={{ background: dotColor + '18', color: dotColor, borderColor: dotColor + '40' }}
-                      >
-                        {item.type?.charAt(0)?.toUpperCase() || 'A'}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-9 h-7 rounded border font-bold text-[10px]" style={{ color: clr, borderColor: clr + '40', background: clr + '08' }}>
+                        {Math.round(pct)}%
                       </div>
-                      {idx !== arr.length - 1 && (
-                        <div className="absolute top-10 bottom-[-24px] w-[2px]" style={{ background: theme.border }} />
-                      )}
+                      <span className="text-[11px] font-semibold" style={{ color: theme.textSecondary }}>{d.name}</span>
                     </div>
-                    <div className="pt-1 flex-1 min-w-0">
-                      <p className="text-[15px] font-semibold leading-relaxed truncate" style={{ color: theme.textPrimary }}>
-                        {item.title}
-                      </p>
-                      <p className="text-sm mt-0.5 line-clamp-2" style={{ color: theme.textSecondary }}>
-                        {item.message}
-                      </p>
-                      <p className="text-xs font-semibold mt-1.5 uppercase tracking-wider" style={{ color: theme.textMuted }}>
-                        {timeAgo(item.created_at)}
-                      </p>
-                    </div>
+                    <span className="text-xs font-extrabold px-1" style={{ color: theme.textPrimary }}>{d.value}</span>
                   </div>
                 );
               })}
@@ -628,76 +467,250 @@ const DashboardPage = () => {
           )}
         </motion.div>
 
-        {/* Efficiency + Quick Stats */}
-        <motion.div
-          variants={itemVariants}
-          className="rounded-3xl border shadow-sm p-7 flex flex-col cursor-pointer hover:shadow-md transition-shadow"
-          style={{ background: theme.surface, borderColor: theme.border }}
-          onClick={() => navigate('/reports')}
-        >
-          <div className="mb-6">
-            <h3 className="text-xl font-bold" style={{ color: theme.textPrimary }}>Efficiency Metrics</h3>
-            <p className="text-sm mt-1" style={{ color: theme.textMuted }}>Key performance indicators</p>
+        {/* Key Metrics */}
+        <motion.div variants={item} className="rounded-xl border p-5" style={card}>
+          <h3 className="text-sm font-semibold mb-4" style={{ color: theme.textPrimary }}>Key Metrics</h3>
+          <div className="space-y-2.5">
+            {[
+              { icon: Timer, label: 'Avg. Time to Hire', value: `${data.average_time_to_hire_days} days`, color: ACCENT },
+              { icon: CheckCircle2, label: 'Offer Acceptance', value: `${data.offer_acceptance_rate}%`, color: '#3AAF76' },
+              { icon: XCircle, label: 'Rejection Rate', value: `${data.rejection_rate}%`, color: '#D9534F' },
+            ].map((m, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 rounded-lg" style={{ background: theme.surfaceMuted }}>
+                <m.icon className="size-4 flex-shrink-0" style={{ color: m.color }} />
+                <div className="flex-1">
+                  <p className="text-[10px] font-medium" style={{ color: theme.textMuted }}>{m.label}</p>
+                  <p className="text-base font-extrabold leading-tight" style={{ color: theme.textPrimary }}>{m.value}</p>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="flex-1 flex flex-col gap-4">
-            {/* Time to Hire */}
-            <div
-              className="flex items-center justify-between p-5 rounded-xl border group hover:shadow-sm transition-all"
-              style={{ background: theme.surfaceHover, borderColor: theme.border }}
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-2.5 rounded-lg" style={{ background: '#10b98120', color: '#10b981' }}>
-                  <Clock className="size-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold" style={{ color: theme.textPrimary }}>Time to Hire</p>
-                  <p className="text-xs" style={{ color: theme.textMuted }}>Average duration</p>
-                </div>
-              </div>
-              <p className="text-2xl font-black" style={{ color: theme.textPrimary }}>
-                {data.average_time_to_hire_days} <span className="text-base font-semibold" style={{ color: theme.textMuted }}>days</span>
-              </p>
-            </div>
+        </motion.div>
+      </div>
 
-            {/* Offer Acceptance */}
-            <div
-              className="flex items-center justify-between p-5 rounded-xl border group hover:shadow-sm transition-all"
-              style={{ background: theme.surfaceHover, borderColor: theme.border }}
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-2.5 rounded-lg" style={{ background: '#3b82f620', color: '#3b82f6' }}>
-                  <TrendingUp className="size-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold" style={{ color: theme.textPrimary }}>Offer Acceptance</p>
-                  <p className="text-xs" style={{ color: theme.textMuted }}>Conversion rate</p>
-                </div>
-              </div>
-              <p className="text-2xl font-black" style={{ color: theme.textPrimary }}>
-                {data.offer_acceptance_rate}%
-              </p>
+      {/* ── Row 3: Funnel Chart + Hires ─────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <motion.div variants={item} className="lg:col-span-3 rounded-xl border p-5" style={card}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold" style={{ color: theme.textPrimary }}>Recruitment Funnel</h3>
+              <p className="text-[11px] mt-0.5" style={{ color: theme.textMuted }}>Sourced vs Interviewed</p>
             </div>
-
-            {/* Rejection Rate */}
-            <div
-              className="flex items-center justify-between p-5 rounded-xl border group hover:shadow-sm transition-all"
-              style={{ background: theme.surfaceHover, borderColor: theme.border }}
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-2.5 rounded-lg" style={{ background: '#ef444420', color: '#ef4444' }}>
-                  <Activity className="size-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold" style={{ color: theme.textPrimary }}>Rejection Rate</p>
-                  <p className="text-xs" style={{ color: theme.textMuted }}>Overall rejections</p>
-                </div>
-              </div>
-              <p className="text-2xl font-black" style={{ color: theme.textPrimary }}>
-                {data.rejection_rate}%
-              </p>
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5 text-[10px] font-medium" style={{ color: theme.textMuted }}>
+                <span className="size-2 rounded-full" style={{ background: CHART_A }} /> Sourced
+              </span>
+              <span className="flex items-center gap-1.5 text-[10px] font-medium" style={{ color: theme.textMuted }}>
+                <span className="size-2 rounded-full" style={{ background: '#3AAF76' }} /> Interviewed
+              </span>
             </div>
-
           </div>
+          {funnelData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-2">
+              <BarChart3 className="size-7" style={{ color: theme.textMuted + '50' }} />
+              <p className="text-xs" style={{ color: theme.textMuted }}>No trend data</p>
+            </div>
+          ) : (
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={funnelData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gSourced" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={CHART_A} stopOpacity={0.15} />
+                      <stop offset="95%" stopColor={CHART_A} stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gInterviewed" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3AAF76" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="#3AAF76" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.border} vertical={false} />
+                  <XAxis dataKey="name" tick={{ fill: theme.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: theme.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <RechartsTooltip contentStyle={{ backgroundColor: theme.surface, borderRadius: '8px', border: `1px solid ${theme.border}`, fontSize: '12px' }} />
+                  <Area type="monotone" dataKey="Sourced" stroke={CHART_A} strokeWidth={2} fillOpacity={1} fill="url(#gSourced)" />
+                  <Area type="monotone" dataKey="Interviewed" stroke="#3AAF76" strokeWidth={2} fillOpacity={1} fill="url(#gInterviewed)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </motion.div>
+
+        <motion.div variants={item} className="lg:col-span-2 rounded-xl border p-5 cursor-pointer" style={card} onClick={() => navigate('/clients')}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold" style={{ color: theme.textPrimary }}>Hires by Client</h3>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: theme.surfaceMuted, color: theme.textSecondary }}>
+              {hiresData.reduce((s, d) => s + d.hires_count, 0)} total
+            </span>
+          </div>
+          {hiresData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 gap-2">
+              <UserCheck className="size-7" style={{ color: theme.textMuted + '50' }} />
+              <p className="text-xs" style={{ color: theme.textMuted }}>No hire data</p>
+            </div>
+          ) : (
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={hiresData} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="client_name" type="category" axisLine={false} tickLine={false} tick={{ fill: theme.textPrimary, fontSize: 11, fontWeight: 600 }} width={100} />
+                  <RechartsTooltip cursor={{ fill: theme.surfaceHover }} contentStyle={{ backgroundColor: theme.surface, borderRadius: '8px', border: `1px solid ${theme.border}`, fontSize: '12px' }} />
+                  <Bar dataKey="hires_count" name="Hires" radius={[0, 4, 4, 0]} barSize={14}>
+                    {hiresData.map((_, i) => <Cell key={i} fill={i === 0 ? ACCENT : CHART_B} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </motion.div>
+      </div>
+
+      {/* ── Row 4: Upcoming Interviews ──────────────────────── */}
+      <motion.div id="upcoming-interviews" variants={item} className="rounded-xl border p-5" style={card}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold" style={{ color: theme.textPrimary }}>Upcoming Interviews</h3>
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded" style={{ background: theme.surfaceMuted, color: theme.textMuted }}>
+            {(data.upcoming_interviews || []).length} scheduled
+          </span>
+        </div>
+
+        {(data.upcoming_interviews || []).length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 gap-2">
+            <Video className="size-7" style={{ color: theme.textMuted + '50' }} />
+            <p className="text-xs" style={{ color: theme.textMuted }}>No upcoming interviews</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto -mx-5 px-5">
+            <table className="w-full text-left" style={{ minWidth: '820px' }}>
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
+                  {['Candidate', 'Position', 'Client', 'Schedule', 'Round', 'Interviewer', 'Recruiter'].map((h) => (
+                    <th key={h} className="pb-2.5 pr-3 text-[10px] font-semibold uppercase tracking-wider" style={{ color: theme.textMuted }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(data.upcoming_interviews || []).map((iv, idx) => (
+                  <tr
+                    key={idx}
+                    className="hover:bg-black/[0.015] transition-colors cursor-pointer"
+                    style={{ borderBottom: idx < (data.upcoming_interviews || []).length - 1 ? `1px solid ${theme.surfaceMuted}` : 'none' }}
+                    onClick={() => navigate(`/positions/${iv.job_id}/pipeline`)}
+                  >
+                    <td className="py-3 pr-3">
+                      <div className="flex items-center gap-2">
+                        <div className="size-6 rounded-md flex items-center justify-center text-[10px] font-bold" style={{ background: theme.accentSoft, color: ACCENT }}>
+                          {iv.candidate_name?.charAt(0) || '?'}
+                        </div>
+                        <span className="text-xs font-semibold" style={{ color: theme.textPrimary }}>{iv.candidate_name}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 pr-3 text-xs max-w-[150px] truncate" style={{ color: theme.textSecondary }}>{iv.job_title}</td>
+                    <td className="py-3 pr-3 text-xs max-w-[120px] truncate" style={{ color: theme.textSecondary }}>{iv.client_name || iv.client?.name || '—'}</td>
+                    <td className="py-3 pr-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-medium" style={{ color: theme.textPrimary }}>{fmtTime(iv.time)}</span>
+                        <span className="text-[10px]" style={{ color: theme.textMuted }}>· {fmtDate(iv.date)}</span>
+                        {iv.mode && (
+                          iv.mode === 'online' || iv.mode === 'video'
+                            ? <Video className="size-3 ml-1" style={{ color: theme.info }} />
+                            : <MapPin className="size-3 ml-1" style={{ color: theme.textMuted }} />
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 pr-3">
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: theme.warningSoft, color: theme.warning }}>{iv.round}</span>
+                    </td>
+                    <td className="py-3 pr-3 text-xs" style={{ color: theme.textSecondary }}>{iv.interviewer_name || '—'}</td>
+                    <td className="py-3 pr-3">
+                      {iv.worked_by ? (
+                        <div>
+                          <p className="text-[11px] font-semibold" style={{ color: theme.textPrimary }}>{iv.worked_by.name}</p>
+                          <p className="text-[9px] capitalize" style={{ color: theme.textMuted }}>{iv.worked_by.role?.replace(/_/g, ' ')}</p>
+                        </div>
+                      ) : (
+                        <span className="text-xs" style={{ color: theme.textMuted }}>—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </motion.div>
+
+      {/* ── Row 5: Activity + Top Jobs ──────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        {/* Activity */}
+        <motion.div variants={item} className="lg:col-span-3 rounded-xl border p-5 cursor-pointer" style={card} onClick={() => navigate('/notifications')}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold" style={{ color: theme.textPrimary }}>Recent Activity</h3>
+            {(data.unread_activity || []).length > 0 && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: theme.destructiveSoft, color: theme.destructive }}>
+                {(data.unread_activity || []).length} unread
+              </span>
+            )}
+          </div>
+          {(data.unread_activity || []).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-2">
+              <Activity className="size-7" style={{ color: theme.textMuted + '50' }} />
+              <p className="text-xs" style={{ color: theme.textMuted }}>No recent activity</p>
+            </div>
+          ) : (
+            <div className="space-y-0.5">
+              {(data.unread_activity || []).slice(0, 6).map((a, i) => {
+                const clr = actColor[a.type] || ACCENT;
+                return (
+                  <div
+                    key={i}
+                    className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-black/[0.015] transition-colors"
+                    onClick={(e) => { if (a.link) { e.stopPropagation(); navigate(a.link); } }}
+                  >
+                    <div className="size-7 rounded-md flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-0.5" style={{ background: clr + '12', color: clr }}>
+                      {a.type?.charAt(0)?.toUpperCase() || 'A'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold truncate" style={{ color: theme.textPrimary }}>{a.title}</p>
+                      <p className="text-[11px] line-clamp-1" style={{ color: theme.textSecondary }}>{a.message}</p>
+                    </div>
+                    <span className="text-[10px] font-medium flex-shrink-0 pt-0.5" style={{ color: theme.textMuted }}>{ago(a.created_at)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
+
+        {/* Top Jobs */}
+        <motion.div variants={item} className="lg:col-span-2 rounded-xl border p-5" style={card}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold" style={{ color: theme.textPrimary }}>Top Performing Jobs</h3>
+            <span className="text-[10px] font-medium" style={{ color: theme.textMuted }}>By active candidates</span>
+          </div>
+          {topJobs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-2">
+              <Briefcase className="size-7" style={{ color: theme.textMuted + '50' }} />
+              <p className="text-xs" style={{ color: theme.textMuted }}>No job data</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {topJobs.slice(0, 6).map((j, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer hover:bg-black/[0.015] transition-colors group"
+                  onClick={() => navigate(`/positions/${j.job_id}`)}
+                >
+                  <span className="text-[11px] font-bold w-5 text-center" style={{ color: theme.textMuted }}>{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold truncate" style={{ color: theme.textPrimary }}>{j.title}</p>
+                    <p className="text-[10px]" style={{ color: theme.textMuted }}>{j.active_candidates} candidates</p>
+                  </div>
+                  <ArrowUpRight className="size-3.5 opacity-0 group-hover:opacity-50 transition-opacity" style={{ color: theme.textMuted }} />
+                </div>
+              ))}
+            </div>
+          )}
         </motion.div>
       </div>
     </motion.div>

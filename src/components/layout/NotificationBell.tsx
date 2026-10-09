@@ -142,6 +142,24 @@ const NotificationBell = () => {
 
   return (
     <div className="relative">
+      <style>
+        {`
+          @keyframes bell-ring {
+            0%, 100% { transform: rotate(0) scale(1); color: green; }
+            10% { transform: rotate(25deg) scale(1.25); color: ${theme.success}; }
+            20% { transform: rotate(-25deg) scale(1.25); color: ${theme.success}; }
+            30% { transform: rotate(15deg) scale(1.15); color: green; }
+            40% { transform: rotate(-15deg) scale(1.15); color: green; }
+            50% { transform: rotate(10deg) scale(1.1); color: ${theme.success}; }
+            60% { transform: rotate(-5deg) scale(1.1); color: ${theme.success}; }
+            70% { transform: rotate(0) scale(1); color: green; }
+          }
+          .animate-bell-ring {
+            animation: bell-ring 1.2s ease-in-out infinite;
+            transform-origin: top center;
+          }
+        `}
+      </style>
       {/* Bell Button */}
       <button
         ref={bellRef}
@@ -162,7 +180,7 @@ const NotificationBell = () => {
           }
         }}
       >
-        <Bell className="size-5" style={{ color: theme.textSecondary }} />
+        <Bell className={`size-5 ${unreadCount > 0 ? 'animate-bell-ring' : ''}`} style={unreadCount === 0 ? { color: "green" } : undefined} />
         {/* Unread Badge */}
         {unreadCount > 0 && (
           <span

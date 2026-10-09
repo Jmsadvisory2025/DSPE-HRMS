@@ -185,6 +185,11 @@ const STAGE_CONFIG: Record<
     color: theme.destructive,
     bg: theme.destructiveSoft,
   },
+  duplicate: {
+    label: "Duplicate",
+    color: theme.warning,
+    bg: theme.warningSoft,
+  },
 };
 
 const getStageConfig = (stage: string) => {

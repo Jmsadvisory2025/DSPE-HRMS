@@ -55,6 +55,7 @@ export const approvalActions = {
   UPDATE_APPLICATION: "UPDATE_APPLICATION",
   SEND_TO_CLIENT: "SEND_TO_CLIENT",
   CLIENT_REMINDER: "CLIENT_REMINDER",
+  FETCH_APPROVAL_QUEUE_LIST: "FETCH_APPROVAL_QUEUE_LIST",
 } as const;
 
 /* ── Users ─────────────────────────────────────────────────────── */

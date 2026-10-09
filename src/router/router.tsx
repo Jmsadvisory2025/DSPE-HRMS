@@ -17,6 +17,7 @@ import JobPipelinePage from "@/pages/positions/JobPipelinePage";
 import DirectJobSubmit from "@/pages/positions/DirectJobSubmit";
 import ApprovalsPage from "@/pages/approvals/ApprovalsPage";
 import ApprovalDetailPage from "@/pages/approvals/ApprovalDetailPage";
+import ApprovalQueueListPage from "@/pages/approvals/ApprovalQueueListPage";
 import UsersPage from "@/pages/users/UsersPage";
 import AuditLogsPage from "@/pages/audit/AuditLogsPage";
 import SettingsPage from "@/pages/settings/SettingsPage";
@@ -117,6 +118,10 @@ export const router = createBrowserRouter([
       {
         path: "/approvals",
         element: <ApprovalsPage />,
+      },
+      {
+        path: "/approvals/queue",
+        element: <ApprovalQueueListPage />,
       },
       {
         path: "/approvals/:applicationId",
